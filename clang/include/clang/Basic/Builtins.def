@@ -631,6 +631,8 @@ BUILTIN(__builtin_thread_pointer, "v*", "nc")
 BUILTIN(__builtin_launder, "v*v*", "ntE")
 LANGBUILTIN(__builtin_is_constant_evaluated, "b", "nE", CXX_LANG)
 
+LANGBUILTIN(__builtin_get_vtable_pointer, "v*v*", "tnc", CXX_LANG)
+
 // GCC exception builtins
 BUILTIN(__builtin_eh_return, "vzv*", "r") // FIXME: Takes intptr_t, not size_t!
 BUILTIN(__builtin_frob_return_addr, "v*v*", "n")
@@ -1704,6 +1706,8 @@ BUILTIN(__builtin_ptrauth_sign_generic_data, "zv*v*", "tnc")
 BUILTIN(__builtin_ptrauth_auth_and_resign, "v*v*iv*iv*", "tn")
 BUILTIN(__builtin_ptrauth_auth, "v*v*iv*", "tn")
 BUILTIN(__builtin_ptrauth_string_discriminator, "zcC*", "ncE")
+
+BUILTIN(__builtin_virtual_member_address, "v*v*v*", "tnc")
 
 // OpenCL v2.0 s6.13.16, s9.17.3.5 - Pipe functions.
 // We need the generic prototype, since the packet type could be anything.
