@@ -7023,6 +7023,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
           options::OPT_fno_ptrauth_function_pointer_type_discrimination, false))
     CmdArgs.push_back("-fptrauth-function-pointer-type-discrimination");
 
+  if (Args.hasArg(options::OPT_fbranch_target_identification,
+                  options::OPT_fno_branch_target_identification, false))
+    CmdArgs.push_back("-mbranch-target-enforce");
+
 
   // -fsigned-bitfields is default, and clang doesn't yet support
   // -funsigned-bitfields.

@@ -3889,6 +3889,8 @@ let Group = f_Group in {
       HelpText<"Enable type discrimination of vtable pointers">;
     def fptrauth_soft : Flag<["-"], "fptrauth-soft">,
       HelpText<"Enable software lowering of pointer authentication">;
+    def fbranch_target_identification : Flag<["-"], "fbranch-target-identification">,
+      HelpText<"Emit branch target identification instructions for indirect branch destinations">;
     def fptrauth_block_descriptor_pointers : Flag<["-"], "fptrauth-block-descriptor-pointers">,
       HelpText<"enable signing block descriptors">;
     def fptrauth_function_pointer_type_discrimination : Flag<["-"], "fptrauth-function-pointer-type-discrimination">,
@@ -3910,6 +3912,7 @@ let Group = f_Group in {
   def fno_ptrauth_objc_isa : Flag<["-"], "fno-ptrauth-objc-isa">;
   def fno_ptrauth_block_descriptor_pointers : Flag<["-"], "fno-ptrauth-block-descriptor-pointers">;
   def fno_ptrauth_function_pointer_type_discrimination : Flag<["-"], "fno-ptrauth-function-pointer-type-discrimination">;
+  def fno_branch_target_identification : Flag<["-"], "fno-branch-target-identification">;
 }
 
 let Group = f_Group in {
