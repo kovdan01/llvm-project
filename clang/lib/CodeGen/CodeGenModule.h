@@ -441,6 +441,7 @@ private:
 
   /// Signed constant pointers.
   void *SignedFunctionPointersByDeclAndType = nullptr;
+  void *SignedThunkPointers = nullptr;
   void *ConstantSignedPointersByConstant = nullptr;
 
   llvm::StringMap<llvm::GlobalVariable *> CFConstantStringMap;
@@ -963,6 +964,13 @@ public:
   llvm::Constant *getFunctionPointer(llvm::Constant *pointer,
                                      QualType functionType,
                                      GlobalDecl GD = GlobalDecl());
+
+  llvm::Constant *getMemberFunctionPointer(const FunctionDecl *FD,
+                                           llvm::Type *Ty = nullptr);
+
+  llvm::Constant *getMemberFunctionPointer(llvm::Constant *pointer,
+                                           QualType functionType,
+                                           const FunctionDecl *FD = nullptr);
 
   CGPointerAuthInfo getFunctionPointerAuthInfo(QualType functionType);
 
