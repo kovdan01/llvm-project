@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AArch64InstrInfo.h"
+#include "AArch64Subtarget.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"

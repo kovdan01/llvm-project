@@ -58,6 +58,15 @@ enum NodeType : unsigned {
 
   CALL_BTI, // Function call followed by a BTI instruction.
 
+  // Function call, authenticating the callee value first:
+  // AUTH_CALL chain, callee, auth key #, int disc, addr disc, operands.
+  AUTH_CALL,
+  // AUTH_TC_RETURN chain, callee, fpdiff, auth key #, int disc, addr disc, operands.
+  AUTH_TC_RETURN,
+
+  // Authenticated variant of CALL_RVMARKER.
+  AUTH_CALL_RVMARKER,
+
   SMSTART,
   SMSTOP,
   RESTORE_ZA,
@@ -862,6 +871,10 @@ public:
       const SmallVectorImpl<MachineBasicBlock *> &Exits) const override;
 
   bool supportSwiftError() const override {
+    return true;
+  }
+
+  bool supportPtrAuthBundles() const override {
     return true;
   }
 
