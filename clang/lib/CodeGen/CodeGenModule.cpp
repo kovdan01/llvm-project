@@ -5970,7 +5970,9 @@ CodeGenModule::GetAddrOfConstantCFString(const StringLiteral *Literal) {
   auto Fields = Builder.beginStruct(STy);
 
   // Class pointer.
-  Fields.add(cast<llvm::Constant>(CFConstantStringClassRef));
+  Fields.addSignedPointer(
+      cast<llvm::Constant>(CFConstantStringClassRef),
+      getCodeGenOpts().PointerAuth.ObjCIsaPointers, GlobalDecl(), QualType());
 
   // Flags.
   if (IsSwiftABI) {
@@ -7482,4 +7484,12 @@ void CodeGenModule::moveLazyEmissionStates(CodeGenModule *NewBuilder) {
   NewBuilder->TBAA = std::move(TBAA);
 
   NewBuilder->ABI->MangleCtx = std::move(ABI->MangleCtx);
+}
+
+llvm::Constant *CodeGenModule::getObjCIsaMaskAddress() {
+  if (!ObjCIsaMaskAddress) {
+    ObjCIsaMaskAddress = GetOrCreateLLVMGlobal(
+        "objc_absolute_packed_isa_class_mask", Int8Ty, LangAS::Default, nullptr);
+  }
+  return ObjCIsaMaskAddress;
 }

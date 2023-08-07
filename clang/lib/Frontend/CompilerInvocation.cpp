@@ -1481,6 +1481,16 @@ bool CompilerInvocation::setDefaultPointerAuthOptions(
               Key::CXXVirtualFunctionPointers, true, Discrimination::Decl);
       Opts.CXXMemberFunctionPointers = PointerAuthSchema(
           Key::CXXMemberFunctionPointers, false, Discrimination::Type);
+      auto explicitIsaAuthenticationMode =
+          LangOpts.getPointerAuthObjcIsaAuthentication();
+      if (explicitIsaAuthenticationMode != PointerAuthenticationMode::None) {
+        Opts.ObjCIsaPointers = PointerAuthSchema(
+            Key::ObjCIsaPointer, true, explicitIsaAuthenticationMode,
+            Discrimination::Constant, IsaPointerConstantDiscriminator, true);
+        Opts.ObjCSuperPointers = PointerAuthSchema(
+            Key::ObjCIsaPointer, true, explicitIsaAuthenticationMode,
+            Discrimination::Constant, SuperPointerConstantDiscriminator);
+      }
     }
     Opts.ReturnAddresses = LangOpts.PointerAuthReturns;
     Opts.AuthTraps = LangOpts.PointerAuthAuthTraps;
@@ -1526,6 +1536,16 @@ bool CompilerInvocation::setDefaultPointerAuthOptions(
               PointerAuthSchema(Key::ASIA, true, Discrimination::Decl);
       Opts.CXXMemberFunctionPointers =
           PointerAuthSchema(Key::ASIA, false, Discrimination::Type);
+      auto explicitIsaAuthenticationMode =
+          LangOpts.getPointerAuthObjcIsaAuthentication();
+      if (explicitIsaAuthenticationMode != PointerAuthenticationMode::None) {
+        Opts.ObjCIsaPointers = PointerAuthSchema(
+            Key::ASDA, true, explicitIsaAuthenticationMode,
+            Discrimination::Constant, IsaPointerConstantDiscriminator, true);
+        Opts.ObjCSuperPointers = PointerAuthSchema(
+            Key::ASDA, true, explicitIsaAuthenticationMode,
+            Discrimination::Constant, SuperPointerConstantDiscriminator);
+      }
     }
     Opts.ReturnAddresses = LangOpts.PointerAuthReturns;
     Opts.AuthTraps = LangOpts.PointerAuthAuthTraps;
@@ -3402,6 +3422,27 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
     if (Opts.PointerAuthKernelABIVersion)
       GenerateArg(Consumer, OPT_fptrauth_kernel_abi_version);
   }
+
+  {
+    StringRef Value;
+    switch (Opts.getPointerAuthObjcIsaAuthentication()) {
+    case LangOptions::PointerAuthenticationMode::None:
+      break;
+    case LangOptions::PointerAuthenticationMode::Strip:
+      Value = PointerAuthenticationOptionStrip;
+      break;
+    case LangOptions::PointerAuthenticationMode::SignAndStrip:
+      Value = PointerAuthenticationOptionSignAndStrip;
+      break;
+    case LangOptions::PointerAuthenticationMode::SignAndAuth:
+      Value = PointerAuthenticationOptionSignAndAuth;
+      break;
+    }
+    if (!Value.empty())
+      GenerateArg(Consumer, OPT_fptrauth_objc_isa_mode, Value);
+  }
+  if (Opts.PointerAuthObjcIsaMasking)
+    GenerateArg(Consumer, OPT_fptrauth_objc_isa_masking);
 }
 
 static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
@@ -3424,6 +3465,33 @@ static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
   Opts.PointerAuthABIVersion =
       getLastArgIntValue(Args, OPT_fptrauth_abi_version_EQ, 0, Diags);
   Opts.PointerAuthKernelABIVersion = Args.hasArg(OPT_fptrauth_kernel_abi_version);
+
+  if (auto modeArg = Args.getLastArg(OPT_fptrauth_objc_isa_mode)) {
+    StringRef Value = modeArg->getValue();
+    std::optional<PointerAuthenticationMode> isaAuthenticationMode =
+        llvm::StringSwitch<std::optional<PointerAuthenticationMode>>(Value)
+            .Case(PointerAuthenticationOptionStrip,
+                  PointerAuthenticationMode::Strip)
+            .Case(PointerAuthenticationOptionSignAndStrip,
+                  PointerAuthenticationMode::SignAndStrip)
+            .Case(PointerAuthenticationOptionSignAndAuth,
+                  PointerAuthenticationMode::SignAndAuth)
+            .Default(std::nullopt);
+    if (!isaAuthenticationMode) {
+      Diags.Report(diag::err_drv_unsupported_option_argument)
+          << modeArg->getOption().getName() << modeArg->getValue();
+      return;
+    }
+    Opts.setPointerAuthObjcIsaAuthentication(*isaAuthenticationMode);
+  }
+  Opts.PointerAuthObjcIsaMasking = Args.hasArg(OPT_fptrauth_objc_isa_masking);
+
+  // Try to catch cherry-picks of the wrong feature enablement commit, or
+  // incorrect -Xclang flags.
+  if (Arg *A = Args.getLastArg(OPT_fptrauth_objc_isa)) {
+    Diags.Report(diag::err_drv_unsupported_opt_with_suggestion)
+      << A->getSpelling() << "-fptrauth-objc-isa-mode=sign-and-auth";
+  }
 }
 
 /// Check if input file kind and language standard are compatible.
