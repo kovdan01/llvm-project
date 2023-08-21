@@ -1346,9 +1346,9 @@ static ICmpInst::Predicate evaluateICmpRelation(Constant *V1, Constant *V2,
   if (V1 == V2) return ICmpInst::ICMP_EQ;
 
   if (!isa<ConstantExpr>(V1) && !isa<GlobalValue>(V1) &&
-      !isa<BlockAddress>(V1)) {
+      !isa<BlockAddress>(V1) && !isa<ConstantPtrAuth>(V1)) {
     if (!isa<GlobalValue>(V2) && !isa<ConstantExpr>(V2) &&
-        !isa<BlockAddress>(V2)) {
+        !isa<BlockAddress>(V2) && !isa<ConstantPtrAuth>(V2)) {
       // We distilled this down to a simple case, use the standard constant
       // folder.
       ConstantInt *R = nullptr;
@@ -1427,6 +1427,8 @@ static ICmpInst::Predicate evaluateICmpRelation(Constant *V1, Constant *V2,
              "Canonicalization guarantee!");
       return ICmpInst::ICMP_NE;
     }
+  } else if (const ConstantPtrAuth *SP = dyn_cast<ConstantPtrAuth>(V1)) {
+    return ICmpInst::BAD_ICMP_PREDICATE;
   } else {
     // Ok, the LHS is known to be a constantexpr.  The RHS can be any of a
     // constantexpr, a global, block address, or a simple constant.
