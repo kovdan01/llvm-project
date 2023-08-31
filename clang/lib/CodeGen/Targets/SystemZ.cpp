@@ -306,7 +306,7 @@ Address SystemZABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
 
     // Update overflow_arg_area_ptr pointer
     llvm::Value *NewOverflowArgArea = CGF.Builder.CreateGEP(
-        OverflowArgArea.getElementType(), OverflowArgArea.getPointer(),
+        OverflowArgArea.getElementType(), OverflowArgArea.getRawPointer(CGF),
         PaddedSizeV, "overflow_arg_area");
     CGF.Builder.CreateStore(NewOverflowArgArea, OverflowArgAreaPtr);
 
@@ -384,7 +384,7 @@ Address SystemZABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
   // Update overflow_arg_area_ptr pointer
   llvm::Value *NewOverflowArgArea =
     CGF.Builder.CreateGEP(OverflowArgArea.getElementType(),
-                          OverflowArgArea.getPointer(), PaddedSizeV,
+                          OverflowArgArea.getRawPointer(CGF), PaddedSizeV,
                           "overflow_arg_area");
   CGF.Builder.CreateStore(NewOverflowArgArea, OverflowArgAreaPtr);
   CGF.EmitBranch(ContBlock);

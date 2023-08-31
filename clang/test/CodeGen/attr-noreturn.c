@@ -17,10 +17,10 @@ void __attribute__((noreturn)) f(void) {
 // CHECK-NEXT:    unreachable
 
 // CHECK-CXX-LABEL: @_Z20test_conditional_gnui(
-// CHECK-CXX:         %cond{{.*}} = phi ptr [ @_Z2t1i, %{{.*}} ], [ @_Z2t2i, %{{.*}} ]
-// CHECK-CXX:         call void %cond{{.*}}(
-// CHECK-CXX:         %cond{{.*}} = phi ptr [ @_Z2t1i, %{{.*}} ], [ @_Z2t1i, %{{.*}} ]
-// CHECK-CXX:         call void %cond{{.*}}(
+// CHECK-CXX:         %{{.*}} = phi ptr [ @_Z2t1i, %{{.*}} ], [ @_Z2t2i, %{{.*}} ]
+// CHECK-CXX:         call void %{{.*}}(
+// CHECK-CXX:         %{{.*}} = phi ptr [ @_Z2t1i, %{{.*}} ], [ @_Z2t1i, %{{.*}} ]
+// CHECK-CXX:         call void %{{.*}}(
 // CHECK-CXX-NEXT:    unreachable
 void t1(int) __attribute__((noreturn));
 void t2(int);
