@@ -1662,6 +1662,10 @@ computeCopyInfoForBlockCapture(const BlockDecl::Capture &CI, QualType T,
     return std::make_pair(BlockCaptureEntityKind::BlockObject, Flags);
   }
 
+  if (T.hasAddressDiscriminatedPointerAuth())
+    return std::make_pair(
+             BlockCaptureEntityKind::AddressDiscriminatedPointerAuth, Flags);
+
   Flags = BLOCK_FIELD_IS_OBJECT;
   bool isBlockPointer = T->isBlockPointerType();
   if (isBlockPointer)
@@ -1682,6 +1686,10 @@ computeCopyInfoForBlockCapture(const BlockDecl::Capture &CI, QualType T,
     return std::make_pair(!isBlockPointer ? BlockCaptureEntityKind::ARCStrong
                                           : BlockCaptureEntityKind::BlockObject,
                           Flags);
+  case QualType::PCK_PtrAuth:
+    return std::make_pair(
+             BlockCaptureEntityKind::AddressDiscriminatedPointerAuth,
+             BlockFieldFlags());
   case QualType::PCK_Trivial:
   case QualType::PCK_VolatileTrivial: {
     if (!T->isObjCRetainableType())
@@ -1784,6 +1792,13 @@ static std::string getBlockCaptureStr(const CGBlockInfo::Capture &Cap,
   case BlockCaptureEntityKind::ARCStrong:
     Str += "s";
     break;
+  case BlockCaptureEntityKind::AddressDiscriminatedPointerAuth: {
+    auto PtrAuth = CaptureTy.getPointerAuth();
+    assert(PtrAuth && PtrAuth.isAddressDiscriminated());
+    Str += "p" + llvm::to_string(PtrAuth.getKey()) + "d" +
+           llvm::to_string(PtrAuth.getExtraDiscriminator());
+    break;
+  }
   case BlockCaptureEntityKind::BlockObject: {
     const VarDecl *Var = CI.getVariable();
     unsigned F = Flags.getBitMask();
@@ -1900,6 +1915,7 @@ static void pushCaptureCleanup(BlockCaptureEntityKind CaptureKind,
     }
     break;
   }
+  case BlockCaptureEntityKind::AddressDiscriminatedPointerAuth:
   case BlockCaptureEntityKind::None:
     break;
   }
@@ -1996,6 +2012,14 @@ CodeGenFunction::GenerateCopyHelperFunction(const CGBlockInfo &blockInfo) {
     case BlockCaptureEntityKind::ARCWeak:
       EmitARCCopyWeak(dstField, srcField);
       break;
+    case BlockCaptureEntityKind::AddressDiscriminatedPointerAuth: {
+      auto type = CI.getVariable()->getType();
+      auto ptrauth = type.getPointerAuth();
+      assert(ptrauth && ptrauth.isAddressDiscriminated());
+      EmitPointerAuthCopy(ptrauth, type, dstField, srcField);
+      // We don't need to push cleanups for ptrauth types.
+      continue;
+    }
     case BlockCaptureEntityKind::NonTrivialCStruct: {
       // If this is a C struct that requires non-trivial copy construction,
       // emit a call to its copy constructor.
@@ -2332,6 +2356,33 @@ public:
   }
 };
 
+/// Emits the copy/dispose helpers for a __block variable with
+/// address-discriminated pointer authentication.
+class AddressDiscriminatedByrefHelpers final : public BlockByrefHelpers {
+  QualType VarType;
+
+public:
+  AddressDiscriminatedByrefHelpers(CharUnits alignment, QualType type)
+      : BlockByrefHelpers(alignment), VarType(type) {
+    assert(type.hasAddressDiscriminatedPointerAuth());
+  }
+
+  void emitCopy(CodeGenFunction &CGF, Address destField,
+                Address srcField) override {
+    CGF.EmitPointerAuthCopy(VarType.getPointerAuth(), VarType,
+                            destField, srcField);
+  }
+
+  bool needsDispose() const override { return false; }
+  void emitDispose(CodeGenFunction &CGF, Address field) override {
+    llvm_unreachable("should never be called");
+  }
+
+  void profileImpl(llvm::FoldingSetNodeID &id) const override {
+    id.AddPointer(VarType.getCanonicalType().getAsOpaquePtr());
+  }
+};
+
 /// Emits the copy/dispose helpers for a __block variable that is a non-trivial
 /// C struct.
 class NonTrivialCStructByrefHelpers final : public BlockByrefHelpers {
@@ -2532,6 +2583,11 @@ CodeGenFunction::buildByrefHelpers(llvm::StructType &byrefType,
 
     return ::buildByrefHelpers(
         CGM, byrefInfo, CXXByrefHelpers(valueAlignment, type, copyExpr));
+  }
+
+  if (type.hasAddressDiscriminatedPointerAuth()) {
+    return ::buildByrefHelpers(
+        CGM, byrefInfo, AddressDiscriminatedByrefHelpers(valueAlignment, type));
   }
 
   // If type is a non-trivial C struct type that is non-trivial to

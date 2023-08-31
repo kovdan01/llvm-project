@@ -450,6 +450,8 @@ class ASTContext : public RefCountedBase<ASTContext> {
   /// This is the top-level (C++20) Named module we are building.
   Module *CurrentCXXNamedModule = nullptr;
 
+  mutable llvm::DenseMap<QualType, bool> containsAuthenticatedNullTypes;
+
   static constexpr unsigned ConstantArrayTypesLog2InitSize = 8;
   static constexpr unsigned GeneralTypesLog2InitSize = 9;
   static constexpr unsigned FunctionProtoTypesLog2InitSize = 12;
@@ -1233,6 +1235,27 @@ public:
 
   /// Return the "other" type-specific discriminator for the given type.
   uint16_t getPointerAuthTypeDiscriminator(QualType T);
+
+  /// Return the discriminator of attribute ptrauth_struct on the record. If the
+  /// key argument is value dependent, set the boolean flag to false.
+  std::pair<bool, unsigned>
+  getPointerAuthStructDisc(const RecordDecl *RD) const;
+
+  // Determine whether the type can have qualifier __ptrauth with key
+  // ptrauth_key_none.
+  bool canQualifyWithPtrAuthKeyNone(QualType T) const {
+    QualType PointeeType = T->getPointeeType();
+
+    // Disallow the qualifier on function pointers.
+    if (PointeeType->isFunctionType())
+      return false;
+
+    return true;
+  }
+
+  bool typeContainsAuthenticatedNull(QualType) const;
+  bool typeContainsAuthenticatedNull(const Type *) const;
+  std::optional<bool> tryTypeContainsAuthenticatedNull(QualType) const;
 
   /// Apply Objective-C protocol qualifiers to the given type.
   /// \param allowOnPointerType specifies if we can apply protocol
@@ -2167,6 +2190,16 @@ public:
     Qualifiers Qs = type.getQualifiers();
     Qs.removeObjCLifetime();
     return getQualifiedType(type.getUnqualifiedType(), Qs);
+  }
+
+  /// \brief Return a type with the given __ptrauth qualifier.
+  QualType getPointerAuthType(QualType type, PointerAuthQualifier pointerAuth) {
+    assert(!type.getPointerAuth());
+    assert(pointerAuth);
+
+    Qualifiers qs;
+    qs.setPointerAuth(pointerAuth);
+    return getQualifiedType(type, qs);
   }
 
   unsigned char getFixedPointScale(QualType Ty) const;

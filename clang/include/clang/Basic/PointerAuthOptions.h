@@ -33,6 +33,8 @@ constexpr uint16_t MethodListPointerConstantDiscriminator = 0xC310;
 /// is ptrauth_string_discriminator("block_descriptor")
 constexpr uint16_t BlockDescriptorConstantDiscriminator = 0xC0BB;
 
+constexpr int PointerAuthKeyNone = -1;
+
 class PointerAuthSchema {
 public:
   enum class Kind : unsigned {
@@ -68,6 +70,7 @@ public:
 private:
   Kind TheKind : 2;
   unsigned IsAddressDiscriminated : 1;
+  unsigned AuthenticatesNullValues : 1;
   PointerAuthenticationMode SelectedAuthenticationMode : 2;
   Discrimination DiscriminationKind : 2;
   unsigned Key : 4;
@@ -79,8 +82,10 @@ public:
   PointerAuthSchema(ARM8_3Key key, bool isAddressDiscriminated,
                     PointerAuthenticationMode authenticationMode,
                     Discrimination otherDiscrimination,
-                    std::optional<uint16_t> constantDiscriminator = std::nullopt)
+                    std::optional<uint16_t> constantDiscriminator = std::nullopt,
+                    bool authenticatesNullValues = false)
       : TheKind(Kind::ARM8_3), IsAddressDiscriminated(isAddressDiscriminated),
+        AuthenticatesNullValues(authenticatesNullValues),
         SelectedAuthenticationMode(authenticationMode),
         DiscriminationKind(otherDiscrimination), Key(unsigned(key)) {
     assert((getOtherDiscrimination() != Discrimination::Constant ||
@@ -92,10 +97,12 @@ public:
 
   PointerAuthSchema(ARM8_3Key key, bool isAddressDiscriminated,
                     Discrimination otherDiscrimination,
-                    std::optional<uint16_t> constantDiscriminator = std::nullopt)
+                    std::optional<uint16_t> constantDiscriminator = std::nullopt,
+                    bool authenticatesNullValues = false)
       : PointerAuthSchema(key, isAddressDiscriminated,
                           PointerAuthenticationMode::SignAndAuth,
-                          otherDiscrimination, constantDiscriminator) {}
+                          otherDiscrimination, constantDiscriminator,
+                          authenticatesNullValues) {}
 
   Kind getKind() const { return TheKind; }
 
@@ -106,6 +113,11 @@ public:
   bool isAddressDiscriminated() const {
     assert(getKind() != Kind::None);
     return IsAddressDiscriminated;
+  }
+
+  bool authenticatesNullValues() const {
+    assert(getKind() != Kind::None);
+    return AuthenticatesNullValues;
   }
 
   bool hasOtherDiscrimination() const {

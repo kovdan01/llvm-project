@@ -8,6 +8,7 @@ extern "C" {
 void f(void);
 void f2(int);
 void (*fptr)(void);
+void (* __ptrauth(0, 0, 42) f2ptr_42_discm)(int);
 void *opaque;
 unsigned long uintptr;
 
@@ -18,27 +19,31 @@ void (*test_constant_null)(int) = 0;
 // CHECK: @test_constant_cast = global ptr @f.ptrauth
 void (*test_constant_cast)(int) = (void (*)(int))f;
 
-// CHECK: @f.ptrauth.1 = private constant { {{.*}} } { ptr @f, i32 0, i64 0, i64 0 }
-// CHECK: @test_opaque = global ptr @f.ptrauth.1
+// CHECK: @f.ptrauth.1 = private constant { {{.*}} } { ptr @f, i32 0, i64 0, i64 42 }
+// CHECK: @test_qualifier = global ptr @f.ptrauth.1
+void (*__ptrauth(0,0,42) test_qualifier)(int) = (void (*)(int))f;
+
+// CHECK: @f.ptrauth.2 = private constant { {{.*}} } { ptr @f, i32 0, i64 0, i64 0 }
+// CHECK: @test_opaque = global ptr @f.ptrauth.2
 void *test_opaque =
 #ifdef __cplusplus
     (void *)
 #endif
     (void (*)(int))(double (*)(double))f;
 
-// CHECK: @test_intptr_t = global i64 ptrtoint (ptr @f.ptrauth.1 to i64)
+// CHECK: @test_intptr_t = global i64 ptrtoint (ptr @f.ptrauth.2 to i64)
 unsigned long test_intptr_t = (unsigned long)f;
 
 // CHECK: @test_through_long = global ptr @f.ptrauth
 void (*test_through_long)(int) = (void (*)(int))(long)f;
 
-// CHECK: @test_to_long = global i64 ptrtoint (ptr @f.ptrauth.1 to i64)
+// CHECK: @test_to_long = global i64 ptrtoint (ptr @f.ptrauth.2 to i64)
 long test_to_long = (long)(double (*)())f;
 
 // CHECKC: @knr.ptrauth = private constant { ptr, i32, i64, i64 } { ptr @knr, i32 0, i64 0, i64 18983 }, section "llvm.ptrauth"
 
 // CHECKC: @redecl.ptrauth = private constant { ptr, i32, i64, i64 } { ptr @redecl, i32 0, i64 0, i64 18983 }, section "llvm.ptrauth"
-// CHECKC: @redecl.ptrauth.3 = private constant { ptr, i32, i64, i64 } { ptr @redecl, i32 0, i64 0, i64 2712 }, section "llvm.ptrauth"
+// CHECKC: @redecl.ptrauth.4 = private constant { ptr, i32, i64, i64 } { ptr @redecl, i32 0, i64 0, i64 2712 }, section "llvm.ptrauth"
 
 #ifdef __cplusplus
 struct ptr_member {
@@ -56,7 +61,7 @@ void (*test_member)() = (void (*)())pm.fptr_;
 void test_cast_to_opaque() {
   opaque = (void *)f;
 
-  // CHECK: [[RESIGN_VAL:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr @f.ptrauth.2 to i64), i32 0, i64 18983, i32 0, i64 0)
+  // CHECK: [[RESIGN_VAL:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr @f.ptrauth.3 to i64), i32 0, i64 18983, i32 0, i64 0)
   // CHECK: [[RESIGN_PTR:%.*]] = inttoptr i64 [[RESIGN_VAL]] to ptr
 }
 
@@ -104,12 +109,74 @@ void test_call() {
   // CHECK: call void %0() [ "ptrauth"(i32 0, i64 18983) ]
 }
 
+// CHECK-LABEL: define void @test_assign_to_qualified
+void test_assign_to_qualified() {
+  f2ptr_42_discm = (void (*)(int))fptr;
+
+  // CHECK: [[ENTRY:.*]]:{{$}}
+  // CHECK: [[FPTR:%.*]] = load ptr, ptr @fptr
+  // CHECK-NEXT: [[CMP:%.*]] = icmp ne ptr [[FPTR]], null
+  // CHECK-NEXT: br i1 [[CMP]], label %[[RESIGN1:.*]], label %[[JOIN1:.*]]
+
+  // CHECK: [[RESIGN1]]:
+  // CHECK-NEXT: [[FPTR2:%.*]] = ptrtoint ptr [[FPTR]] to i64
+  // CHECK-NEXT: [[FPTR4:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR2]], i32 0, i64 18983, i32 0, i64 2712)
+  // CHECK-NEXT: [[FPTR5:%.*]] = inttoptr i64 [[FPTR4]] to ptr
+  // CHECK-NEXT: br label %[[JOIN1]]
+
+  // CHECK: [[JOIN1]]:
+  // CHECK-NEXT: [[FPTR6:%.*]] = phi ptr [ null, %[[ENTRY]] ], [ [[FPTR5]], %[[RESIGN1]] ]
+  // CHECK-NEXT: [[CMP:%.*]] = icmp ne ptr [[FPTR6]], null
+  // CHECK-NEXT: br i1 [[CMP]], label %[[RESIGN2:.*]], label %[[JOIN2:.*]]
+
+  // CHECK: [[RESIGN2]]:
+  // CHECK-NEXT: [[FPTR7:%.*]] = ptrtoint ptr [[FPTR6]] to i64
+  // CHECK-NEXT: [[FPTR8:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR7]], i32 0, i64 2712, i32 0, i64 42)
+  // CHECK-NEXT: [[FPTR9:%.*]] = inttoptr i64 [[FPTR8]] to ptr
+  // CHECK-NEXT: br label %[[JOIN2]]
+
+  // CHECK: [[JOIN2]]
+  // CHECK-NEXT: [[FPTR10:%.*]] = phi ptr [ null, %[[JOIN1]] ], [ [[FPTR9]], %[[RESIGN2]] ]
+  // CHECK-NEXT store void (i32)* [[FPTR10]], void (i32)** @f2ptr_42_discm
+}
+
+// CHECK-LABEL: define void @test_assign_from_qualified
+void test_assign_from_qualified() {
+  fptr = (void (*)(void))f2ptr_42_discm;
+
+  // CHECK: [[ENTRY:.*]]:{{$}}
+  // CHECK: [[FPTR:%.*]] = load ptr, ptr @f2ptr_42_discm
+  // CHECK-NEXT: [[CMP:%.*]] = icmp ne ptr [[FPTR]], null
+  // CHECK-NEXT: br i1 [[CMP]], label %[[RESIGN1:.*]], label %[[JOIN1:.*]]
+
+  // CHECK: [[RESIGN1]]:
+  // CHECK-NEXT: [[FPTR1:%.*]] = ptrtoint ptr [[FPTR]] to i64
+  // CHECK-NEXT: [[FPTR2:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR1]], i32 0, i64 42, i32 0, i64 2712)
+  // CHECK-NEXT: [[FPTR3:%.*]] = inttoptr i64 [[FPTR2]] to ptr
+  // CHECK-NEXT: br label %[[JOIN1]]
+
+  // CHECK: [[JOIN1]]:
+  // CHECK-NEXT: [[FPTR4:%.*]] = phi ptr [ null, %[[ENTRY]] ], [ [[FPTR3]], %[[RESIGN1]] ]
+  // CHECK-NEXT: [[CMP:%.*]] = icmp ne ptr [[FPTR4]], null
+  // CHECK-NEXT: br i1 [[CMP]], label %[[RESIGN2:.*]], label %[[JOIN2:.*]]
+
+  // CHECK: [[RESIGN2]]:
+  // CHECK-NEXT: [[FPTR6:%.*]] = ptrtoint ptr [[FPTR4]] to i64
+  // CHECK-NEXT: [[FPTR7:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR6]], i32 0, i64 2712, i32 0, i64 18983)
+  // CHECK-NEXT: [[FPTR8:%.*]] = inttoptr i64 [[FPTR7]] to ptr
+  // CHECK-NEXT: br label %[[JOIN2]]
+
+  // CHECK: [[JOIN2]]
+  // CHECK-NEXT: [[FPTR9:%.*]] = phi ptr [ null, %[[JOIN1]] ], [ [[FPTR8]], %[[RESIGN2]] ]
+  // CHECK-NEXT store void ()* [[FPTR10]], void ()** @f2ptr_42_discm
+}
+
 // CHECK-LABEL: define void @test_call_lvalue_cast
 void test_call_lvalue_cast() {
   (*(void (*)(int))f)(42);
 
   // CHECK: entry:
-  // CHECK-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr @f.ptrauth.2 to i64), i32 0, i64 18983, i32 0, i64 2712)
+  // CHECK-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr @f.ptrauth.3 to i64), i32 0, i64 18983, i32 0, i64 2712)
   // CHECK-NEXT: [[RESIGN_INT:%.*]] = inttoptr i64 [[RESIGN]] to ptr
   // CHECK-NEXT: call void [[RESIGN_INT]](i32 noundef 42) [ "ptrauth"(i32 0, i64 2712) ]
 }
