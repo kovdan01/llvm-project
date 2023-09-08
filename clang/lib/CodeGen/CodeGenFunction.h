@@ -2604,7 +2604,9 @@ public:
   }
 
   LValue MakeNaturalAlignPointeeAddrLValue(llvm::Value *V, QualType T);
-  LValue MakeNaturalAlignAddrLValue(llvm::Value *V, QualType T);
+  LValue
+  MakeNaturalAlignAddrLValue(llvm::Value *V, QualType T,
+                             KnownNonNull_t IsKnownNonNull = NotKnownNonNull);
   LValue MakeNaturalAlignPointeeRawAddrLValue(llvm::Value *V, QualType T);
   LValue MakeNaturalAlignRawAddrLValue(llvm::Value *V, QualType T);
 

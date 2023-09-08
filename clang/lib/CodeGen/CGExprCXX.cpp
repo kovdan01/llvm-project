@@ -260,7 +260,7 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
   if (auto *OCE = dyn_cast<CXXOperatorCallExpr>(CE)) {
     if (OCE->isAssignmentOp()) {
       if (TrivialAssignment) {
-        TrivialAssignmentRHS = EmitLValue(CE->getArg(1));
+        TrivialAssignmentRHS = EmitLValue(CE->getArg(1), KnownNonNull);
       } else {
         RtlArgs = &RtlArgStorage;
         EmitCallArgs(*RtlArgs, MD->getType()->castAs<FunctionProtoType>(),
@@ -274,11 +274,12 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
   if (IsArrow) {
     LValueBaseInfo BaseInfo;
     TBAAAccessInfo TBAAInfo;
-    Address ThisValue = EmitPointerWithAlignment(Base, &BaseInfo, &TBAAInfo);
+    Address ThisValue = EmitPointerWithAlignment(
+        Base, &BaseInfo, &TBAAInfo, KnownNonNull);
     This = MakeAddrLValue(ThisValue, Base->getType()->getPointeeType(),
                           BaseInfo, TBAAInfo);
   } else {
-    This = EmitLValue(Base);
+    This = EmitLValue(Base, KnownNonNull);
   }
 
   if (const CXXConstructorDecl *Ctor = dyn_cast<CXXConstructorDecl>(MD)) {
@@ -311,7 +312,7 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
       // the RHS.
       LValue RHS = isa<CXXOperatorCallExpr>(CE)
                        ? TrivialAssignmentRHS
-                       : EmitLValue(*CE->arg_begin());
+                       : EmitLValue(*CE->arg_begin(), KnownNonNull);
       EmitAggregateAssign(This, RHS, CE->getType());
       return RValue::get(This.getPointer(*this));
     }
