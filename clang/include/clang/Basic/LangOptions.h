@@ -30,6 +30,13 @@
 
 namespace clang {
 
+enum class PointerAuthenticationMode : unsigned {
+  None,
+  Strip,
+  SignAndStrip,
+  SignAndAuth
+};
+
 /// Bitfields of LangOptions, split out from LangOptions in order to ensure that
 /// this large collection of bitfields is a trivial class type.
 class LangOptionsBase {
@@ -340,6 +347,8 @@ public:
     /// Return address signing uses APIB key.
     BKey
   };
+
+  using PointerAuthenticationMode = ::clang::PointerAuthenticationMode;
 
   enum class ThreadModelKind {
     /// POSIX Threads.
