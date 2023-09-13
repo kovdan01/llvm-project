@@ -1983,9 +1983,11 @@ bool Sema::checkPointerAuthDiscriminatorArg(Expr *arg,
     return true;
   }
 
+  bool isPtrAuthStruct = kind == PADAK_TypeDiscPtrAuthStruct;
+
   std::optional<llvm::APSInt> result = arg->getIntegerConstantExpr(Context);
   if (!result) {
-    Diag(arg->getExprLoc(), diag::err_ptrauth_arg_not_ice);
+    Diag(arg->getExprLoc(), diag::err_ptrauth_arg_not_ice) << isPtrAuthStruct;
     return false;
   }
 
@@ -1998,6 +2000,7 @@ bool Sema::checkPointerAuthDiscriminatorArg(Expr *arg,
     isAddrDiscArg = true;
     break;
   case PADAK_ExtraDiscPtrAuth:
+  case PADAK_TypeDiscPtrAuthStruct:
     max = PointerAuthQualifier::MaxDiscriminator;
     break;
   };
@@ -2014,7 +2017,7 @@ bool Sema::checkPointerAuthDiscriminatorArg(Expr *arg,
           << value;
     else
       Diag(arg->getExprLoc(), diag::err_ptrauth_extra_discriminator_invalid)
-          << value << max;
+          << value << max << isPtrAuthStruct;
 
     return false;
   };

@@ -508,6 +508,7 @@ private:
   void mangleUnscopedTemplateName(GlobalDecl GD, const DeclContext *DC,
                                   const AbiTagList *AdditionalAbiTags);
   void mangleSourceName(const IdentifierInfo *II);
+  void mangleSourceName(StringRef Name);
   void mangleRegCallName(const IdentifierInfo *II);
   void mangleDeviceStubName(const IdentifierInfo *II);
   void mangleSourceNameWithAbiTags(
@@ -1704,10 +1705,14 @@ void CXXNameMangler::mangleDeviceStubName(const IdentifierInfo *II) {
 }
 
 void CXXNameMangler::mangleSourceName(const IdentifierInfo *II) {
+  mangleSourceName(II->getName());
+}
+
+void CXXNameMangler::mangleSourceName(StringRef Name) {
   // <source-name> ::= <positive length number> <identifier>
   // <number> ::= [n] <non-negative decimal integer>
   // <identifier> ::= <unqualified source code identifier>
-  Out << II->getLength() << II->getName();
+  Out << Name.size() << Name;
 }
 
 void CXXNameMangler::mangleNestedName(GlobalDecl GD,
@@ -4900,6 +4905,15 @@ recurse:
           "cannot yet mangle __builtin_omp_required_simd_align expression");
       Diags.Report(DiagID);
       return;
+    }
+    case UETT_PtrAuthStructKey:
+    case UETT_PtrAuthStructDiscriminator: {
+      // <expression> ::= u <source-name> <template-arg>* E
+      Out << "u";
+      mangleSourceName(getTraitSpelling(SAE->getKind()));
+      mangleType(SAE->getArgumentType());
+      Out << "E";
+      break;
     }
     }
     break;
