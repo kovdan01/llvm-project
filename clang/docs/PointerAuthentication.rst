@@ -783,7 +783,9 @@ The use of a uniform constant discriminator is seen as a serious defect which sh
 C++ virtual tables
 ~~~~~~~~~~~~~~~~~~
 
-The pointer to a C++ virtual table is currently signed with the ``DA`` key, no address diversity, and a constant discriminator of 0.  The use of no address diversity, as well as the uniform constant discriminator, are seen as weaknesses.  Not using address diversity allows attackers to simply copy valid v-table pointers from one object to another.  However, using a uniform discriminator of 0 does have positive performance and code-size implications on ARMv8.3, and diversity for the most important v-table access pattern (virtual dispatch) is already better assured by the signing schemas used on the virtual functions.  It is also known that some code in practice copies objects containing v-tables with ``memcpy``, and while this is not permitted formally, it is something that may be invasive to eliminate.
+On Apple's arm64e, the pointer to a C++ virtual table is currently signed with the ``DA`` key, no address diversity, and a constant discriminator of 0.  The use of no address diversity, as well as the uniform constant discriminator, are seen as weaknesses.  Not using address diversity allows attackers to simply copy valid v-table pointers from one object to another.  However, using a uniform discriminator of 0 does have positive performance and code-size implications on ARMv8.3, and diversity for the most important v-table access pattern (virtual dispatch) is already better assured by the signing schemas used on the virtual functions.  It is also known that some code in practice copies objects containing v-tables with ``memcpy``, and while this is not permitted formally, it is something that may be invasive to eliminate.
+
+When building for ELF platforms with ``-mbranch-protection=pauthabi``, C++ virtual tables are signed with the ``DA`` key, address diversity enabled and a type-dependent discriminator (options ``-fptrauth-vtable-type-discrimination`` and ``-fptrauth-vtable-address-discrimination`` are implicitly passed).
 
 Virtual functions in a C++ virtual table are signed with the ``IA`` key, address diversity, and a constant discriminator equal to the string hash (see `ptrauth_string_discriminator`_) of the mangled name of the function which originally gave rise to the v-table slot.
 
@@ -799,6 +801,11 @@ arm64e changes this ABI so that virtual function pointers are stored using dispa
 The use of dispatch thunks means that ``==`` on member function pointers is no longer reliable for virtual functions, but this is acceptable because the standard makes no guarantees about it in the first place.
 
 The use of dispatch thunks also potentially enables v-tables to be signed using a declaration-specific constant discriminator in the future; otherwise this discriminator would also need to be stored in the member pointer.
+
+Function pointers in init/fini arrays
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A command-line option ``-fptrauth-init-fini`` can be used to enable signing of pointers stored in ``.init_array`` and ``.fini_array`` sections. A constant discriminator distinguishing them from other function pointers is used. See ``ptrauth.h`` for the discriminator value. The option is disabled by default and is automatically enabled when building for ELF platforms with ``-mbranch-protection=pauthabi``.
 
 Blocks
 ~~~~~~
