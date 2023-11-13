@@ -80,6 +80,9 @@ typedef enum {
   /* The key used to sign block descriptor pointers. */
   ptrauth_key_block_descriptor_pointer = ptrauth_key_asda,
 
+  /* The key used to sign pointers in ELF .init_array/.fini_array. */
+  ptrauth_key_init_fini_pointer = ptrauth_key_asia,
+
   /* Other pointers signed under the ABI use private ABI rules. */
 
 } ptrauth_key;
@@ -398,6 +401,9 @@ typedef __UINTPTR_TYPE__ ptrauth_generic_signature_t;
   __ptrauth(ptrauth_key_cxx_vtable_pointer,0,0)
 #define __ptrauth_swift_heap_object_destructor \
   __ptrauth(ptrauth_key_function_pointer,1,0xbbbf)
+#define __ptrauth_init_fini_discriminator 0xd9d4
+#define __ptrauth_init_fini_pointer                                            \
+  __ptrauth(ptrauth_key_init_fini_pointer, 0, __ptrauth_init_fini_discriminator)
 
 /* Some situations in the C++ and Swift ABIs use declaration-specific
    or type-specific extra discriminators. */

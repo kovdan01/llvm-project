@@ -1626,12 +1626,6 @@ static void handlePAuthABIOption(const ArgList &DriverArgs,
                           options::OPT_fno_ptrauth_auth_traps))
     CC1Args.push_back("-fptrauth-auth-traps");
 
-#if 1
-  if (!DriverArgs.hasArg(
-          options::OPT_fptrauth_block_descriptor_pointers,
-          options::OPT_fno_ptrauth_block_descriptor_pointers))
-    CC1Args.push_back("-fptrauth-block-descriptor-pointers");
-
   if (!DriverArgs.hasArg(
       options::OPT_fptrauth_vtable_pointer_address_discrimination,
       options::OPT_fno_ptrauth_vtable_pointer_address_discrimination))
@@ -1642,6 +1636,13 @@ static void handlePAuthABIOption(const ArgList &DriverArgs,
       options::OPT_fno_ptrauth_vtable_pointer_type_discrimination))
     CC1Args.push_back("-fptrauth-vtable-pointer-type-discrimination");
 
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_init_fini,
+                         options::OPT_fno_ptrauth_init_fini))
+    CC1Args.push_back("-fptrauth-init-fini");
+
+#if 0
+  // Due to implicit casts, code with function pointer type discrimination
+  // enabled might be broken.
   if (!DriverArgs.hasArg(
       options::OPT_fptrauth_function_pointer_type_discrimination,
       options::OPT_fno_ptrauth_function_pointer_type_discrimination))
@@ -7078,6 +7079,11 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
                    options::OPT_fno_ptrauth_vtable_pointer_type_discrimination,
                    false))
     CmdArgs.push_back("-fptrauth-vtable-pointer-type-discrimination");
+
+  if (Args.hasFlag(options::OPT_fptrauth_init_fini,
+                   options::OPT_fno_ptrauth_init_fini,
+                   false))
+    CmdArgs.push_back("-fptrauth-init-fini");
 
   if (Args.hasFlag(options::OPT_fptrauth_objc_isa,
                    options::OPT_fno_ptrauth_objc_isa, false))
