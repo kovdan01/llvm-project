@@ -106,10 +106,6 @@ define i8* @test_global_weak() #0 {
   ret i8* %tmp0
 }
 
-; FIXME: if we define this after function definition, the function body
-; transorms to a single call to foo_weak via bl.
-@foo_weak.ptrauth.ia.0 = private constant { ptr, i32, i64, i64 } { ptr @foo_weak, i32 0, i64 0, i64 0 }, section "llvm.ptrauth"
-
 define void @test_foo_weak() #0 {
 ; CHECK-LABEL: test_foo_weak:
 ; CHECK:       // %bb.0:
@@ -151,8 +147,6 @@ define i8* @test_global_strong_def() #0 {
 @g = external global i32
 
 @g_weak = extern_weak global i32
-
-declare extern_weak void @foo_weak() #0
 
 ; For ELF, we should specify dso_local explicitly for strong definition, otherwise the symbol would be assumed preemptible, and GOT load would be used
 @g_strong_def = dso_local constant i32 42
@@ -233,6 +227,10 @@ declare extern_weak void @foo_weak() #0
 ; CHECK-NEXT:    .p2align 3
 ; CHECK-NEXT:  g_strong_def.ref.da.0:
 ; CHECK-NEXT:    .xword g_strong_def@AUTH(da,0)
+
+declare extern_weak void @foo_weak() #0
+
+@foo_weak.ptrauth.ia.0 = private constant { ptr, i32, i64, i64 } { ptr @foo_weak, i32 0, i64 0, i64 0 }, section "llvm.ptrauth"
 
 @g_strong_def.ptrauth.da.0 = private constant { i8*, i32, i64, i64 } { i8* bitcast (i32* @g_strong_def to i8*), i32 2, i64 0, i64 0 }, section "llvm.ptrauth"
 

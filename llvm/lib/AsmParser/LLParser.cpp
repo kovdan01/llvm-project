@@ -1256,16 +1256,6 @@ bool LLParser::parseGlobal(const std::string &Name, LocTy NameLoc,
   GV->setThreadLocalMode(TLM);
   GV->setUnnamedAddr(UnnamedAddr);
 
-  if (GVal) {
-    if (GVal->getAddressSpace() != AddrSpace)
-      return error(
-          TyLoc,
-          "forward reference and definition of global have different types");
-
-    GVal->replaceAllUsesWith(GV);
-    GVal->eraseFromParent();
-  }
-
   // parse attributes on the global.
   while (Lex.getKind() == lltok::comma) {
     Lex.Lex();
@@ -1301,6 +1291,16 @@ bool LLParser::parseGlobal(const std::string &Name, LocTy NameLoc,
       else
         return tokError("unknown global variable property!");
     }
+  }
+
+  if (GVal) {
+    if (GVal->getAddressSpace() != AddrSpace)
+      return error(
+          TyLoc,
+          "forward reference and definition of global have different types");
+
+    GVal->replaceAllUsesWith(GV);
+    GVal->eraseFromParent();
   }
 
   AttrBuilder Attrs(M->getContext());
