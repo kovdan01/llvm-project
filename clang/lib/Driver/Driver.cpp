@@ -521,6 +521,41 @@ static llvm::Triple computeTargetTriple(const Driver &D,
   if (TargetTriple.contains("-unknown-gnu") || TargetTriple.contains("-pc-gnu"))
     Target.setOSName("hurd");
 
+  // Since -arch is an Apple-specific option, construct an Apple triple when
+  // -target is not explicitely passed.
+  if (Args.hasArg(options::OPT_arch) && !Args.hasArg(options::OPT_target)) {
+    if (Target.isOSBinFormatMachO()) {
+      // The default triple is already Apple-specific - just update the arch.
+      Target.setArchName(Args.getLastArg(options::OPT_arch)->getValue());
+    } else {
+      // The default triple is not Apple-specific - construct a new one to avoid
+      // handling unrelated info from the default one (e.g. environment).
+      Target = llvm::Triple(llvm::Triple::normalize(
+          Args.getLastArg(options::OPT_arch)->getValue()));
+      Target.setVendor(llvm::Triple::Apple);
+      // -fobjc-arc is not supported on versions of OS X prior to 10.6
+      if (Args.hasArg(options::OPT_fobjc_arc))
+        Target.setOSName("macosx10.6.0");
+      else
+        Target.setOS(llvm::Triple::Darwin);
+    }
+  }
+
+  // Since arm64e arch is Apple-specific, set VendorName and OS correspondingly
+  // if not set already.
+  if (!Args.hasArg(options::OPT_arch) && Target.getArchName() == "arm64e" &&
+      !Target.isOSBinFormatMachO()) {
+    if (Target.getVendorName().empty())
+      Target.setVendor(llvm::Triple::Apple);
+    if (Target.getOSAndEnvironmentName().empty()) {
+      // -fobjc-arc is not supported on versions of OS X prior to 10.6
+      if (Args.hasArg(options::OPT_fobjc_arc))
+        Target.setOSName("macosx10.6.0");
+      else
+        Target.setOS(llvm::Triple::Darwin);
+    }
+  }
+
   // Handle Apple-specific options available here.
   if (Target.isOSBinFormatMachO()) {
     // If an explicit Darwin arch name is given, that trumps all.
