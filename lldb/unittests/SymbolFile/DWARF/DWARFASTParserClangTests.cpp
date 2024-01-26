@@ -286,6 +286,114 @@ DWARF:
   ASSERT_EQ(found_function_types, expected_function_types);
 }
 
+TEST_F(DWARFASTParserClangTests, TestPtrAuthParsing) {
+  // Tests parsing values with type DW_TAG_LLVM_ptrauth_type
+
+  const char *yamldata = R"(
+--- !ELF
+FileHeader:
+  Class:   ELFCLASS64
+  Data:    ELFDATA2LSB
+  Type:    ET_EXEC
+  Machine: EM_AARCH64
+DWARF:
+  debug_str:
+    - a
+  debug_abbrev:
+    - ID:              0
+      Table:
+        - Code:            0x1
+          Tag:             DW_TAG_compile_unit
+          Children:        DW_CHILDREN_yes
+          Attributes:
+            - Attribute:       DW_AT_language
+              Form:            DW_FORM_data2
+        - Code:            0x2
+          Tag:             DW_TAG_variable
+          Children:        DW_CHILDREN_no
+          Attributes:
+            - Attribute:       DW_AT_name
+              Form:            DW_FORM_strx1
+            - Attribute:       DW_AT_type
+              Form:            DW_FORM_ref4
+            - Attribute:       DW_AT_external
+              Form:            DW_FORM_flag_present
+        - Code:            0x3
+          Tag:             DW_TAG_LLVM_ptrauth_type
+          Children:        DW_CHILDREN_no
+          Attributes:
+            - Attribute:       DW_AT_type
+              Form:            DW_FORM_ref4
+            - Attribute:       DW_AT_LLVM_ptrauth_key
+              Form:            DW_FORM_data1
+            - Attribute:       DW_AT_LLVM_ptrauth_extra_discriminator
+              Form:            DW_FORM_data2
+        - Code:            0x4
+          Tag:             DW_TAG_pointer_type
+          Children:        DW_CHILDREN_no
+          Attributes:
+            - Attribute:       DW_AT_type
+              Form:            DW_FORM_ref4
+        - Code:            0x5
+          Tag:             DW_TAG_subroutine_type
+          Children:        DW_CHILDREN_yes
+        - Code:            0x6
+          Tag:             DW_TAG_unspecified_parameters
+          Children:        DW_CHILDREN_no
+
+  debug_info:
+    - Version:         5
+      UnitType:        DW_UT_compile
+      AddrSize:        8
+      Entries:
+        - AbbrCode:        0x1
+          Values:
+            - Value:           0xC
+        - AbbrCode:        0x2
+          Values:
+            - Value:           0x00
+            - Value:           0x15
+        - AbbrCode:        0x3
+          Values:
+            - Value:           0x1D
+            - Value:           0x00
+            - Value:           0x2A
+        - AbbrCode:        0x4
+          Values:
+            - Value:           0x22
+        - AbbrCode:        0x5
+        - AbbrCode:        0x6
+        - AbbrCode:        0x0
+        - AbbrCode:        0x0
+...
+)";
+  YAMLModuleTester t(yamldata);
+
+  DWARFUnit *unit = t.GetDwarfUnit();
+  ASSERT_NE(unit, nullptr);
+  const DWARFDebugInfoEntry *cu_entry = unit->DIE().GetDIE();
+  ASSERT_EQ(cu_entry->Tag(), DW_TAG_compile_unit);
+  DWARFDIE cu_die(unit, cu_entry);
+
+  auto holder = std::make_unique<clang_utils::TypeSystemClangHolder>("ast");
+  auto &ast_ctx = *holder->GetAST();
+  DWARFASTParserClangStub ast_parser(ast_ctx);
+
+  DWARFDIE ptrauth_variable = cu_die.GetFirstChild();
+  ASSERT_EQ(ptrauth_variable.Tag(), DW_TAG_variable);
+  DWARFDIE ptrauth_type =
+      ptrauth_variable.GetAttributeValueAsReferenceDIE(DW_AT_type);
+  ASSERT_EQ(ptrauth_type.Tag(), DW_TAG_LLVM_ptrauth_type);
+
+  SymbolContext sc;
+  bool new_type = false;
+  lldb::TypeSP type =
+      ast_parser.ParseTypeFromDWARF(sc, ptrauth_type, &new_type);
+  std::string type_as_string =
+      type->GetForwardCompilerType().GetTypeName().AsCString();
+  ASSERT_EQ(type_as_string, "void (*__ptrauth(0,0,42))(...)");
+}
+
 struct ExtractIntFromFormValueTest : public testing::Test {
   SubsystemRAII<FileSystem, HostInfo> subsystems;
   clang_utils::TypeSystemClangHolder holder;
