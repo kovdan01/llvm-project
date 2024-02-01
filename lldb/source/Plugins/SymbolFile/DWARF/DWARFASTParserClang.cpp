@@ -1842,6 +1842,48 @@ DWARFASTParserClang::ParseStructureLikeDIE(const SymbolContext &sc,
           attrs.name.GetCString(), tag_decl_kind, attrs.class_language,
           &metadata, attrs.exports_symbols);
     }
+
+    if (metadata.GetIsDynamicCXXType()) {
+      clang::RecordDecl *record_decl = m_ast.GetAsRecordDecl(clang_type);
+      DWARFDIE vptr_type_die =
+          die.GetFirstChild().GetAttributeValueAsReferenceDIE(DW_AT_type);
+      if (vptr_type_die.Tag() == DW_TAG_LLVM_ptrauth_type) {
+        unsigned key = vptr_type_die.GetAttributeValueAsUnsigned(
+            DW_AT_LLVM_ptrauth_key, -1);
+        unsigned discriminator = vptr_type_die.GetAttributeValueAsUnsigned(
+            DW_AT_LLVM_ptrauth_extra_discriminator, -1);
+        unsigned has_addr_discr = vptr_type_die.GetAttributeValueAsUnsigned(
+            DW_AT_LLVM_ptrauth_address_discriminated, -1);
+
+        auto error_missing = [&vptr_type_die](const dw_attr_t attr) {
+          vptr_type_die.GetDWARF()->GetObjectFile()->GetModule()->ReportError(
+              "[{0:x16}]: missing attribute {1:x4} ({2}) required for signed "
+              "vtable pointer",
+              vptr_type_die.GetOffset(), attr, DW_AT_value_to_name(attr));
+        };
+
+        if (key == unsigned(-1))
+          error_missing(DW_AT_LLVM_ptrauth_key);
+        if (discriminator == unsigned(-1))
+          error_missing(DW_AT_LLVM_ptrauth_extra_discriminator);
+        if (has_addr_discr == unsigned(-1))
+          error_missing(DW_AT_LLVM_ptrauth_extra_discriminator);
+
+        record_decl->addAttr(
+            clang::VTablePointerAuthenticationAttr::CreateImplicit(
+                m_ast.getASTContext(),
+                key == 2
+                    ? clang::VTablePointerAuthenticationAttr::ProcessDependent
+                    : clang::VTablePointerAuthenticationAttr::
+                          ProcessIndependent,
+                has_addr_discr ? clang::VTablePointerAuthenticationAttr::
+                                     AddressDiscrimination
+                               : clang::VTablePointerAuthenticationAttr::
+                                     NoAddressDiscrimination,
+                clang::VTablePointerAuthenticationAttr::CustomDiscrimination,
+                discriminator));
+      }
+    }
   }
 
   // Store a forward declaration to this class type in case any
