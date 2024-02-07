@@ -1,4 +1,5 @@
 # REQUIRES: aarch64
+# TODO: test PAuth ELF marking via GNU property section
 
 # RUN: rm -rf %t && split-file %s %t && cd %t
 
