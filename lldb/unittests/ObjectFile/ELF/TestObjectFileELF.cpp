@@ -117,6 +117,40 @@ Symbols:
   EXPECT_EQ(text_sp, start->GetAddress().GetSection());
 }
 
+TEST_F(ObjectFileELFTest, GNUPropertyAArch64PAuthABI) {
+  auto ExpectedFile = TestFile::fromYaml(R"(
+--- !ELF
+FileHeader:
+  Class:           ELFCLASS64
+  Data:            ELFDATA2LSB
+  Type:            ET_DYN
+  Machine:         EM_AARCH64
+  Entry:           0x10768
+Sections:
+  - Name:            .note.gnu.property
+    Type:            SHT_NOTE
+    Flags:           [ SHF_ALLOC ]
+    Address:         0x328
+    AddressAlign:    0x8
+    Notes:
+      - Name:            GNU
+        Desc:            010000C01000000002000000000000001F00000000000000
+        Type:            NT_GNU_PROPERTY_TYPE_0
+...
+)");
+  ASSERT_THAT_EXPECTED(ExpectedFile, llvm::Succeeded());
+
+  auto module_sp = std::make_shared<Module>(ExpectedFile->moduleSpec());
+  ObjectFile *obj_file = module_sp->GetObjectFile();
+  ASSERT_NE(nullptr, obj_file);
+
+  std::optional<std::pair<uint64_t, uint64_t>> pauthabi =
+      obj_file->ParseGNUPropertyAArch64PAuthABI();
+  ASSERT_NE(std::nullopt, pauthabi);
+  ASSERT_EQ(2, pauthabi->first);
+  ASSERT_EQ(31, pauthabi->second);
+}
+
 // Test that GetModuleSpecifications works on an "atypical" object file which
 // has section headers right after the ELF header (instead of the more common
 // layout where the section headers are at the very end of the object file).
