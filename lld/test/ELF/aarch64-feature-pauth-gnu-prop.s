@@ -1,5 +1,9 @@
 # REQUIRES: aarch64
-# TODO: test PAuth ELF marking via GNU property section
+# TODO: handle both ELF marking ways.
+# To be implemented after the following PRs are merged:
+# - https://github.com/ARM-software/abi-aa/pull/240
+# - https://github.com/llvm/llvm-project/pull/72714
+# XFAIL: *
 
 # RUN: rm -rf %t && split-file %s %t && cd %t
 
