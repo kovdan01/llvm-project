@@ -472,11 +472,22 @@ ClangExpressionParser::ClangExpressionParser(
 
   auto target_info = TargetInfo::CreateTargetInfo(
       m_compiler->getDiagnostics(), m_compiler->getInvocation().TargetOpts);
-  bool is_pauthabi = true;
-  if (target_machine == llvm::Triple::aarch64 && is_pauthabi) {
-    // TODO: enable this depending on corresponding tag section in ELF
-    target_info->getTargetOpts().Features.push_back("+pauth");
+
+  std::optional<std::pair<uint64_t, uint64_t>> elf_pauth_abi_tag;
+  if (target_machine == llvm::Triple::aarch64) {
+    do {
+      Module *module_sp = target_sp->GetExecutableModulePointer();
+      if (module_sp == nullptr)
+        break;
+      ObjectFile *obj_file = module_sp->GetObjectFile();
+      if (obj_file == nullptr)
+        break;
+      elf_pauth_abi_tag = obj_file->ParseGNUPropertyAArch64PAuthABI();
+      if (elf_pauth_abi_tag != std::nullopt)
+        target_info->getTargetOpts().Features.push_back("+pauth");
+    } while (false);
   }
+
   if (log) {
     LLDB_LOGF(log, "Target datalayout string: '%s'",
               target_info->getDataLayoutString());
@@ -491,6 +502,22 @@ ClangExpressionParser::ClangExpressionParser(
   // 4. Set language options.
   lldb::LanguageType language = expr.Language();
   LangOptions &lang_opts = m_compiler->getLangOpts();
+
+  if (elf_pauth_abi_tag != std::nullopt) {
+    uint64_t elf_pauth_abi_platform = elf_pauth_abi_tag->first;
+    // TODO: store this magic constant corresponding to Linux platform in some
+    // header
+    if (elf_pauth_abi_platform == 2) {
+      uint64_t elf_pauth_abi_version = elf_pauth_abi_tag->second;
+      lang_opts.PointerAuthCalls = elf_pauth_abi_version & (1 << 0);
+      lang_opts.PointerAuthReturns = elf_pauth_abi_version & (1 << 1);
+      lang_opts.PointerAuthVTPtrAddressDiscrimination =
+          elf_pauth_abi_version & (1 << 2);
+      lang_opts.PointerAuthVTPtrTypeDiscrimination =
+          elf_pauth_abi_version & (1 << 3);
+      lang_opts.PointerAuthInitFini = elf_pauth_abi_version & (1 << 4);
+    }
+  }
 
   switch (language) {
   case lldb::eLanguageTypeC:
@@ -622,14 +649,6 @@ ClangExpressionParser::ClangExpressionParser(
   // additionally enabling them as expandable builtins is breaking Clang.
   lang_opts.NoBuiltin = true;
 
-  // TODO: enable this depending on corresponding tag section in ELF
-  if (is_pauthabi) {
-    lang_opts.PointerAuthCalls = true;
-    lang_opts.PointerAuthReturns = true;
-    lang_opts.PointerAuthVTPtrAddressDiscrimination = true;
-    lang_opts.PointerAuthVTPtrTypeDiscrimination = true;
-    lang_opts.PointerAuthInitFini = true;
-  }
   // Set CodeGen options
   m_compiler->getCodeGenOpts().EmitDeclMetadata = true;
   m_compiler->getCodeGenOpts().InstrumentFunctions = false;
