@@ -287,7 +287,8 @@ DWARF:
 }
 
 TEST_F(DWARFASTParserClangTests, TestPtrAuthParsing) {
-  // Tests parsing values with type DW_TAG_LLVM_ptrauth_type
+  // Tests parsing values with type DW_TAG_LLVM_ptrauth_type corresponding to
+  // explicitly signed raw function pointers
 
   const char *yamldata = R"(
 --- !ELF
@@ -313,7 +314,7 @@ DWARF:
           Children:        DW_CHILDREN_no
           Attributes:
             - Attribute:       DW_AT_name
-              Form:            DW_FORM_strx1
+              Form:            DW_FORM_strp
             - Attribute:       DW_AT_type
               Form:            DW_FORM_ref4
             - Attribute:       DW_AT_external
@@ -346,25 +347,45 @@ DWARF:
       UnitType:        DW_UT_compile
       AddrSize:        8
       Entries:
+# 0x0c: DW_TAG_compile_unit
+#         DW_AT_language [DW_FORM_data2]    (DW_LANG_C99)
         - AbbrCode:        0x1
           Values:
             - Value:           0xC
+
+# 0x0f:   DW_TAG_variable
+#           DW_AT_name [DW_FORM_strx1]      ()
+#           DW_AT_type [DW_FORM_ref4]       (0x00000014)
+#           DW_AT_external [DW_FORM_flag_present]   (true)
         - AbbrCode:        0x2
           Values:
             - Value:           0x00
-            - Value:           0x15
+            - Value:           0x18
+
+# 0x18:   DW_TAG_LLVM_ptrauth_type
+#           DW_AT_type [DW_FORM_ref4]       (0x00000020)
+#           DW_AT_LLVM_ptrauth_key [DW_FORM_data1]  (0x00)
+#           DW_AT_LLVM_ptrauth_extra_discriminator [DW_FORM_data2]  (0x002a)
         - AbbrCode:        0x3
           Values:
-            - Value:           0x1D
+            - Value:           0x20
             - Value:           0x00
-            - Value:           0x2A
+            - Value:           0x2a
+
+# 0x20:   DW_TAG_pointer_type
+#           DW_AT_type [DW_FORM_ref4]       (0x00000025)
         - AbbrCode:        0x4
           Values:
-            - Value:           0x22
+            - Value:           0x25
+
+# 0x25:   DW_TAG_subroutine_type
         - AbbrCode:        0x5
+
+# 0x26:     DW_TAG_unspecified_parameters
         - AbbrCode:        0x6
-        - AbbrCode:        0x0
-        - AbbrCode:        0x0
+
+        - AbbrCode:        0x0 # end of child tags of 0x25
+        - AbbrCode:        0x0 # end of child tags of 0x0c
 ...
 )";
   YAMLModuleTester t(yamldata);
@@ -395,6 +416,9 @@ DWARF:
 }
 
 TEST_F(DWARFASTParserClangTests, TestVTablePtrAuthParsing) {
+  // Tests parsing dynamic structure types with explicit vtable pointer
+  // authentication
+
   // This is Dwarf for the following C++ code:
   // ```
   // struct [[clang::ptrauth_vtable_pointer(process_dependent,
