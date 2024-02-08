@@ -1075,6 +1075,22 @@ void CodeGenModule::Release() {
     if (!LangOpts.isSignReturnAddressWithAKey())
       getModule().addModuleFlag(llvm::Module::Min,
                                 "sign-return-address-with-bkey", 1);
+
+    if (getTriple().isOSBinFormatELF()) {
+      uint64_t PAuthABIVersion =
+          (LangOpts.PointerAuthCalls << 0) |
+          (LangOpts.PointerAuthReturns << 1) |
+          (LangOpts.PointerAuthVTPtrAddressDiscrimination << 2) |
+          (LangOpts.PointerAuthVTPtrTypeDiscrimination << 3) |
+          (LangOpts.PointerAuthInitFini << 4);
+      if (PAuthABIVersion != 0) {
+        getModule().addModuleFlag(llvm::Module::Error,
+                                  "aarch64-elf-pauthabi-platform", 2);
+        getModule().addModuleFlag(llvm::Module::Error,
+                                  "aarch64-elf-pauthabi-version",
+                                  PAuthABIVersion);
+      }
+    }
   }
 
   if (!CodeGenOpts.MemoryProfileOutput.empty()) {
