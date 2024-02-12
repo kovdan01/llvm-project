@@ -504,6 +504,10 @@ TypeSP DWARFASTParserClang::ParseTypeFromDWARF(const SymbolContext &sc,
     type_sp = ParsePointerToMemberType(die, attrs);
     break;
   }
+  case DW_TAG_LLVM_ptrauth_type: {
+    type_sp = ParsePtrAuthQualifiedType(die, attrs);
+    break;
+  }
   default:
     dwarf->GetObjectFile()->GetModule()->ReportError(
         "[{0:x16}]: unhandled type tag {1:x4} ({2}), "
@@ -1373,6 +1377,33 @@ TypeSP DWARFASTParserClang::ParsePointerToMemberType(
                            clang_type, Type::ResolveState::Forward);
   }
   return nullptr;
+}
+
+TypeSP DWARFASTParserClang::ParsePtrAuthQualifiedType(
+    const DWARFDIE &die, const ParsedDWARFTypeAttributes &attrs) {
+  SymbolFileDWARF *dwarf = die.GetDWARF();
+  Type *pointer_type = dwarf->ResolveTypeUID(attrs.type.Reference(), true);
+
+  if (pointer_type == nullptr)
+    return nullptr;
+
+  CompilerType pointer_clang_type = pointer_type->GetForwardCompilerType();
+
+  unsigned key = die.GetAttributeValueAsUnsigned(DW_AT_LLVM_ptrauth_key, 0);
+  bool has_addr_discr = die.GetAttributeValueAsUnsigned(
+      DW_AT_LLVM_ptrauth_address_discriminated, false);
+  unsigned extra_discr = die.GetAttributeValueAsUnsigned(
+      DW_AT_LLVM_ptrauth_extra_discriminator, 0);
+  CompilerType clang_type = m_ast.AddPtrAuthModifier(
+      pointer_clang_type.GetOpaqueQualType(), key, has_addr_discr, extra_discr);
+
+  TypeSP type_sp = dwarf->MakeType(
+      die.GetID(), attrs.name, pointer_type->GetByteSize(nullptr), nullptr,
+      attrs.type.Reference().GetID(), Type::eEncodingIsLLVMPtrAuthUID,
+      &attrs.decl, clang_type, Type::ResolveState::Forward);
+
+  dwarf->GetDIEToType()[die.GetDIE()] = type_sp.get();
+  return type_sp;
 }
 
 void DWARFASTParserClang::ParseInheritance(
