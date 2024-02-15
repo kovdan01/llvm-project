@@ -917,10 +917,53 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
       }
     }
 
-    // Add template parameters to a class, structure or union types.
     if (Tag == dwarf::DW_TAG_class_type ||
-        Tag == dwarf::DW_TAG_structure_type || Tag == dwarf::DW_TAG_union_type)
+        Tag == dwarf::DW_TAG_structure_type ||
+        Tag == dwarf::DW_TAG_union_type) {
+      // Add template parameters to a class, structure or union types.
       addTemplateParams(Buffer, CTy->getTemplateParams());
+
+      // Handle class, structure and union types with ptrauth_struct attribute.
+      DINodeArray Annotations = CTy->getAnnotations();
+      if (Annotations) {
+        for (const Metadata *Annotation : Annotations->operands()) {
+          // TODO: can we use cast here and omit the following check against
+          // nullptr? In BTFDebug::processDeclAnnotations, just a cast is used.
+          const auto *MD = dyn_cast<MDNode>(Annotation);
+          if (MD == nullptr)
+            continue;
+          if (MD->getNumOperands() != 3)
+            continue;
+
+          const auto *Name = dyn_cast<MDString>(MD->getOperand(0));
+          if (Name == nullptr)
+            continue;
+          if (!Name->getString().equals("ptrauth_struct"))
+            continue;
+
+          const auto *KeyMD = dyn_cast<ConstantAsMetadata>(MD->getOperand(1));
+          if (KeyMD == nullptr || KeyMD->getValue() == nullptr)
+            continue;
+          const auto *KeyConstant = dyn_cast<ConstantInt>(KeyMD->getValue());
+          if (KeyConstant->getValue().getBitWidth() != 2) // TODO
+            continue;
+          unsigned Key = KeyConstant->getZExtValue();
+
+          const auto *DiscMD = dyn_cast<ConstantAsMetadata>(MD->getOperand(2));
+          if (DiscMD == nullptr || DiscMD->getValue() == nullptr)
+            continue;
+          const auto *DiscConstant = dyn_cast<ConstantInt>(DiscMD->getValue());
+          if (DiscConstant->getValue().getBitWidth() != 16) // TODO
+            continue;
+          unsigned Disc = DiscConstant->getZExtValue();
+
+          addUInt(Buffer, dwarf::DW_AT_LLVM_ptrauth_key, dwarf::DW_FORM_data1,
+                  Key);
+          addUInt(Buffer, dwarf::DW_AT_LLVM_ptrauth_extra_discriminator,
+                  dwarf::DW_FORM_data2, Disc);
+        }
+      }
+    }
 
     // Add elements to structure type.
     DINodeArray Elements = CTy->getElements();

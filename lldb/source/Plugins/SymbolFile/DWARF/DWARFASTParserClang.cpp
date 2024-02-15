@@ -1884,6 +1884,28 @@ DWARFASTParserClang::ParseStructureLikeDIE(const SymbolContext &sc,
                 discriminator));
       }
     }
+
+    std::optional<uint64_t> pauth_key =
+        die.GetAttributeValueAsOptionalUnsigned(DW_AT_LLVM_ptrauth_key);
+    std::optional<uint64_t> pauth_disc =
+        die.GetAttributeValueAsOptionalUnsigned(
+            DW_AT_LLVM_ptrauth_extra_discriminator);
+    // TODO: do we need some handling for one std::nullopt out of two?
+    if (pauth_key != std::nullopt && pauth_disc != std::nullopt) {
+      clang::ASTContext &ctx = m_ast.getASTContext();
+      llvm::APInt key_int = llvm::APInt(ctx.getTypeSize(ctx.UnsignedIntTy),
+                                        pauth_key.value(), false);
+      auto *key = clang::IntegerLiteral::Create(ctx, key_int, ctx.UnsignedIntTy,
+                                                clang::SourceLocation());
+      llvm::APInt disc_int = llvm::APInt(ctx.getTypeSize(ctx.UnsignedIntTy),
+                                         pauth_disc.value(), false);
+      auto *disc = clang::IntegerLiteral::Create(
+          ctx, disc_int, ctx.UnsignedIntTy, clang::SourceLocation());
+
+      clang::RecordDecl *record_decl = m_ast.GetAsRecordDecl(clang_type);
+      record_decl->addAttr(
+          clang::PointerAuthStructAttr::CreateImplicit(ctx, key, disc));
+    }
   }
 
   // Store a forward declaration to this class type in case any
