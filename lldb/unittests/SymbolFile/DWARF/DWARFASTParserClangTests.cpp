@@ -695,6 +695,143 @@ DWARF:
   ASSERT_EQ(attr->getCustomDiscriminationValue(), 42);
 }
 
+TEST_F(DWARFASTParserClangTests, TestPtrAuthStructAttr) {
+  // Tests parsing types with ptrauth_struct attribute
+  // authentication
+
+  // This is Dwarf for the following C code:
+  // ```
+  // struct [[clang::ptrauth_struct(2, 42)]] A {};
+  // struct A a;
+  // ```
+
+  const char *yamldata = R"(
+--- !ELF
+FileHeader:
+  Class:   ELFCLASS64
+  Data:    ELFDATA2LSB
+  Type:    ET_EXEC
+  Machine: EM_AARCH64
+DWARF:
+  debug_str:
+    - a
+    - A
+    - ptrauth_struct_key
+    - ptrauth_struct_disc
+  debug_abbrev:
+    - ID:              0
+      Table:
+        - Code:            0x1
+          Tag:             DW_TAG_compile_unit
+          Children:        DW_CHILDREN_yes
+          Attributes:
+            - Attribute:       DW_AT_language
+              Form:            DW_FORM_data2
+        - Code:            0x2
+          Tag:             DW_TAG_variable
+          Children:        DW_CHILDREN_no
+          Attributes:
+            - Attribute:       DW_AT_name
+              Form:            DW_FORM_strp
+            - Attribute:       DW_AT_type
+              Form:            DW_FORM_ref4
+            - Attribute:       DW_AT_external
+              Form:            DW_FORM_flag_present
+        - Code:            0x3
+          Tag:             DW_TAG_structure_type
+          Children:        DW_CHILDREN_yes
+          Attributes:
+            - Attribute:       DW_AT_name
+              Form:            DW_FORM_strp
+        - Code:            0x4
+          Tag:             DW_TAG_LLVM_annotation
+          Children:        DW_CHILDREN_no
+          Attributes:
+            - Attribute:       DW_AT_name
+              Form:            DW_FORM_strp
+            - Attribute:       DW_AT_const_value
+              Form:            DW_FORM_udata
+
+  debug_info:
+    - Version:         5
+      UnitType:        DW_UT_compile
+      AddrSize:        8
+      Entries:
+# 0x0c: DW_TAG_compile_unit
+#         DW_AT_language [DW_FORM_data2]    (DW_LANG_C99)
+        - AbbrCode:        0x1
+          Values:
+            - Value:           0x0c
+
+# 0x0f:   DW_TAG_variable
+#           DW_AT_name [DW_FORM_strp]       (\"a\")
+#           DW_AT_type [DW_FORM_ref4]       (0x00000018 \"A\")
+#           DW_AT_external [DW_FORM_flag_present]   (true)
+        - AbbrCode:        0x2
+          Values:
+            - Value:           0x00
+            - Value:           0x18
+
+# 0x18:   DW_TAG_structure_type
+#           DW_AT_name [DW_FORM_strp]       (\"A\")
+        - AbbrCode:        0x3
+          Values:
+            - Value:           0x02
+
+# 0x1d:     DW_TAG_LLVM_annotation
+#             DW_AT_name [DW_FORM_strp]     (\"ptrauth_struct_key\")
+#             DW_AT_const_value [DW_FORM_udata]  (2)
+        - AbbrCode:        0x4
+          Values:
+            - Value:           0x04
+            - Value:           0x02
+
+# 0x23:     DW_TAG_LLVM_annotation
+#             DW_AT_name [DW_FORM_strp]     (\"ptrauth_struct_disc\")
+#             DW_AT_const_value [DW_FORM_udata]  (42)
+        - AbbrCode:        0x4
+          Values:
+            - Value:           0x17
+            - Value:           0x2a
+
+        - AbbrCode:        0x0 # end of child tags of 0x18
+        - AbbrCode:        0x0 # end of child tags of 0x0c
+...
+)";
+  YAMLModuleTester t(yamldata);
+
+  DWARFUnit *unit = t.GetDwarfUnit();
+  ASSERT_NE(unit, nullptr);
+  const DWARFDebugInfoEntry *cu_entry = unit->DIE().GetDIE();
+  ASSERT_EQ(cu_entry->Tag(), DW_TAG_compile_unit);
+  DWARFDIE cu_die(unit, cu_entry);
+
+  auto holder = std::make_unique<clang_utils::TypeSystemClangHolder>("ast");
+  auto &ast_ctx = *holder->GetAST();
+  DWARFASTParserClangStub ast_parser(ast_ctx);
+
+  DWARFDIE struct_object = cu_die.GetFirstChild();
+  ASSERT_EQ(struct_object.Tag(), DW_TAG_variable);
+  DWARFDIE structure_type =
+      struct_object.GetAttributeValueAsReferenceDIE(DW_AT_type);
+  ASSERT_EQ(structure_type.Tag(), DW_TAG_structure_type);
+
+  SymbolContext sc;
+  bool new_type = false;
+  lldb::TypeSP type =
+      ast_parser.ParseTypeFromDWARF(sc, structure_type, &new_type);
+  clang::RecordDecl *record_decl =
+      TypeSystemClang::GetAsRecordDecl(type->GetForwardCompilerType());
+  auto [is_key_val_independent, key] =
+      ast_ctx.getASTContext().getPointerAuthStructKey(record_decl);
+  auto [is_disc_val_independent, disc] =
+      ast_ctx.getASTContext().getPointerAuthStructDisc(record_decl);
+  ASSERT_TRUE(is_key_val_independent);
+  ASSERT_TRUE(is_disc_val_independent);
+  ASSERT_EQ(key, 2);
+  ASSERT_EQ(disc, 42);
+}
+
 struct ExtractIntFromFormValueTest : public testing::Test {
   SubsystemRAII<FileSystem, HostInfo> subsystems;
   clang_utils::TypeSystemClangHolder holder;
