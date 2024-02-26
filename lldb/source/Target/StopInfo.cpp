@@ -83,6 +83,57 @@ bool StopInfo::HasTargetRunSinceMe() {
   return false;
 }
 
+std::optional<StopInfo::PtrauthInstructionInfo>
+StopInfo::GetPtrauthInstructionInfo(Target &target, const ArchSpec &arch,
+                                    const Address &at_addr) {
+  const char *plugin_name = nullptr;
+  const char *flavor = nullptr;
+  AddressRange range_bounds(at_addr, 4);
+  const bool prefer_file_cache = true;
+  DisassemblerSP disassembler_sp = Disassembler::DisassembleRange(
+      arch, plugin_name, flavor, target, range_bounds, prefer_file_cache);
+  if (!disassembler_sp)
+    return std::nullopt;
+
+  InstructionList &insn_list = disassembler_sp->GetInstructionList();
+  InstructionSP insn = insn_list.GetInstructionAtIndex(0);
+  if (!insn)
+    return std::nullopt;
+
+  return PtrauthInstructionInfo{insn->IsAuthenticated(), insn->IsLoad(),
+                                insn->DoesBranch()};
+}
+
+void StopInfo::DescribeAddressBriefly(Stream &strm, const Address &addr,
+                                      Target &target) {
+  strm.Printf("at address=0x%" PRIx64, addr.GetLoadAddress(&target));
+  StreamString s;
+  if (addr.GetDescription(s, target, eDescriptionLevelBrief))
+    strm.Printf(" %s", s.GetString().data());
+  strm.Printf(".\n");
+}
+
+std::optional<StopInfo::ProcessInfo>
+StopInfo::GetBlabla(ExecutionContext &exe_ctx) const {
+  // Check that we have a live process.
+  if (!exe_ctx.HasProcessScope() || !exe_ctx.HasThreadScope() ||
+      !exe_ctx.HasTargetScope())
+    return std::nullopt;
+
+  Thread &thread = *exe_ctx.GetThreadPtr();
+  StackFrameSP current_frame = thread.GetStackFrameAtIndex(0);
+  if (!current_frame)
+    return std::nullopt;
+
+  Target &target = *exe_ctx.GetTargetPtr();
+  Process &process = *exe_ctx.GetProcessPtr();
+  ABISP abi_sp = process.GetABI();
+  const ArchSpec &arch = target.GetArchitecture();
+  assert(abi_sp && "Missing ABI info");
+
+  return StopInfo::ProcessInfo{thread, target, current_frame, abi_sp, arch};
+}
+
 // StopInfoBreakpoint
 
 namespace lldb_private {
@@ -1094,69 +1145,17 @@ public:
   // TODO: move common code from StopInfoMachException and StopInfoUnixSignal to
   // base class StopInfo.
 
-  /// Information about a pointer-authentication related instruction.
-  struct PtrauthInstructionInfo {
-    bool IsAuthenticated;
-    bool IsLoad;
-    bool DoesBranch;
-  };
-
-  /// Get any pointer-authentication related information about the instruction
-  /// at address \p at_addr.
-  static std::optional<PtrauthInstructionInfo>
-  GetPtrauthInstructionInfo(Target &target, const ArchSpec &arch,
-                            const Address &at_addr) {
-    const char *plugin_name = nullptr;
-    const char *flavor = nullptr;
-    AddressRange range_bounds(at_addr, 4);
-    const bool prefer_file_cache = true;
-    DisassemblerSP disassembler_sp = Disassembler::DisassembleRange(
-        arch, plugin_name, flavor, target, range_bounds, prefer_file_cache);
-    if (!disassembler_sp)
-      return std::nullopt;
-
-    InstructionList &insn_list = disassembler_sp->GetInstructionList();
-    InstructionSP insn = insn_list.GetInstructionAtIndex(0);
-    if (!insn)
-      return std::nullopt;
-
-    return PtrauthInstructionInfo{insn->IsAuthenticated(), insn->IsLoad(),
-                                  insn->DoesBranch()};
-  }
-
-  /// Describe the load address of \p addr using the format filename:line:col.
-  static void DescribeAddressBriefly(Stream &strm, const Address &addr,
-                                     Target &target) {
-    strm.Printf("at address=0x%" PRIx64, addr.GetLoadAddress(&target));
-    StreamString s;
-    if (addr.GetDescription(s, target, eDescriptionLevelBrief))
-      strm.Printf(" %s", s.GetString().data());
-    strm.Printf(".\n");
-  }
-
   bool DeterminePtrauthFailure(ExecutionContext &exe_ctx) {
     // TODO: do we need to handle SIGBUS and SIGTRAP?
-    if (m_value != 11) // SIGSEGV
+    if (m_value != 11) // SIGSEGV; TODO: is there a named constant?
       return false;
 
-    // Check that we have a live process.
-    if (!exe_ctx.HasProcessScope() || !exe_ctx.HasThreadScope() ||
-        !exe_ctx.HasTargetScope())
+    std::optional<StopInfo::ProcessInfo> process_info = GetBlabla(exe_ctx);
+    if (process_info == std::nullopt)
       return false;
-
-    Thread &thread = *exe_ctx.GetThreadPtr();
-    StackFrameSP current_frame = thread.GetStackFrameAtIndex(0);
-    if (!current_frame)
-      return false;
-
-    Target &target = *exe_ctx.GetTargetPtr();
-    Process &process = *exe_ctx.GetProcessPtr();
-    ABISP abi_sp = process.GetABI();
-    const ArchSpec &arch = target.GetArchitecture();
-    assert(abi_sp && "Missing ABI info");
 
     // Check for a ptrauth-enabled target.
-    Module *module_sp = target.GetExecutableModulePointer();
+    Module *module_sp = process_info->target.GetExecutableModulePointer();
     if (module_sp == nullptr)
       return false;
     ObjectFile *obj_file = module_sp->GetObjectFile();
@@ -1164,10 +1163,12 @@ public:
         obj_file->ParseGNUPropertyAArch64PAuthABI() == std::nullopt)
       return false;
 
-    Address current_address = current_frame->GetFrameCodeAddress();
+    Address current_address =
+        process_info->current_frame->GetFrameCodeAddress();
     uint64_t bad_address = 0; // TODO: get proper fault address
-    uint64_t fixed_bad_address = abi_sp->FixCodeAddress(bad_address);
-    uint64_t current_pc = current_address.GetLoadAddress(&target);
+    uint64_t fixed_bad_address =
+        process_info->abi_sp->FixCodeAddress(bad_address);
+    uint64_t current_pc = current_address.GetLoadAddress(&process_info->target);
 
     // Detect: LDRAA, LDRAB (Load Register, with pointer authentication).
     //
@@ -1187,22 +1188,24 @@ public:
     // we tried to branch to.
     if (bad_address !=
         current_pc /* TODO: && fixed_bad_address == current_pc */) {
-      if (StackFrameSP parent_frame = thread.GetStackFrameAtIndex(1)) {
-        addr_t return_pc =
-            parent_frame->GetFrameCodeAddress().GetLoadAddress(&target);
+      if (StackFrameSP parent_frame =
+              process_info->thread.GetStackFrameAtIndex(1)) {
+        addr_t return_pc = parent_frame->GetFrameCodeAddress().GetLoadAddress(
+            &process_info->target);
         Address blr_address;
-        if (!target.ResolveLoadAddress(return_pc - 4, blr_address))
+        if (!process_info->target.ResolveLoadAddress(return_pc - 4,
+                                                     blr_address))
           return false;
 
-        auto blr_ptrauth_info =
-            GetPtrauthInstructionInfo(target, arch, blr_address);
+        auto blr_ptrauth_info = GetPtrauthInstructionInfo(
+            process_info->target, process_info->arch, blr_address);
         if (blr_ptrauth_info && blr_ptrauth_info->IsAuthenticated &&
             blr_ptrauth_info->DoesBranch) {
           StreamString strm;
           strm.Printf(
               "\nNote: Possible pointer authentication failure detected."
               "\nFound authenticated indirect branch ");
-          DescribeAddressBriefly(strm, blr_address, target);
+          DescribeAddressBriefly(strm, blr_address, process_info->target);
           m_description_with_pauth =
               m_description + std::string(strm.GetString());
           return true;

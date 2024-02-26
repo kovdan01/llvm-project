@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "lldb/Target/ExecutionContext.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Utility/StructuredData.h"
 #include "lldb/lldb-public.h"
@@ -193,6 +194,34 @@ protected:
   // Thread::RestoreThreadStateFromCheckpoint and to make sure the one-step
   // needed for before-the-fact watchpoints does not prevent us from stopping
   void MakeStopInfoValid();
+
+  // Information about a pointer-authentication related instruction.
+  struct PtrauthInstructionInfo {
+    bool IsAuthenticated;
+    bool IsLoad;
+    bool DoesBranch;
+  };
+
+  // Get any pointer-authentication related information about the instruction
+  // at address \p at_addr.
+  static std::optional<PtrauthInstructionInfo>
+  GetPtrauthInstructionInfo(Target &target, const ArchSpec &arch,
+                            const Address &at_addr);
+
+  // Describe the load address of \p addr using the format filename:line:col.
+  static void DescribeAddressBriefly(Stream &strm, const Address &addr,
+                                     Target &target);
+
+  struct ProcessInfo {
+    Thread &thread;
+    Target &target;
+    lldb::StackFrameSP current_frame;
+    lldb::ABISP abi_sp;
+    const ArchSpec &arch;
+  };
+
+  // TODO
+  std::optional<ProcessInfo> GetBlabla(ExecutionContext &exe_ctx) const;
 
 private:
   friend class Thread;
