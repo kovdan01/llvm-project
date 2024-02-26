@@ -57,6 +57,7 @@ bool lldb_private::formatters::CXXFunctionPointerSummaryProvider(
                 test_address.SetLoadAddress(fixed_addr, target);
                 if (test_address.GetSection() != nullptr) {
                   int addrsize = target->GetArchitecture().GetAddressByteSize();
+                  // TODO
                   sstr.Printf("actual=0x%*.*" PRIx64 " ", addrsize * 2,
                               addrsize * 2, fixed_addr);
                   so_addr = test_address;

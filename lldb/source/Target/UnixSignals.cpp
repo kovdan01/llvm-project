@@ -161,7 +161,7 @@ UnixSignals::GetSignalDescription(int32_t signo, std::optional<int32_t> code,
           break;
         case SignalCodePrintOption::Address:
           if (addr)
-            strm << " (fault address: 0x" << std::hex << *addr << ")";
+            strm << " (PAUTH fault address: 0x" << std::hex << *addr << ")";
           break;
         case SignalCodePrintOption::Bounds:
           if (lower && upper && addr) {

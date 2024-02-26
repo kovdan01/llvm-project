@@ -268,10 +268,11 @@ void ProcessMinidump::RefreshStateAfterStop() {
     stop_info = StopInfo::CreateStopReasonWithSignal(
         *stop_thread, signo);
   } else if (arch.GetTriple().getVendor() == llvm::Triple::Apple) {
-    stop_info = StopInfoMachException::CreateStopReasonWithMachException(
-        *stop_thread, m_active_exception->ExceptionRecord.ExceptionCode, 2,
-        m_active_exception->ExceptionRecord.ExceptionFlags,
-        m_active_exception->ExceptionRecord.ExceptionAddress, 0);
+    stop_info =
+        StopInfoMachException::CreateStopReasonWithMachException( // TODO
+            *stop_thread, m_active_exception->ExceptionRecord.ExceptionCode, 2,
+            m_active_exception->ExceptionRecord.ExceptionFlags,
+            m_active_exception->ExceptionRecord.ExceptionAddress, 0);
   } else {
     std::string desc;
     llvm::raw_string_ostream desc_stream(desc);

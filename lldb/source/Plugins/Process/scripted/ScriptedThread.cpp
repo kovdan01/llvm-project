@@ -302,7 +302,7 @@ bool ScriptedThread::CalculateStopInfo() {
       break;
     }
 #endif
-    stop_info_sp =
+    stop_info_sp = // TODO
         StopInfo::CreateStopReasonWithException(*this, "EXC_BAD_ACCESS");
   } break;
   default:

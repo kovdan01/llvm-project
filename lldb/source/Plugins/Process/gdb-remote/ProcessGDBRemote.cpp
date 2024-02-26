@@ -1709,7 +1709,7 @@ ThreadSP ProcessGDBRemote::SetThreadStopInfo(
     if (exc_type != 0) {
       const size_t exc_data_size = exc_data.size();
 
-      thread_sp->SetStopInfo(
+      thread_sp->SetStopInfo( // TODO
           StopInfoMachException::CreateStopReasonWithMachException(
               *thread_sp, exc_type, exc_data_size,
               exc_data_size >= 1 ? exc_data[0] : 0,
