@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "lldb/Target/ExecutionContext.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Utility/StructuredData.h"
 #include "lldb/lldb-public.h"
@@ -193,6 +194,27 @@ protected:
   // Thread::RestoreThreadStateFromCheckpoint and to make sure the one-step
   // needed for before-the-fact watchpoints does not prevent us from stopping
   void MakeStopInfoValid();
+
+  // Determine the pointer-authentication related failure that caused this
+  // exception (assuming an exception led to stop). Returns true and fills out
+  // the failure description if there is auth-related failure, and returns false
+  // otherwise.
+  bool DeterminePtrauthFailure(ExecutionContext &exe_ctx);
+
+  // Can't use pure virtual functions since derived classes which do not
+  // override the functions need to have non-abstract types
+  // TODO
+  virtual void EmitPtrauthPrologue(StreamString &strm,
+                                   uint64_t at_address) const {}
+
+  // TODO
+  virtual std::optional<uint64_t> GetBadAddress() const { return std::nullopt; }
+
+  // TODO
+  virtual bool IsBadAccess() const { return false; }
+
+  // TODO
+  virtual bool IsBreakpoint() const { return false; }
 
 private:
   friend class Thread;

@@ -22,11 +22,6 @@
 namespace lldb_private {
 
 class StopInfoMachException : public StopInfo {
-  /// Determine the pointer-authentication related failure that caused this
-  /// exception. Returns true and fills out the failure description if there
-  /// is auth-related failure, and returns false otherwise.
-  bool DeterminePtrauthFailure(ExecutionContext &exe_ctx);
-
 public:
   // Constructors and Destructors
   StopInfoMachException(Thread &thread, uint32_t exc_type,
@@ -59,6 +54,15 @@ public:
       bool pc_already_adjusted = true, bool adjust_pc_if_needed = false);
 
 protected:
+  void EmitPtrauthPrologue(StreamString &strm,
+                           uint64_t at_address) const override;
+
+  std::optional<uint64_t> GetBadAddress() const override;
+
+  bool IsBadAccess() const override;
+
+  bool IsBreakpoint() const override;
+
   uint32_t m_exc_data_count;
   uint64_t m_exc_code;
   uint64_t m_exc_subcode;
