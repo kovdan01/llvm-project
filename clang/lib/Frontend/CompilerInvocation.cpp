@@ -3293,6 +3293,108 @@ static void ParseAPINotesArgs(APINotesOptions &Opts, ArgList &Args,
     Opts.ModuleSearchPaths.push_back(A->getValue());
 }
 
+static void GeneratePointerAuthArgs(const LangOptions &Opts,
+                                    ArgumentConsumer Consumer) {
+  // if (Opts.PointerAuthIntrinsics)
+  //   GenerateArg(Consumer, OPT_fptrauth_intrinsics);
+  if (Opts.PointerAuthCalls)
+    GenerateArg(Consumer, OPT_fptrauth_calls);
+  if (Opts.PointerAuthReturns)
+    GenerateArg(Consumer, OPT_fptrauth_returns);
+  // if (Opts.PointerAuthAuthTraps)
+  //   GenerateArg(Consumer, OPT_fptrauth_auth_traps);
+  if (Opts.PointerAuthVTPtrAddressDiscrimination)
+    GenerateArg(Consumer, OPT_fptrauth_vtable_pointer_address_discrimination);
+  if (Opts.PointerAuthVTPtrTypeDiscrimination)
+    GenerateArg(Consumer, OPT_fptrauth_vtable_pointer_type_discrimination);
+  // if (Opts.FunctionPointerTypeDiscrimination)
+  //   GenerateArg(Consumer, OPT_fptrauth_function_pointer_type_discrimination);
+  // if (Opts.SoftPointerAuth)
+  //   GenerateArg(Consumer, OPT_fptrauth_soft);
+  // if (Opts.PointerAuthBlockDescriptorPointers)
+  //   GenerateArg(Consumer, OPT_fptrauth_block_descriptor_pointers);
+
+  // if (Opts.PointerAuthABIVersionEncoded) {
+  //   GenerateArg(Consumer, OPT_fptrauth_abi_version_EQ,
+  //               Twine(Opts.PointerAuthABIVersion));
+  //   if (Opts.PointerAuthKernelABIVersion)
+  //     GenerateArg(Consumer, OPT_fptrauth_kernel_abi_version);
+  // }
+
+  // {
+  //   StringRef Value;
+  //   switch (Opts.getPointerAuthObjcIsaAuthentication()) {
+  //   case LangOptions::PointerAuthenticationMode::None:
+  //     break;
+  //   case LangOptions::PointerAuthenticationMode::Strip:
+  //     Value = PointerAuthenticationOptionStrip;
+  //     break;
+  //   case LangOptions::PointerAuthenticationMode::SignAndStrip:
+  //     Value = PointerAuthenticationOptionSignAndStrip;
+  //     break;
+  //   case LangOptions::PointerAuthenticationMode::SignAndAuth:
+  //     Value = PointerAuthenticationOptionSignAndAuth;
+  //     break;
+  //   }
+  //   if (!Value.empty())
+  //     GenerateArg(Consumer, OPT_fptrauth_objc_isa_mode, Value);
+  // }
+  // if (Opts.PointerAuthObjcIsaMasking)
+  //   GenerateArg(Consumer, OPT_fptrauth_objc_isa_masking);
+  if (Opts.PointerAuthInitFini)
+    GenerateArg(Consumer, OPT_fptrauth_init_fini);
+}
+
+static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
+                                 DiagnosticsEngine &Diags) {
+  //Opts.PointerAuthIntrinsics = Args.hasArg(OPT_fptrauth_intrinsics);
+  Opts.PointerAuthCalls = Args.hasArg(OPT_fptrauth_calls);
+  Opts.PointerAuthReturns = Args.hasArg(OPT_fptrauth_returns);
+  //Opts.PointerAuthAuthTraps = Args.hasArg(OPT_fptrauth_auth_traps);
+  Opts.PointerAuthVTPtrAddressDiscrimination =
+      Args.hasArg(OPT_fptrauth_vtable_pointer_address_discrimination);
+  Opts.PointerAuthVTPtrTypeDiscrimination =
+      Args.hasArg(OPT_fptrauth_vtable_pointer_type_discrimination);
+  Opts.PointerAuthInitFini = Args.hasArg(OPT_fptrauth_init_fini);
+  // Opts.SoftPointerAuth = Args.hasArg(OPT_fptrauth_soft);
+  // Opts.PointerAuthBlockDescriptorPointers =
+  //     Args.hasArg(OPT_fptrauth_block_descriptor_pointers);
+
+  // Opts.PointerAuthABIVersionEncoded =
+  //     Args.hasArg(OPT_fptrauth_abi_version_EQ) ||
+  //     Args.hasArg(OPT_fptrauth_kernel_abi_version);
+  // Opts.PointerAuthABIVersion =
+  //     getLastArgIntValue(Args, OPT_fptrauth_abi_version_EQ, 0, Diags);
+  // Opts.PointerAuthKernelABIVersion = Args.hasArg(OPT_fptrauth_kernel_abi_version);
+
+  // if (auto modeArg = Args.getLastArg(OPT_fptrauth_objc_isa_mode)) {
+  //   StringRef Value = modeArg->getValue();
+  //   std::optional<PointerAuthenticationMode> isaAuthenticationMode =
+  //       llvm::StringSwitch<std::optional<PointerAuthenticationMode>>(Value)
+  //           .Case(PointerAuthenticationOptionStrip,
+  //                 PointerAuthenticationMode::Strip)
+  //           .Case(PointerAuthenticationOptionSignAndStrip,
+  //                 PointerAuthenticationMode::SignAndStrip)
+  //           .Case(PointerAuthenticationOptionSignAndAuth,
+  //                 PointerAuthenticationMode::SignAndAuth)
+  //           .Default(std::nullopt);
+  //   if (!isaAuthenticationMode) {
+  //     Diags.Report(diag::err_drv_unsupported_option_argument)
+  //         << modeArg->getOption().getName() << modeArg->getValue();
+  //     return;
+  //   }
+  //   Opts.setPointerAuthObjcIsaAuthentication(*isaAuthenticationMode);
+  // }
+  // Opts.PointerAuthObjcIsaMasking = Args.hasArg(OPT_fptrauth_objc_isa_masking);
+
+  //        // Try to catch cherry-picks of the wrong feature enablement commit, or
+  //        // incorrect -Xclang flags.
+  // if (Arg *A = Args.getLastArg(OPT_fptrauth_objc_isa)) {
+  //   Diags.Report(diag::err_drv_unsupported_opt_with_suggestion)
+  //       << A->getSpelling() << "-fptrauth-objc-isa-mode=sign-and-auth";
+  // }
+}
+
 /// Check if input file kind and language standard are compatible.
 static bool IsInputCompatibleWithStandard(InputKind IK,
                                           const LangStandard &S) {
@@ -4610,6 +4712,7 @@ bool CompilerInvocation::CreateFromArgsImpl(
   llvm::Triple T(Res.getTargetOpts().Triple);
   ParseHeaderSearchArgs(Res.getHeaderSearchOpts(), Args, Diags,
                         Res.getFileSystemOpts().WorkingDir);
+  ParsePointerAuthArgs(LangOpts, Args, Diags);
   ParseAPINotesArgs(Res.getAPINotesOpts(), Args, Diags);
 
   ParseLangArgs(LangOpts, Args, DashX, T, Res.getPreprocessorOpts().Includes,
@@ -4841,6 +4944,7 @@ void CompilerInvocationBase::generateCC1CommandLine(
   GenerateFrontendArgs(getFrontendOpts(), Consumer, getLangOpts().IsHeaderFile);
   GenerateTargetArgs(getTargetOpts(), Consumer);
   GenerateHeaderSearchArgs(getHeaderSearchOpts(), Consumer);
+  GeneratePointerAuthArgs(getLangOpts(), Consumer);
   GenerateAPINotesArgs(getAPINotesOpts(), Consumer);
   GenerateLangArgs(getLangOpts(), Consumer, T, getFrontendOpts().DashX);
   GenerateCodeGenArgs(getCodeGenOpts(), Consumer, T,

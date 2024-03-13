@@ -4085,6 +4085,29 @@ defm strict_return : BoolFOption<"strict-return",
             " of a non-void function as unreachable">,
   PosFlag<SetTrue>>;
 
+let Group = f_Group in {
+  let Visibility = [ClangOption,CC1Option] in {
+    def fptrauth_calls : Flag<["-"], "fptrauth-calls">,
+      HelpText<"Enable signing and authentication of all indirect calls">;
+    def fptrauth_returns : Flag<["-"], "fptrauth-returns">,
+      HelpText<"Enable signing and authentication of return addresses">;
+    def fptrauth_vtable_pointer_address_discrimination : Flag<["-"], "fptrauth-vtable-pointer-address-discrimination">,
+      HelpText<"Enable address discrimination of vtable pointers">;
+    def fptrauth_vtable_pointer_type_discrimination : Flag<["-"], "fptrauth-vtable-pointer-type-discrimination">,
+      HelpText<"Enable type discrimination of vtable pointers">;
+    def fptrauth_function_pointer_type_discrimination : Flag<["-"], "fptrauth-function-pointer-type-discrimination">,
+      HelpText<"Enabling type discrimination on C function pointers">;
+    def fptrauth_init_fini : Flag<["-"], "fptrauth-init-fini">,
+      HelpText<"Enable signing of function pointers in init/fini arrays">;
+  }
+  def fno_ptrauth_calls : Flag<["-"], "fno-ptrauth-calls">;
+  def fno_ptrauth_returns : Flag<["-"], "fno-ptrauth-returns">;
+  def fno_ptrauth_vtable_pointer_address_discrimination : Flag<["-"], "fno-ptrauth-vtable-pointer-address-discrimination">;
+  def fno_ptrauth_vtable_pointer_type_discrimination : Flag<["-"], "fno-ptrauth-vtable-pointer-type-discrimination">;
+  def fno_ptrauth_function_pointer_type_discrimination : Flag<["-"], "fno-ptrauth-function-pointer-type-discrimination">;
+  def fno_ptrauth_init_fini : Flag<["-"], "fno-ptrauth-init-fini">;
+}
+
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,
     Visibility<[ClangOption, CC1Option]>,
     HelpText<"Enable matrix data type and related builtin functions">,
