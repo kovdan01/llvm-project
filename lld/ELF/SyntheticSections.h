@@ -106,9 +106,9 @@ public:
   void writeTo(uint8_t *buf) override;
 
   void addConstant(const Relocation &r);
-  void addEntry(Symbol &sym);
-  bool addTlsDescEntry(Symbol &sym);
-  bool addDynTlsEntry(Symbol &sym);
+  void addEntry(const Symbol &sym);
+  bool addTlsDescEntry(const Symbol &sym);
+  bool addDynTlsEntry(const Symbol &sym);
   bool addTlsIndex();
   uint32_t getTlsDescOffset(const Symbol &sym) const;
   uint64_t getTlsDescAddr(const Symbol &sym) const;
@@ -126,6 +126,11 @@ protected:
   size_t numEntries = 0;
   uint32_t tlsIndexOff = -1;
   uint64_t size = 0;
+  struct AuthEntryInfo {
+    size_t offset;
+    bool isSymbolFunc;
+  };
+  SmallVector<AuthEntryInfo> authEntries;
 };
 
 // .note.GNU-stack section.

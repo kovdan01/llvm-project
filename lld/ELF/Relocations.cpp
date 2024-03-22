@@ -210,9 +210,10 @@ static bool needsPlt(RelExpr expr) {
 
 bool lld::elf::needsGot(RelExpr expr) {
   return oneof<R_GOT, R_GOT_OFF, R_MIPS_GOT_LOCAL_PAGE, R_MIPS_GOT_OFF,
-               R_MIPS_GOT_OFF32, R_AARCH64_GOT_PAGE_PC, R_GOT_PC, R_GOTPLT,
-               R_AARCH64_GOT_PAGE, R_LOONGARCH_GOT, R_LOONGARCH_GOT_PAGE_PC>(
-      expr);
+               R_MIPS_GOT_OFF32, R_AARCH64_GOT_PAGE_PC,
+               R_AARCH64_AUTH_GOT_PAGE_PC, R_GOT_PC, R_GOTPLT,
+               R_AARCH64_GOT_PAGE, R_AARCH64_AUTH_GOT_PAGE, R_LOONGARCH_GOT,
+               R_LOONGARCH_GOT_PAGE_PC>(expr);
 }
 
 // True if this expression is of the form Sym - X, where X is a position in the
@@ -924,7 +925,14 @@ void elf::addGotEntry(Symbol &sym) {
 
   // If preemptible, emit a GLOB_DAT relocation.
   if (sym.isPreemptible) {
-    mainPart->relaDyn->addReloc({target->gotRel, in.got.get(), off,
+    RelType gotRel = [&sym]() -> RelType {
+      if (sym.hasFlag(NEEDS_GOT_AUTH)) {
+        assert(config->emachine == EM_AARCH64);
+        return R_AARCH64_AUTH_GLOB_DAT;
+      }
+      return target->gotRel;
+    }();
+    mainPart->relaDyn->addReloc({gotRel, in.got.get(), off,
                                  DynamicReloc::AgainstSymbol, sym, 0, R_ABS});
     return;
   }
@@ -983,16 +991,18 @@ bool RelocationScanner::isStaticLinkTimeConstant(RelExpr e, RelType type,
   // These expressions always compute a constant
   if (oneof<R_GOTPLT, R_GOT_OFF, R_RELAX_HINT, R_MIPS_GOT_LOCAL_PAGE,
             R_MIPS_GOTREL, R_MIPS_GOT_OFF, R_MIPS_GOT_OFF32, R_MIPS_GOT_GP_PC,
-            R_AARCH64_GOT_PAGE_PC, R_GOT_PC, R_GOTONLY_PC, R_GOTPLTONLY_PC,
-            R_PLT_PC, R_PLT_GOTREL, R_PLT_GOTPLT, R_GOTPLT_GOTREL, R_GOTPLT_PC,
-            R_PPC32_PLTREL, R_PPC64_CALL_PLT, R_PPC64_RELAX_TOC, R_RISCV_ADD,
-            R_AARCH64_GOT_PAGE, R_LOONGARCH_PLT_PAGE_PC, R_LOONGARCH_GOT,
+            R_AARCH64_GOT_PAGE_PC, R_AARCH64_AUTH_GOT_PAGE_PC, R_GOT_PC,
+            R_GOTONLY_PC, R_GOTPLTONLY_PC, R_PLT_PC, R_PLT_GOTREL, R_PLT_GOTPLT,
+            R_GOTPLT_GOTREL, R_GOTPLT_PC, R_PPC32_PLTREL, R_PPC64_CALL_PLT,
+            R_PPC64_RELAX_TOC, R_RISCV_ADD, R_AARCH64_GOT_PAGE,
+            R_AARCH64_AUTH_GOT_PAGE, R_LOONGARCH_PLT_PAGE_PC, R_LOONGARCH_GOT,
             R_LOONGARCH_GOT_PAGE_PC>(e))
     return true;
 
   // These never do, except if the entire file is position dependent or if
   // only the low bits are used.
-  if (e == R_GOT || e == R_PLT)
+  if (e == R_GOT ||
+      (e == R_AARCH64_AUTH_GOT && config->emachine == EM_AARCH64) || e == R_PLT)
     return target->usesOnlyLowPageBits(type) || !config->isPic;
 
   // R_AARCH64_AUTH_ABS64 requires a dynamic relocation.
@@ -1099,7 +1109,20 @@ void RelocationScanner::processAux(RelExpr expr, RelType type, uint64_t offset,
     } else if (!sym.isTls() || config->emachine != EM_LOONGARCH) {
       // Many LoongArch TLS relocs reuse the R_LOONGARCH_GOT type, in which
       // case the NEEDS_GOT flag shouldn't get set.
-      sym.setFlags(NEEDS_GOT);
+      if (!sym.hasFlag(NEEDS_GOT)) {
+        sym.setFlags(NEEDS_GOT);
+        if (config->emachine == EM_AARCH64 &&
+            type == R_AARCH64_AUTH_ADR_GOT_PAGE)
+          sym.setFlags(NEEDS_GOT_AUTH);
+      } else if (config->emachine == EM_AARCH64 &&
+                 ((type == R_AARCH64_AUTH_ADR_GOT_PAGE &&
+                   !sym.hasFlag(NEEDS_GOT_AUTH)) ||
+                  (type == R_AARCH64_ADR_GOT_PAGE &&
+                   sym.hasFlag(NEEDS_GOT_AUTH)))) {
+        fatal(
+            "Both auth and non-auth got entries for a symbol " + sym.getName() +
+            " requested. Only one type of got entry per symbol is supported.");
+      }
     }
   } else if (needsPlt(expr)) {
     sym.setFlags(NEEDS_PLT);

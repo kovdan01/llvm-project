@@ -162,11 +162,17 @@ RelExpr AArch64::getRelExpr(RelType type, const Symbol &s,
   case R_AARCH64_LD64_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
     return R_GOT;
+  case R_AARCH64_AUTH_GOT_LO12_NC:
+    return R_AARCH64_AUTH_GOT;
   case R_AARCH64_LD64_GOTPAGE_LO15:
     return R_AARCH64_GOT_PAGE;
+  case R_AARCH64_AUTH_LD64_GOTPAGE_LO15:
+    return R_AARCH64_AUTH_GOT_PAGE;
   case R_AARCH64_ADR_GOT_PAGE:
   case R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21:
     return R_AARCH64_GOT_PAGE_PC;
+  case R_AARCH64_AUTH_ADR_GOT_PAGE:
+    return R_AARCH64_AUTH_GOT_PAGE_PC;
   case R_AARCH64_GOTPCREL32:
     return R_GOT_PC;
   case R_AARCH64_NONE:
@@ -193,6 +199,7 @@ bool AArch64::usesOnlyLowPageBits(RelType type) const {
     return false;
   case R_AARCH64_ADD_ABS_LO12_NC:
   case R_AARCH64_LD64_GOT_LO12_NC:
+  case R_AARCH64_AUTH_GOT_LO12_NC:
   case R_AARCH64_LDST128_ABS_LO12_NC:
   case R_AARCH64_LDST16_ABS_LO12_NC:
   case R_AARCH64_LDST32_ABS_LO12_NC:
@@ -217,6 +224,7 @@ int64_t AArch64::getImplicitAddend(const uint8_t *buf, RelType type) const {
     return read64(buf + 8);
   case R_AARCH64_NONE:
   case R_AARCH64_GLOB_DAT:
+  case R_AARCH64_AUTH_GLOB_DAT:
   case R_AARCH64_JUMP_SLOT:
     return 0;
   case R_AARCH64_PREL32:
@@ -417,6 +425,7 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     or32AArch64Imm(loc, val);
     break;
   case R_AARCH64_ADR_GOT_PAGE:
+  case R_AARCH64_AUTH_ADR_GOT_PAGE:
   case R_AARCH64_ADR_PREL_PG_HI21:
   case R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21:
   case R_AARCH64_TLSDESC_ADR_PAGE21:
@@ -465,6 +474,7 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     break;
   case R_AARCH64_LDST64_ABS_LO12_NC:
   case R_AARCH64_LD64_GOT_LO12_NC:
+  case R_AARCH64_AUTH_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
   case R_AARCH64_TLSLE_LDST64_TPREL_LO12_NC:
   case R_AARCH64_TLSDESC_LD64_LO12:
@@ -477,6 +487,7 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     or32AArch64Imm(loc, getBits(val, 4, 11));
     break;
   case R_AARCH64_LD64_GOTPAGE_LO15:
+  case R_AARCH64_AUTH_LD64_GOTPAGE_LO15:
     checkAlignment(loc, val, 8, rel);
     or32AArch64Imm(loc, getBits(val, 3, 14));
     break;
