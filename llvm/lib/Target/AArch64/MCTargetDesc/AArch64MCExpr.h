@@ -38,6 +38,7 @@ public:
     VK_SECREL   = 0x009,
     VK_AUTH     = 0x00a,
     VK_AUTHADDR = 0x00b,
+    VK_GOTAUTH  = 0x00c,
     VK_SymLocBits = 0x00f,
 
     // Variants specifying which part of the final address calculation is
@@ -112,6 +113,9 @@ public:
     VK_TLSDESC_PAGE      = VK_TLSDESC  | VK_PAGE,
     VK_SECREL_LO12       = VK_SECREL   | VK_PAGEOFF,
     VK_SECREL_HI12       = VK_SECREL   | VK_HI12,
+    VK_GOTAUTH_PAGE      = VK_GOTAUTH  | VK_PAGE,
+    VK_GOTAUTH_PAGE_LO15 = VK_GOTAUTH  | VK_LO15    | VK_NC,
+    VK_GOTAUTH_LO12      = VK_GOTAUTH  | VK_PAGEOFF | VK_NC,
 
     VK_INVALID  = 0xfff
   };
