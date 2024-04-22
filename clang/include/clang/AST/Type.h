@@ -363,8 +363,9 @@ public:
   /// the given sets.
   static Qualifiers removeCommonQualifiers(Qualifiers &L, Qualifiers &R) {
     Qualifiers Q;
-    if (L.getPointerAuth().isEquivalent(R.getPointerAuth())) {
-      Q.setPointerAuth(L.getPointerAuth().withoutKeyNone());
+    if (!L.getPointerAuth().hasKeyNone() &&
+        L.getPointerAuth() == R.getPointerAuth()) {
+      Q.setPointerAuth(L.getPointerAuth());
       PointerAuthQualifier Empty;
       L.setPointerAuth(Empty);
       R.setPointerAuth(Empty);
