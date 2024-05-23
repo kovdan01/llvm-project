@@ -959,7 +959,9 @@ __gxx_personality_v0
         results.ttypeIndex = exception_header->handlerSwitchValue;
         results.actionRecord = exception_header->actionRecord;
         results.languageSpecificData = exception_header->languageSpecificData;
-        set_landing_pad_as_ptr(results, exception_header->catchTemp);
+        // TODO set_landing_pad_as_ptr(results, exception_header->catchTemp);
+        results.landingPad =
+            reinterpret_cast<uintptr_t>(exception_header->catchTemp);
         results.adjustedPtr = exception_header->adjustedPtr;
 
         // Jump to the handler.
@@ -993,7 +995,8 @@ __gxx_personality_v0
             exc->handlerSwitchValue = static_cast<int>(results.ttypeIndex);
             exc->actionRecord = results.actionRecord;
             exc->languageSpecificData = results.languageSpecificData;
-            exc->catchTemp = get_landing_pad_as_ptr(results);
+            // TODO exc->catchTemp = get_landing_pad_as_ptr(results);
+            exc->catchTemp = reinterpret_cast<void*>(results.landingPad);
             exc->adjustedPtr = results.adjustedPtr;
 #ifdef __USING_WASM_EXCEPTIONS__
             // Wasm only uses a single phase (_UA_SEARCH_PHASE), so save the

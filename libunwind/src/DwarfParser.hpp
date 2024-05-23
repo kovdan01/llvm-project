@@ -47,8 +47,7 @@ public:
     uint8_t   lsdaEncoding;
     uint8_t   personalityEncoding;
     uint8_t   personalityOffsetInCIE;
-    personality_t personality;
-    pint_t _LIBUNWIND_PTRAUTH_RESTRICTED_INTPTR(ptrauth_key_function_pointer, 1, "CIE_Info::personality") personality_t;
+    pint_t _LIBUNWIND_PTRAUTH_RESTRICTED_INTPTR(ptrauth_key_function_pointer, 1, "CIE_Info::personality") personality;
     uint32_t  codeAlignFactor;
     int       dataAlignFactor;
     bool      isSignalFrame;
@@ -399,6 +398,7 @@ const char *CFI_Parser<A>::parseCIE(A &addressSpace, pint_t cie,
             .getEncodedP(p, cieContentEnd, cieInfo->personalityEncoding,
                          /*datarelBase=*/0, &resultAddr);
 #if __has_feature(ptrauth_calls)
+        // TODO
         if (personality) {
           // The GOT for the personality function was signed address authenticated.
           // Manually re-sign with the CIE_Info::personality schema. If we could guarantee the

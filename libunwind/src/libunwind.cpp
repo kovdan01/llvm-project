@@ -195,7 +195,7 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
 
       pint_t sp = (pint_t)co->getReg(UNW_REG_SP);
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) && defined(__APPLE__)
     // If we are in an arm64e frame, then the PC should have been signed with the sp
     {
         const mach_header_64 *mh = (const mach_header_64 *)info.extra;
