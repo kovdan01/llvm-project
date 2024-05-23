@@ -1640,6 +1640,10 @@ static void handlePAuthABIOption(const ArgList &DriverArgs,
                          options::OPT_fno_ptrauth_init_fini))
     CC1Args.push_back("-fptrauth-init-fini");
 
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_elf_personality,
+                         options::OPT_fno_ptrauth_elf_personality))
+    CC1Args.push_back("-fptrauth-elf-personality");
+
 #if 0
   // Due to implicit casts, code with function pointer type discrimination
   // enabled might be broken.
@@ -7084,6 +7088,11 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
                    options::OPT_fno_ptrauth_init_fini,
                    false))
     CmdArgs.push_back("-fptrauth-init-fini");
+
+  if (Args.hasFlag(options::OPT_fptrauth_elf_personality,
+                   options::OPT_fno_ptrauth_elf_personality,
+                   false))
+    CmdArgs.push_back("-fptrauth-elf-personality");
 
   if (Args.hasFlag(options::OPT_fptrauth_objc_isa,
                    options::OPT_fno_ptrauth_objc_isa, false))

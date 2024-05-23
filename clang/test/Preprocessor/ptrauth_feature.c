@@ -88,3 +88,11 @@ int no_ptrauth_function_pointer_type_discrimination() {
   return ptrauth_function_pointer_type_discriminator(void(*)(void));
 }
 #endif
+
+#if __has_feature(ptrauth_elf_personality)
+// PERSONALITY: has_ptrauth_elf_personality
+void has_ptrauth_elf_personality() {}
+#else
+// NOPERSONALITY: no_ptrauth_elf_personality
+void no_ptrauth_elf_personality() {}
+#endif

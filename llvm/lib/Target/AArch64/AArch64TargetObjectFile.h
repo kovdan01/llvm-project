@@ -33,6 +33,10 @@ public:
   MCSymbol *getAuthPtrSlotSymbol(const TargetMachine &TM,
                                  MachineModuleInfo *MMI,
                                  const GlobalPtrAuthInfo &PAI) const;
+
+  void emitPersonalityValue(MCStreamer &Streamer, const DataLayout &DL,
+                          const MCSymbol *Sym,
+                          const MachineModuleInfo *MMI) const override;
 };
 
 /// AArch64_MachoTargetObjectFile - This TLOF implementation is used for Darwin.

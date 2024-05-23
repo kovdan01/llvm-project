@@ -3455,6 +3455,8 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
     GenerateArg(Consumer, OPT_fptrauth_objc_isa_masking);
   if (Opts.PointerAuthInitFini)
     GenerateArg(Consumer, OPT_fptrauth_init_fini);
+  if (Opts.PointerAuthELFPersonality)
+    GenerateArg(Consumer, OPT_fptrauth_elf_personality);
 }
 
 static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
@@ -3468,6 +3470,7 @@ static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
   Opts.PointerAuthVTPtrTypeDiscrimination =
       Args.hasArg(OPT_fptrauth_vtable_pointer_type_discrimination);
   Opts.PointerAuthInitFini = Args.hasArg(OPT_fptrauth_init_fini);
+  Opts.PointerAuthELFPersonality = Args.hasArg(OPT_fptrauth_elf_personality);
   Opts.SoftPointerAuth = Args.hasArg(OPT_fptrauth_soft);
   Opts.PointerAuthBlockDescriptorPointers =
       Args.hasArg(OPT_fptrauth_block_descriptor_pointers);

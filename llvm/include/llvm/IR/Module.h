@@ -1033,6 +1033,9 @@ public:
 
   /// Set the target variant version build SDK version metadata.
   void setDarwinTargetVariantSDKVersion(VersionTuple Version);
+
+  /// TODO
+  bool hasELFSignedPersonality() const;
 };
 
 /// Given "llvm.used" or "llvm.compiler.used" as a global name, collect the

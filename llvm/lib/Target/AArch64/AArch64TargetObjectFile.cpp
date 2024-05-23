@@ -9,15 +9,19 @@
 #include "AArch64TargetObjectFile.h"
 #include "AArch64TargetMachine.h"
 #include "MCTargetDesc/AArch64MCExpr.h"
+#include "MCTargetDesc/AArch64TargetStreamer.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/BinaryFormat/Dwarf.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/IR/GlobalPtrAuthInfo.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/MCValue.h"
 using namespace llvm;
 using namespace dwarf;
@@ -28,6 +32,38 @@ void AArch64_ELFTargetObjectFile::Initialize(MCContext &Ctx,
   // AARCH64 ELF ABI does not define static relocation type for TLS offset
   // within a module.  Do not generate AT_location for TLS variables.
   SupportDebugThreadLocalLocation = false;
+}
+
+void AArch64_ELFTargetObjectFile::emitPersonalityValue(
+    MCStreamer &Streamer, const DataLayout &DL, const MCSymbol *Sym,
+    const MachineModuleInfo *MMI) const {
+  SmallString<64> NameData("DW.ref.");
+  NameData += Sym->getName();
+  MCSymbolELF *Label =
+      cast<MCSymbolELF>(getContext().getOrCreateSymbol(NameData));
+  Streamer.emitSymbolAttribute(Label, MCSA_Hidden);
+  Streamer.emitSymbolAttribute(Label, MCSA_Weak);
+  unsigned Flags = ELF::SHF_ALLOC | ELF::SHF_WRITE | ELF::SHF_GROUP;
+  MCSection *Sec = getContext().getELFNamedSection(".data", Label->getName(),
+                                                   ELF::SHT_PROGBITS, Flags, 0);
+  unsigned Size = DL.getPointerSize();
+  Streamer.switchSection(Sec);
+  Streamer.emitValueToAlignment(DL.getPointerABIAlignment(0));
+  Streamer.emitSymbolAttribute(Label, MCSA_ELF_TypeObject);
+  const MCExpr *E = MCConstantExpr::create(Size, getContext());
+  Streamer.emitELFSize(Label, E);
+  Streamer.emitLabel(Label);
+
+  if (MMI->getModule()->hasELFSignedPersonality()) {
+    auto *TS =
+        static_cast<AArch64TargetStreamer *>(Streamer.getTargetStreamer());
+    /// TODO. The value is ptrauth_string_discriminator("personality")
+    constexpr uint16_t Discriminator = 0xABCD; // TODO
+    TS->emitAuthValue(MCSymbolRefExpr::create(Sym, getContext()), Discriminator,
+                      AArch64PACKey::IA, true, getContext());
+  } else {
+    Streamer.emitSymbolValue(Sym, Size);
+  }
 }
 
 AArch64_MachoTargetObjectFile::AArch64_MachoTargetObjectFile() {
