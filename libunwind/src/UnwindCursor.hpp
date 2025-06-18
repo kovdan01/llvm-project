@@ -1054,7 +1054,7 @@ private:
                                const UnwindInfoSections &sects,
                                uint32_t fdeSectionOffsetHint = 0);
   int stepWithDwarfFDE(bool stage2) {
-    typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
+    typename R::reg_t rawPC = _registers.getIP();
     typename R::link_reg_t pc;
     _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
     return DwarfInstructions<A, R>::stepWithDwarf(
@@ -2671,7 +2671,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
   _isSigReturn = false;
 #endif
 
-  typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
+  typename R::reg_t rawPC = _registers.getIP();
 
 #if defined(_LIBUNWIND_ARM_EHABI)
   // Remove the thumb bit so the IP represents the actual instruction address.
@@ -3231,7 +3231,7 @@ void UnwindCursor<A, R>::getInfo(unw_proc_info_t *info) {
 template <typename A, typename R>
 bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
                                          unw_word_t *offset) {
-  typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
+  typename R::reg_t rawPC = _registers.getIP();
   typename R::link_reg_t pc;
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
 

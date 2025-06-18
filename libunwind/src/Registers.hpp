@@ -1853,6 +1853,9 @@ public:
   Registers_arm64();
   Registers_arm64(const void *registers);
 
+  Registers_arm64(const Registers_arm64 &other);
+  Registers_arm64 &operator=(const Registers_arm64 &other);
+
   bool        validRegister(int num) const;
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
