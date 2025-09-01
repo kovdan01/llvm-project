@@ -20,7 +20,7 @@
 #include "shadow_stack_unwind.h"
 #include "libunwind_ext.h"
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #endif
 

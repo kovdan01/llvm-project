@@ -103,11 +103,8 @@
 #define _LIBCXXABI_DTOR_FUNC
 #endif
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #  include <ptrauth.h>
-#endif
-
-#if __has_extension(ptrauth_qualifier)
 
 // ptrauth_string_discriminator("__cxa_exception::actionRecord") == 0xFC91
 #  define __ptrauth_cxxabi_action_record \

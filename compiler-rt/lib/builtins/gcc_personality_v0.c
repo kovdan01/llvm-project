@@ -30,7 +30,7 @@ EXCEPTION_DISPOSITION _GCC_specific_handler(PEXCEPTION_RECORD, void *, PCONTEXT,
                                             _Unwind_Personality_Fn);
 #endif
 
-#if __has_feature(ptrauth_qualifier)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #if __has_feature(ptrauth_restricted_intptr_qualifier)
 #define __ptrauth_gcc_personality_intptr(key, addressDiscriminated,            \

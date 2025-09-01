@@ -111,7 +111,7 @@ extern "C" _Unwind_Reason_Code __libunwind_seh_personality(
 
 #endif
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #endif
 

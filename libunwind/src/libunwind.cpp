@@ -14,7 +14,7 @@
 #include "config.h"
 #include "libunwind_ext.h"
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #endif
 #include <stdlib.h>

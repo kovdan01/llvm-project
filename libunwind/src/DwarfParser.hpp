@@ -23,7 +23,7 @@
 
 #include "config.h"
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #endif
 

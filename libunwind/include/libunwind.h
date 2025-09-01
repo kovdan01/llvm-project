@@ -43,7 +43,7 @@
   #define LIBUNWIND_AVAIL
 #endif
 
-#if __has_extension(ptrauth_qualifier)
+#ifdef __PTRAUTH__
 
   #if __has_include(<ptrauth.h>)
     #include <ptrauth.h>

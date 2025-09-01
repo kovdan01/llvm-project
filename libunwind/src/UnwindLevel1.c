@@ -31,7 +31,7 @@
 #include "shadow_stack_unwind.h"
 #include "unwind.h"
 
-#if __has_include(<ptrauth.h>)
+#ifdef __PTRAUTH__
 #include <ptrauth.h>
 #endif
 
