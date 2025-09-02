@@ -634,8 +634,8 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
   // express the required relationship with the destination address
   const auto existingDiscriminator = ptrauth_blend_discriminator(
       &results.landingPad, __ptrauth_scan_results_landingpad_disc);
-  unw_word_t newIP /* opaque __ptrauth(ptrauth_key_return_address, stackPointer, 0) */ =
-      (unw_word_t)ptrauth_auth_and_resign(*(void**)&results.landingPad,
+  uintptr_t newIP /* opaque __ptrauth(ptrauth_key_return_address, stackPointer, 0) */ =
+      (uintptr_t)ptrauth_auth_and_resign(*(void**)&results.landingPad,
                                           __ptrauth_scan_results_landingpad_key,
                                           existingDiscriminator,
                                           ptrauth_key_return_address, stackPointer);
