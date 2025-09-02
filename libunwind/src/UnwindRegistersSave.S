@@ -768,7 +768,7 @@ LnoR2Fix:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || defined(__PTRAUTH__)
   pacibsp
 #endif
 
@@ -813,7 +813,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #endif
   mov    x0, #0                   // return UNW_ESUCCESS
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || defined(__PTRAUTH__)
   retab
 #else
   ret
