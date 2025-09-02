@@ -306,7 +306,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 
       isSignalFrame = cieInfo.isSignalFrame;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64)
+#if 0 && defined(_LIBUNWIND_TARGET_AARCH64)
       // If the target is aarch64 then the return address may have been signed
       // using the v8.3 pointer authentication extensions. The original
       // return address needs to be authenticated before the return address is
