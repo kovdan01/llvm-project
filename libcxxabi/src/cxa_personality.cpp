@@ -629,6 +629,11 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
   _Unwind_SetGR(context, __builtin_eh_return_data_regno(1),
                 static_cast<uintptr_t>(results.ttypeIndex));
 #ifdef __PTRAUTH__
+  // architecture independent register numbers
+  enum {
+    UNW_REG_IP = -1, // instruction pointer
+    UNW_REG_SP = -2, // stack pointer
+  };
   auto stackPointer = _Unwind_GetGR(context, UNW_REG_SP);
   // We manually re-sign the IP as the __ptrauth qualifiers cannot
   // express the required relationship with the destination address
