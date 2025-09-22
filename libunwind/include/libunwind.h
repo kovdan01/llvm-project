@@ -53,13 +53,16 @@
 
   #include <ptrauth.h>
 
-  #if __has_extension(ptrauth_restricted_intptr_qualifier)
-    #define __unwind_ptrauth_restricted_intptr(...) \
-      __ptrauth_restricted_intptr(__VA_ARGS__)
-  #else
-    #define __unwind_ptrauth_restricted_intptr(...) \
-      __ptrauth(__VA_ARGS__)
-  #endif
+  // Some downstream compilers (e.g. Apple's one) might want to use a different
+  // way of imposing signing scheme on pointer-sized-integers fields. Mainline
+  // llvm never had such an alternative implementation for pointer-sized
+  // integers and allows to use regular __ptrauth qualifier for integers just
+  // as for pointers. So, we just use __ptrauth here and wrap it in
+  // __unwind_ptrauth_restricted_intptr macro for ease of adoption in
+  // alternative downstream implementations.
+
+  #define __unwind_ptrauth_restricted_intptr(...) \
+    __ptrauth(__VA_ARGS__)
 
 // ptrauth_string_discriminator("unw_proc_info_t::handler") == 0x7405
   #define __ptrauth_unwind_upi_handler_disc 0x7405

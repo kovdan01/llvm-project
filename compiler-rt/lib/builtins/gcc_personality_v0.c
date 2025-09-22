@@ -35,15 +35,16 @@ EXCEPTION_DISPOSITION _GCC_specific_handler(PEXCEPTION_RECORD, void *, PCONTEXT,
 
 #include <ptrauth.h>
 
-#if __has_feature(ptrauth_restricted_intptr_qualifier)
-#define __ptrauth_gcc_personality_intptr(key, addressDiscriminated,            \
-                                         discriminator)                        \
-  __ptrauth_restricted_intptr(key, addressDiscriminated, discriminator)
-#else
+// Some downstream compilers (e.g. Apple's one) might want to use a different
+// way of imposing signing scheme on pointer-sized-integers fields. Mainline
+// llvm never had such an alternative implementation for pointer-sized
+// integers and allows to use regular __ptrauth qualifier for integers just
+// as for pointers. So, we just use __ptrauth here and wrap it in
+// __ptrauth_gcc_personality_intptr macro for ease of adoption in
+// alternative downstream implementations.
 #define __ptrauth_gcc_personality_intptr(key, addressDiscriminated,            \
                                          discriminator)                        \
   __ptrauth(key, addressDiscriminated, discriminator)
-#endif
 #elif __has_feature(ptrauth_calls) || __has_feature(ptrauth_returns)
 #error "Either both or none of ptrauth_calls and ptrauth_returns is allowed to be enabled"
 #else

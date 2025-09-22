@@ -44,13 +44,15 @@
 #  define __ptrauth_scan_results_landingpad                                                                            \
     __ptrauth(__ptrauth_scan_results_landingpad_key, 1, __ptrauth_scan_results_landingpad_disc)
 
-#  if __has_extension(__ptrauth_restricted_intptr)
-#    define __ptrauth_scan_results_landingpad_intptr                                                                   \
-      __ptrauth_restricted_intptr(__ptrauth_scan_results_landingpad_key, 1, __ptrauth_scan_results_landingpad_disc)
-#  else
-#    define __ptrauth_scan_results_landingpad_intptr                                                                   \
-      __ptrauth(__ptrauth_scan_results_landingpad_key, 1, __ptrauth_scan_results_landingpad_disc)
-#  endif
+  // Some downstream compilers (e.g. Apple's one) might want to use a different
+  // way of imposing signing scheme on pointer-sized-integers fields. Mainline
+  // llvm never had such an alternative implementation for pointer-sized
+  // integers and allows to use regular __ptrauth qualifier for integers just
+  // as for pointers. So, we just use __ptrauth here and wrap it in
+  // __ptrauth_scan_results_landingpad_intptr macro for ease of adoption in
+  // alternative downstream implementations.
+#  define __ptrauth_scan_results_landingpad_intptr                                                                   \
+    __ptrauth(__ptrauth_scan_results_landingpad_key, 1, __ptrauth_scan_results_landingpad_disc)
 
 #else
 #  define __ptrauth_scan_results_lsd
