@@ -303,6 +303,14 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
       isSignalFrame = cieInfo.isSignalFrame;
 
 #if defined(_LIBUNWIND_TARGET_AARCH64)
+      // There are two ways of return address signing: pac-ret (enabled via
+      // -mbranch-protection=pac-ret) and ptrauth-returns (enabled as part of
+      // Apple's arm64e or experimental pauthtest ABI on Linux). The code
+      // below handles signed RA for pac-ret, while ptrauth-returns uses
+      // different logic.
+      // TODO: unify logic for both cases, see
+      // https://github.com/llvm/llvm-project/issues/160110
+#ifndef LIBUNWIND_PTRAUTH_CALLS_AND_RETURNS
       // If the target is aarch64 then the return address may have been signed
       // using the v8.3 pointer authentication extensions. The original
       // return address needs to be authenticated before the return address is
@@ -343,6 +351,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         returnAddress = x17;
 #endif
       }
+#endif
 #endif
 
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY) && defined(_LIBUNWIND_TARGET_ARM) &&    \
