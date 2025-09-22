@@ -43,7 +43,13 @@
   #define LIBUNWIND_AVAIL
 #endif
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) && __has_feature(ptrauth_returns)
+#define LIBUNWIND_PTRAUTH_CALLS_AND_RETURNS
+#elif __has_feature(ptrauth_calls) || __has_feature(ptrauth_returns)
+#error "Either both or none of ptrauth_calls and ptrauth_returns is allowed to be enabled"
+#endif
+
+#ifdef LIBUNWIND_PTRAUTH_CALLS_AND_RETURNS
 
   #include <ptrauth.h>
 

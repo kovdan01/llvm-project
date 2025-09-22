@@ -103,11 +103,14 @@
 #define _LIBCXXABI_DTOR_FUNC
 #endif
 
-#if __has_include(<ptrauth.h>)
-#  include <ptrauth.h>
+#if __has_feature(ptrauth_calls) && __has_feature(ptrauth_returns)
+#define LIBCXXABI_PTRAUTH_CALLS_AND_RETURNS
+#elif __has_feature(ptrauth_calls) || __has_feature(ptrauth_returns)
+#error "Either both or none of ptrauth_calls and ptrauth_returns is allowed to be enabled"
 #endif
 
-#if __has_feature(ptrauth_calls)
+#ifdef LIBCXXABI_PTRAUTH_CALLS_AND_RETURNS
+#  include <ptrauth.h>
 
 // ptrauth_string_discriminator("__cxa_exception::actionRecord") == 0xFC91
 #  define __ptrauth_cxxabi_action_record __ptrauth(ptrauth_key_process_dependent_data, 1, 0xFC91)

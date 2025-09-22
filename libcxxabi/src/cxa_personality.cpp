@@ -21,7 +21,7 @@
 #include "cxa_handlers.h"
 #include "private_typeinfo.h"
 
-#if __has_feature(ptrauth_calls)
+#ifdef LIBCXXABI_PTRAUTH_CALLS_AND_RETURNS
 
 // CXXABI depends on defintions in libunwind as pointer auth couples the
 // definitions
@@ -625,7 +625,7 @@ set_registers(_Unwind_Exception* unwind_exception, _Unwind_Context* context,
                 reinterpret_cast<uintptr_t>(unwind_exception));
   _Unwind_SetGR(context, __builtin_eh_return_data_regno(1),
                 static_cast<uintptr_t>(results.ttypeIndex));
-#if __has_feature(ptrauth_calls)
+#ifdef LIBCXXABI_PTRAUTH_CALLS_AND_RETURNS
   auto stackPointer = _Unwind_GetGR(context, UNW_REG_SP);
   // We manually re-sign the IP as the __ptrauth qualifiers cannot
   // express the required relationship with the destination address
