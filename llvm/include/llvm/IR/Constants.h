@@ -1098,6 +1098,13 @@ public:
                                       const Value *Discriminator,
                                       const DataLayout &DL) const;
 
+  bool isKnownCompatibleWith(const Value *Key,
+                             const Value *AddrDisc,
+                             const Value *IntDisc,
+                             const DataLayout &DL) const;
+  bool isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
+                             const DataLayout &DL) const;
+
   /// Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Value *V) {
     return V->getValueID() == ConstantPtrAuthVal;

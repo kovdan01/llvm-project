@@ -6626,12 +6626,12 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     Register AUTAddrDisc = AUTDisc;
     uint16_t AUTConstDiscC = 0;
     std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators(AUTDisc, MRI);
+        extractPtrauthBlendDiscriminators({0, AUTDisc}, MRI);
 
     Register PACAddrDisc = PACDisc;
     uint16_t PACConstDiscC = 0;
     std::tie(PACConstDiscC, PACAddrDisc) =
-        extractPtrauthBlendDiscriminators(PACDisc, MRI);
+        extractPtrauthBlendDiscriminators({0, PACDisc}, MRI);
 
     MIB.buildCopy({AArch64::X16}, {ValReg});
     MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
@@ -6658,7 +6658,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     Register AUTAddrDisc = AUTDisc;
     uint16_t AUTConstDiscC = 0;
     std::tie(AUTConstDiscC, AUTAddrDisc) =
-        extractPtrauthBlendDiscriminators(AUTDisc, MRI);
+        extractPtrauthBlendDiscriminators({0, AUTDisc}, MRI);
 
     if (STI.isX16X17Safer()) {
       MIB.buildCopy({AArch64::X16}, {ValReg});

@@ -3929,14 +3929,18 @@ void Verifier::visitCallBase(CallBase &Call) {
   if (Intrinsic::ID ID = Call.getIntrinsicID())
     visitIntrinsicCall(ID, Call);
 
+  auto IsConstantInt = [](Value *V, unsigned BitWidth) {
+    return isa<ConstantInt>(V) && V->getType()->isIntegerTy(BitWidth);
+  };
+
   // Verify that a callsite has at most one "deopt", at most one "funclet", at
   // most one "gc-transition", at most one "cfguardtarget", at most one
   // "preallocated" operand bundle, and at most one "ptrauth" operand bundle.
   bool FoundDeoptBundle = false, FoundFuncletBundle = false,
        FoundGCTransitionBundle = false, FoundCFGuardTargetBundle = false,
        FoundPreallocatedBundle = false, FoundGCLiveBundle = false,
-       FoundPtrauthBundle = false, FoundKCFIBundle = false,
-       FoundAttachedCallBundle = false;
+       FoundKCFIBundle = false, FoundAttachedCallBundle = false;
+  unsigned NumPtrauthBundles = 0;
   for (unsigned i = 0, e = Call.getNumOperandBundles(); i < e; ++i) {
     OperandBundleUse BU = Call.getOperandBundleAt(i);
     uint32_t Tag = BU.getTagID();
@@ -3962,22 +3966,27 @@ void Verifier::visitCallBase(CallBase &Call) {
       Check(BU.Inputs.size() == 1,
             "Expected exactly one cfguardtarget bundle operand", Call);
     } else if (Tag == LLVMContext::OB_ptrauth) {
-      Check(!FoundPtrauthBundle, "Multiple ptrauth operand bundles", Call);
-      FoundPtrauthBundle = true;
-      Check(BU.Inputs.size() == 2,
-            "Expected exactly two ptrauth bundle operands", Call);
-      Check(isa<ConstantInt>(BU.Inputs[0]) &&
-                BU.Inputs[0]->getType()->isIntegerTy(32),
+      ++NumPtrauthBundles;
+      // The below checks are currently AArch64-specific, as it is currently
+      // the only target with PtrAuth support. Two forms are supported:
+      // * "ptrauth"(i32 <key>, i64 %discr)
+      // * "ptrauth"(i32 <key>, i64 %addr_modif, i64 <imm_modif>)
+      unsigned NumOperands = BU.Inputs.size();
+      Check(NumOperands == 2 || NumOperands == 3,
+            "Expected two or three ptrauth bundle operands", Call);
+      Check(IsConstantInt(BU.Inputs[0], 32),
             "Ptrauth bundle key operand must be an i32 constant", Call);
       Check(BU.Inputs[1]->getType()->isIntegerTy(64),
             "Ptrauth bundle discriminator operand must be an i64", Call);
+      if (NumOperands == 3)
+        Check(IsConstantInt(BU.Inputs[2], 64),
+              "Ptrauth bundle integer modifier must be an i64 constant", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;
       Check(BU.Inputs.size() == 1, "Expected exactly one kcfi bundle operand",
             Call);
-      Check(isa<ConstantInt>(BU.Inputs[0]) &&
-                BU.Inputs[0]->getType()->isIntegerTy(32),
+      Check(IsConstantInt(BU.Inputs[0], 32),
             "Kcfi bundle operand must be an i32 constant", Call);
     } else if (Tag == LLVMContext::OB_preallocated) {
       Check(!FoundPreallocatedBundle, "Multiple preallocated operand bundles",
@@ -4003,8 +4012,14 @@ void Verifier::visitCallBase(CallBase &Call) {
   }
 
   // Verify that callee and callsite agree on whether to use pointer auth.
-  Check(!(Call.getCalledFunction() && FoundPtrauthBundle),
+  Check(!(Call.getCalledFunction() && NumPtrauthBundles),
         "Direct call cannot have a ptrauth bundle", Call);
+  switch (Call.getIntrinsicID()) {
+  case Intrinsic::not_intrinsic:
+    Check(NumPtrauthBundles <= 1,
+          "Multiple ptrauth operand bundles on a function call", Call);
+    break;
+  }
 
   // Verify that each inlinable callsite of a debug-info-bearing function in a
   // debug-info-bearing function has a debug location attached to it. Failure to

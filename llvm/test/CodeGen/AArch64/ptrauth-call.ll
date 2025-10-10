@@ -514,6 +514,22 @@ define i32 @test_direct_call_addr_blend() #0 {
   ret i32 %tmp1
 }
 
+define i32 @test_direct_call_addr_blending_bundle() #0 {
+; DARWIN-LABEL: test_direct_call_addr_blending_bundle:
+; DARWIN-NEXT:   stp x29, x30, [sp, #-16]!
+; DARWIN-NEXT:   bl _f
+; DARWIN-NEXT:   ldp x29, x30, [sp], #16
+; DARWIN-NEXT:   ret
+;
+; ELF-LABEL: test_direct_call_addr_blending_bundle:
+; ELF-NEXT:   str x30, [sp, #-16]!
+; ELF-NEXT:   bl f
+; ELF-NEXT:   ldr x30, [sp], #16
+; ELF-NEXT:   ret
+  %tmp1 = call i32 ptrauth(ptr @f, i32 1, i64 42, ptr @f.ref.ib.42.addr)() [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f.ref.ib.42.addr to i64), i64 42) ]
+  ret i32 %tmp1
+}
+
 define i32 @test_direct_call_addr_gep_different_index_types() #0 {
 ; DARWIN-LABEL: test_direct_call_addr_gep_different_index_types:
 ; DARWIN-NEXT:   stp x29, x30, [sp, #-16]!

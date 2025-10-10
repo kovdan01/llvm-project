@@ -4353,11 +4353,8 @@ Instruction *InstCombinerImpl::foldPtrAuthConstantCallee(CallBase &Call) {
   if (!PAB)
     return nullptr;
 
-  auto *Key = cast<ConstantInt>(PAB->Inputs[0]);
-  Value *Discriminator = PAB->Inputs[1];
-
   // If the bundle doesn't match, this is probably going to fail to auth.
-  if (!CPA->isKnownCompatibleWith(Key, Discriminator, DL))
+  if (!CPA->isKnownCompatibleWith(PAB->Inputs, DL))
     return nullptr;
 
   // If the bundle matches the constant, proceed in making this a direct call.

@@ -352,10 +352,16 @@ static bool isZeroingInactiveLanes(SDValue Op) {
 }
 
 static std::tuple<SDValue, SDValue>
-extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
-  SDLoc DL(Disc);
+extractPtrauthBlendDiscriminators(SmallVector<SDValue> Operands, SelectionDAG *DAG) {
   SDValue AddrDisc;
   SDValue ConstDisc;
+
+  if (Operands.size() == 3)
+    return {Operands[2], Operands[1]};
+
+  // Stay fully compatible for now.
+  SDValue Disc = Operands[1];
+  SDLoc DL(Disc);
 
   // If this is a blend, remember the constant and address discriminators.
   // Otherwise, it's either a constant discriminator, or a non-blended
@@ -9971,20 +9977,19 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   }
 
   if (CLI.PAI) {
-    const uint64_t Key = CLI.PAI->Key;
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
+    // assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
+           // "Invalid auth call key");
 
     // Split the discriminator into address/integer components.
     SDValue AddrDisc, IntDisc;
     std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(CLI.PAI->Discriminator, &DAG);
+        extractPtrauthBlendDiscriminators(CLI.PAI->Operands, &DAG);
 
     if (Opc == AArch64ISD::CALL_RVMARKER)
       Opc = AArch64ISD::AUTH_CALL_RVMARKER;
     else
       Opc = IsTailCall ? AArch64ISD::AUTH_TC_RETURN : AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(Key, DL, MVT::i32));
+    Ops.push_back(CLI.PAI->Operands[0]);
     Ops.push_back(IntDisc);
     Ops.push_back(AddrDisc);
   }
@@ -10484,7 +10489,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
   // With ptrauth-calls, the tlv access thunk pointer is authenticated (IA, 0).
   if (DAG.getMachineFunction().getFunction().hasFnAttribute("ptrauth-calls")) {
     Opcode = AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i32));
+    Ops.push_back(DAG.getConstant(AArch64PACKey::IA, DL, MVT::i32));
     Ops.push_back(DAG.getTargetConstant(0, DL, MVT::i64)); // Integer Disc.
     Ops.push_back(DAG.getRegister(AArch64::NoRegister, MVT::i64)); // Addr Disc.
   }

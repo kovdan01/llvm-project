@@ -2130,6 +2130,48 @@ bool ConstantPtrAuth::hasSpecialAddressDiscriminator(uint64_t Value) const {
   return IntVal->getValue() == Value;
 }
 
+// For now, this method is to be called for three-operand bundles only!
+bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
+                                            const Value *AddrDiscriminator,
+                                            const Value *IntDisc,
+                                            const DataLayout &DL) const {
+
+  if (getKey() != Key)
+    return false;
+
+  // Three-operand bundle implies blend!
+  if (!hasAddressDiscriminator())
+    return false;
+
+  if (getDiscriminator() != IntDisc)
+    return false;
+
+  // FIXME: Copied from the original method:
+
+  // Discriminators are i64, so the provided addr disc may be a ptrtoint.
+  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDiscriminator))
+    AddrDiscriminator = Cast->getPointerOperand();
+
+  // Beyond that, we're only interested in compatible pointers.
+  if (getAddrDiscriminator()->getType() != AddrDiscriminator->getType())
+    return false;
+
+  // These are often the same constant GEP, making them trivially equivalent.
+  if (getAddrDiscriminator() == AddrDiscriminator)
+    return true;
+
+  // Finally, they may be equivalent base+offset expressions.
+  APInt Off1(DL.getIndexTypeSizeInBits(getAddrDiscriminator()->getType()), 0);
+  auto *Base1 = getAddrDiscriminator()->stripAndAccumulateConstantOffsets(
+      DL, Off1, /*AllowNonInbounds=*/true);
+
+  APInt Off2(DL.getIndexTypeSizeInBits(AddrDiscriminator->getType()), 0);
+  auto *Base2 = AddrDiscriminator->stripAndAccumulateConstantOffsets(
+      DL, Off2, /*AllowNonInbounds=*/true);
+
+  return Base1 == Base2 && Off1 == Off2;
+}
+
 bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
                                             const Value *Discriminator,
                                             const DataLayout &DL) const {
@@ -2189,6 +2231,15 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
 
   return Base1 == Base2 && Off1 == Off2;
 }
+
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
+                                            const DataLayout &DL) const {
+  if (BundleOperands.size() == 3)
+    return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1],
+                                 BundleOperands[2], DL);
+  return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1], DL);
+}
+
 
 //---- ConstantExpr::get() implementations.
 //

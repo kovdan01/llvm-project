@@ -9765,20 +9765,12 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   auto PAB = CB.getOperandBundle("ptrauth");
   const Value *CalleeV = CB.getCalledOperand();
 
-  // Gather the call ptrauth data from the operand bundle:
-  //   [ i32 <key>, i64 <discriminator> ]
-  const auto *Key = cast<ConstantInt>(PAB->Inputs[0]);
-  const Value *Discriminator = PAB->Inputs[1];
-
-  assert(Key->getType()->isIntegerTy(32) && "Invalid ptrauth key");
-  assert(Discriminator->getType()->isIntegerTy(64) &&
-         "Invalid ptrauth discriminator");
+  assert(!isa<IntrinsicInst>(CB));
 
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
   if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
-    if (CalleeCPA->isKnownCompatibleWith(Key, Discriminator,
-                                         DAG.getDataLayout()))
+    if (CalleeCPA->isKnownCompatibleWith(PAB->Inputs, DAG.getDataLayout()))
       return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
                          CB.isMustTailCall(), EHPadBB);
 
@@ -9786,8 +9778,10 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   assert(!isa<Function>(CalleeV) && "invalid direct ptrauth call");
 
   // Otherwise, do an authenticated indirect call.
-  TargetLowering::PtrAuthInfo PAI = {Key->getZExtValue(),
-                                     getValue(Discriminator)};
+
+  TargetLowering::PtrAuthInfo PAI;
+  for (const Value *V : PAB->Inputs)
+    PAI.Operands.push_back(getValue(V));
 
   LowerCallTo(CB, getValue(CalleeV), CB.isTailCall(), CB.isMustTailCall(),
               EHPadBB, &PAI);

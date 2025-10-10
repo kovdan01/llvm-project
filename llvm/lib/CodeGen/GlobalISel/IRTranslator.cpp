@@ -2750,19 +2750,18 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     // Functions should never be ptrauth-called directly.
     assert(!CB.getCalledFunction() && "invalid direct ptrauth call");
 
-    const Value *Key = Bundle->Inputs[0];
-    const Value *Discriminator = Bundle->Inputs[1];
+    assert(!isa<IntrinsicInst>(CB));
 
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(Key, Discriminator, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(Bundle->Inputs, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
-      Register DiscReg = getOrCreateVReg(*Discriminator);
-      PAI = CallLowering::PtrAuthInfo{cast<ConstantInt>(Key)->getZExtValue(),
-                                      DiscReg};
+      PAI = CallLowering::PtrAuthInfo();
+      for (const Value *V : Bundle->Inputs)
+        PAI->Operands.push_back(getOrCreateVReg(*V));
     }
   }
 

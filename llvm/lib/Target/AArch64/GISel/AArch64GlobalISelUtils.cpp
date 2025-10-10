@@ -97,8 +97,17 @@ bool AArch64GISelUtils::tryEmitBZero(MachineInstr &MI,
 }
 
 std::tuple<uint16_t, Register>
-AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register Disc,
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
                                                      MachineRegisterInfo &MRI) {
+  if (Operands.size() == 3) {
+    uint64_t ConstDiscVal = getIConstantVRegVal(Operands[2], MRI)->getZExtValue();
+    assert(isUInt<16>(ConstDiscVal));
+    return { ConstDiscVal, Operands[1] };
+  }
+
+  // Stay fully compatible for now.
+  Register Disc = Operands[1];
+
   Register AddrDisc = Disc;
   uint16_t ConstDisc = 0;
 

@@ -4711,8 +4711,7 @@ public:
   /// pointer-authenticating indirect calls.  It is equivalent to the "ptrauth"
   /// operand bundle found on the call instruction, if any.
   struct PtrAuthInfo {
-    uint64_t Key;
-    SDValue Discriminator;
+    SmallVector<SDValue> Operands;
   };
 
   /// This structure contains all information that is necessary for lowering
