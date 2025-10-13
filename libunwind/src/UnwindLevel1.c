@@ -99,7 +99,7 @@
 static _Unwind_Personality_Fn get_handler_function(unw_proc_info_t *frameInfo) {
   uintptr_t __unwind_ptrauth_restricted_intptr(ptrauth_key_function_pointer,
                                                0,
-                                               ptrauth_function_pointer_type_discriminator(_Unwind_Personality_Fn))
+                                               ptrauth_type_discriminator(_Unwind_Personality_Fn))
     reauthenticatedIntegerHandler = frameInfo->handler;
   _Unwind_Personality_Fn handler;
   memmove(&handler, (void *)&reauthenticatedIntegerHandler,
