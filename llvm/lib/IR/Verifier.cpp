@@ -3967,20 +3967,10 @@ void Verifier::visitCallBase(CallBase &Call) {
             "Expected exactly one cfguardtarget bundle operand", Call);
     } else if (Tag == LLVMContext::OB_ptrauth) {
       ++NumPtrauthBundles;
-      // The below checks are currently AArch64-specific, as it is currently
-      // the only target with PtrAuth support. Two forms are supported:
-      // * "ptrauth"(i32 <key>, i64 %discr)
-      // * "ptrauth"(i32 <key>, i64 %addr_modif, i64 <imm_modif>)
-      unsigned NumOperands = BU.Inputs.size();
-      Check(NumOperands == 2 || NumOperands == 3,
-            "Expected two or three ptrauth bundle operands", Call);
-      Check(IsConstantInt(BU.Inputs[0], 32),
-            "Ptrauth bundle key operand must be an i32 constant", Call);
-      Check(BU.Inputs[1]->getType()->isIntegerTy(64),
-            "Ptrauth bundle discriminator operand must be an i64", Call);
-      if (NumOperands == 3)
-        Check(IsConstantInt(BU.Inputs[2], 64),
-              "Ptrauth bundle integer modifier must be an i64 constant", Call);
+      Check(!BU.Inputs.empty(), "Expected non-empty ptrauth bundle", Call);
+      for (Value *V : BU.Inputs)
+        Check(V->getType()->isIntegerTy(32) || V->getType()->isIntegerTy(64),
+              "Ptrauth bundle must only contain i32 or i64 operands", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;
@@ -4018,6 +4008,10 @@ void Verifier::visitCallBase(CallBase &Call) {
   case Intrinsic::not_intrinsic:
     Check(NumPtrauthBundles <= 1,
           "Multiple ptrauth operand bundles on a function call", Call);
+    break;
+  default:
+    Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle on intrinsic call",
+          Call);
     break;
   }
 
