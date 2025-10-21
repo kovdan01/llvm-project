@@ -1079,9 +1079,6 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
       return IsIndirect ? getBLRCallOpcode(CallerF) : (unsigned)AArch64::BL;
 
     assert(IsIndirect && "Direct call should not be authenticated");
-    const unsigned Key = getIConstantVRegVal(PAI->Operands[0], MRI)->getZExtValue();
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
     return AArch64::BLRA;
   }
 
@@ -1167,8 +1164,6 @@ bool AArch64CallLowering::lowerTailCall(
   // Authenticated tail calls always take key/discriminator arguments.
   if (Opc == AArch64::AUTH_TCRETURN || Opc == AArch64::AUTH_TCRETURN_BTI) {
     const unsigned Key = getIConstantVRegVal(Info.PAI->Operands[0], MRI)->getZExtValue();
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
     MIB.addImm(Key);
 
     Register AddrDisc = 0;
@@ -1441,8 +1436,6 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
 
   if (Opc == AArch64::BLRA || Opc == AArch64::BLRA_RVMARKER) {
     const unsigned Key = getIConstantVRegVal(Info.PAI->Operands[0], MRI)->getZExtValue();
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth call key");
     MIB.addImm(Key);
 
     Register AddrDisc = 0;

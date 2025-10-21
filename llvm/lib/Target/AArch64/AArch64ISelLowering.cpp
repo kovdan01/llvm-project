@@ -9977,9 +9977,6 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   }
 
   if (CLI.PAI) {
-    // assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           // "Invalid auth call key");
-
     // Split the discriminator into address/integer components.
     SDValue AddrDisc, IntDisc;
     std::tie(IntDisc, AddrDisc) =

@@ -167,6 +167,116 @@ define i32 @test_tailcall_ib_var(ptr %arg0, ptr %arg1) #0 {
   ret i32 %tmp1
 }
 
+define i32 @test_call_da_0(ptr %arg0) #0 {
+; DARWIN-LABEL: test_call_da_0:
+; DARWIN-NEXT:    stp x29, x30, [sp, #-16]!
+; DARWIN-NEXT:    autdza x0
+; DARWIN-NEXT:    blr x0
+; DARWIN-NEXT:    ldp x29, x30, [sp], #16
+; DARWIN-NEXT:    ret
+;
+; ELF-LABEL: test_call_da_0:
+; ELF-NEXT:    str x30, [sp, #-16]!
+; ELF-NEXT:    autdza x0
+; ELF-NEXT:    blr x0
+; ELF-NEXT:    ldr x30, [sp], #16
+; ELF-NEXT:    ret
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 2, i64 0) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_call_db_0(ptr %arg0) #0 {
+; DARWIN-LABEL: test_call_db_0:
+; DARWIN-NEXT:    stp x29, x30, [sp, #-16]!
+; DARWIN-NEXT:    autdzb x0
+; DARWIN-NEXT:    blr x0
+; DARWIN-NEXT:    ldp x29, x30, [sp], #16
+; DARWIN-NEXT:    ret
+;
+; ELF-LABEL: test_call_db_0:
+; ELF-NEXT:    str x30, [sp, #-16]!
+; ELF-NEXT:    autdzb x0
+; ELF-NEXT:    blr x0
+; ELF-NEXT:    ldr x30, [sp], #16
+; ELF-NEXT:    ret
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 3, i64 0) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_call_da_imm(ptr %arg0) #0 {
+; DARWIN-LABEL: test_call_da_imm:
+; DARWIN-NEXT:    stp x29, x30, [sp, #-16]!
+; DARWIN-NEXT:    mov x17, #42
+; DARWIN-NEXT:    autda x0, x17
+; DARWIN-NEXT:    blr x0
+; DARWIN-NEXT:    ldp x29, x30, [sp], #16
+; DARWIN-NEXT:    ret
+;
+; ELF-LABEL: test_call_da_imm:
+; ELF-NEXT:    str x30, [sp, #-16]!
+; ELF-NEXT:    mov x17, #42
+; ELF-NEXT:    autda x0, x17
+; ELF-NEXT:    blr x0
+; ELF-NEXT:    ldr x30, [sp], #16
+; ELF-NEXT:    ret
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 2, i64 42) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_call_db_imm(ptr %arg0) #0 {
+; DARWIN-LABEL: test_call_db_imm:
+; DARWIN-NEXT:    stp x29, x30, [sp, #-16]!
+; DARWIN-NEXT:    mov x17, #42
+; DARWIN-NEXT:    autdb x0, x17
+; DARWIN-NEXT:    blr x0
+; DARWIN-NEXT:    ldp x29, x30, [sp], #16
+; DARWIN-NEXT:    ret
+;
+; ELF-LABEL: test_call_db_imm:
+; ELF-NEXT:    str x30, [sp, #-16]!
+; ELF-NEXT:    mov x17, #42
+; ELF-NEXT:    autdb x0, x17
+; ELF-NEXT:    blr x0
+; ELF-NEXT:    ldr x30, [sp], #16
+; ELF-NEXT:    ret
+  %tmp0 = call i32 %arg0() [ "ptrauth"(i32 3, i64 42) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_tailcall_da_0(ptr %arg0) #0 {
+; CHECK-LABEL: test_tailcall_da_0:
+; CHECK-NEXT:    autdza x0
+; CHECK-NEXT:    br x0
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 2, i64 0) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_tailcall_db_0(ptr %arg0) #0 {
+; CHECK-LABEL: test_tailcall_db_0:
+; CHECK-NEXT:    autdzb x0
+; CHECK-NEXT:    br x0
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 3, i64 0) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_tailcall_da_imm(ptr %arg0) #0 {
+; CHECK-LABEL: test_tailcall_da_imm:
+; CHECK-NEXT:    mov x16, #42
+; CHECK-NEXT:    autda x0, x16
+; CHECK-NEXT:    br x0
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 2, i64 42) ]
+  ret i32 %tmp0
+}
+
+define i32 @test_tailcall_db_imm(ptr %arg0) #0 {
+; CHECK-LABEL: test_tailcall_db_imm:
+; CHECK-NEXT:    mov x16, #42
+; CHECK-NEXT:    autdb x0, x16
+; CHECK-NEXT:    br x0
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i32 3, i64 42) ]
+  ret i32 %tmp0
+}
+
 define void @test_tailcall_omit_mov_x16_x16(ptr %objptr) #0 {
 ; CHECK-LABEL: test_tailcall_omit_mov_x16_x16:
 ; DARWIN-NEXT:    ldr     x16, [x0]

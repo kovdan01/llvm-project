@@ -4301,11 +4301,6 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
     if (II->getOperand(4) != PtrAuthBundleOrNone->Inputs[1])
       return nullptr;
 
-    // Resign input (auth) key should also match: we can't change the key on
-    // the new call we're generating, because we don't know what keys are valid.
-    if (II->getOperand(1) != PtrAuthBundleOrNone->Inputs[0])
-      return nullptr;
-
     Value *NewBundleOps[] = {II->getOperand(1), II->getOperand(2)};
     NewBundles.emplace_back("ptrauth", NewBundleOps);
     NewCallee = II->getOperand(0);

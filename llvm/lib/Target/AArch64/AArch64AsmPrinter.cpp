@@ -2247,8 +2247,6 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
   unsigned BrTarget = MI->getOperand(0).getReg();
 
   auto Key = (AArch64PACKey::ID)MI->getOperand(1).getImm();
-  assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-         "Invalid auth call key");
 
   uint64_t Disc = MI->getOperand(2).getImm();
   assert(isUInt<16>(Disc));
@@ -2281,6 +2279,23 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
   Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17,
                                               AddrDiscIsImplicitDef);
   bool IsZeroDisc = DiscReg == AArch64::XZR;
+
+  if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+    // Have to emit separate auth and branch instructions for D-key.
+    MCInst AUTInst;
+    AUTInst.setOpcode(getAUTOpcodeForKey(Key, IsZeroDisc));
+    AUTInst.addOperand(MCOperand::createReg(BrTarget));
+    AUTInst.addOperand(MCOperand::createReg(BrTarget));
+    if (!IsZeroDisc)
+      AUTInst.addOperand(MCOperand::createReg(DiscReg));
+    EmitToStreamer(AUTInst);
+
+    MCInst BranchInst;
+    BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
+    BranchInst.addOperand(MCOperand::createReg(BrTarget));
+    EmitToStreamer(BranchInst);
+    return;
+  }
 
   unsigned Opc;
   if (IsCall) {
@@ -3005,9 +3020,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   case AArch64::AUTH_TCRETURN:
   case AArch64::AUTH_TCRETURN_BTI: {
     Register Callee = MI->getOperand(0).getReg();
-    const uint64_t Key = MI->getOperand(2).getImm();
-    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
-           "Invalid auth key for tail-call return");
+    const auto Key = (AArch64PACKey::ID)MI->getOperand(2).getImm();
 
     const uint64_t Disc = MI->getOperand(3).getImm();
     assert(isUInt<16>(Disc) && "Integer discriminator is too wide");
@@ -3032,6 +3045,24 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
                                                 AddrDiscIsImplicitDef);
 
     const bool IsZero = DiscReg == AArch64::XZR;
+
+    if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+      // Have to emit separate auth and branch instructions for D-key.
+      MCInst AUTInst;
+      AUTInst.setOpcode(getAUTOpcodeForKey(Key, IsZero));
+      AUTInst.addOperand(MCOperand::createReg(Callee));
+      AUTInst.addOperand(MCOperand::createReg(Callee));
+      if (!IsZero)
+        AUTInst.addOperand(MCOperand::createReg(DiscReg));
+      EmitToStreamer(AUTInst);
+
+      MCInst BranchInst;
+      BranchInst.setOpcode(AArch64::BR);
+      BranchInst.addOperand(MCOperand::createReg(Callee));
+      EmitToStreamer(BranchInst);
+      return;
+    }
+
     const unsigned Opcodes[2][2] = {{AArch64::BRAA, AArch64::BRAAZ},
                                     {AArch64::BRAB, AArch64::BRABZ}};
 

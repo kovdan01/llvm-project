@@ -124,10 +124,7 @@ define i32 @test_ptrauth_call_resign_mismatch_blend(ptr %pp) {
 
 define i32 @test_ptrauth_call_resign_changing_call_key(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_call_resign_changing_call_key(
-; CHECK-NEXT:    [[V0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[V1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[V0]], i32 2, i64 1234, i32 1, i64 5678)
-; CHECK-NEXT:    [[V2:%.*]] = inttoptr i64 [[V1]] to ptr
-; CHECK-NEXT:    [[V3:%.*]] = call i32 [[V2]]() [ "ptrauth"(i32 1, i64 5678) ]
+; CHECK-NEXT:    [[V3:%.*]] = call i32 [[P:%.*]]() [ "ptrauth"(i32 2, i64 1234) ]
 ; CHECK-NEXT:    ret i32 [[V3]]
 ;
   %v0 = ptrtoint ptr %p to i64
