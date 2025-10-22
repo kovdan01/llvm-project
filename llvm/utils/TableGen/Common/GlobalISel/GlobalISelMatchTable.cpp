@@ -1474,6 +1474,9 @@ Error OperandMatcher::addTypeCheckPredicate(const TypeSetByHwMode &VTy,
     return Error::success();
   }
 
+  if (VTy.getMachineValueType() == MVT::Untyped)
+    return Error::success();
+
   auto OpTyOrNone = MVTToLLT(VTy.getMachineValueType().SimpleTy);
   if (!OpTyOrNone)
     return failUnsupported("unsupported type");

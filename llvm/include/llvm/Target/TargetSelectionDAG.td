@@ -382,10 +382,10 @@ def imm        : SDNode<"ISD::Constant"  , SDTIntLeaf , [], "ConstantSDNode">;
 //            ^
 //        llvm-tblgen: /data/ast/llvm-project/llvm/utils/TableGen/Common/CodeGenDAGPatterns.h:210: MVT llvm::TypeSetByHwMode::getMachineValueType() const: Assertion `isMachineValueType()' failed.
 def SDTPtrAuthBundle : SDTypeProfile<1, -1, [
-  SDTCisVT<0, OtherVT>
+  SDTCisVT<0, untyped>
 ]>;
 def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
-  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, OtherVT>
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>
 ]>;
 
 def ptrauth_bundle : SDNode<"ISD::PtrAuthBundle", SDTPtrAuthBundle, []>;

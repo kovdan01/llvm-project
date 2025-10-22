@@ -2203,9 +2203,28 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   if (translateSimpleIntrinsic(CI, ID, MIRBuilder))
     return true;
 
+  auto TranslatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = CI.getOperandBundleAt(Index);
+    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+    Register Res = MRI->createGenericVirtualRegister(LLT::token());
+    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
+    Builder.addDef(Res);
+    for (Value *Operand : Bundle.Inputs)
+      Builder.addUse(getOrCreateVReg(*Operand));
+    return Res;
+  };
+
   switch (ID) {
   default:
     break;
+  case Intrinsic::ptrauth_strip: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register Bundle = TranslatePtrAuthBundle(0);
+
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_STRIP, {Dst}, {V, Bundle});
+    return true;
+  }
   case Intrinsic::lifetime_start:
   case Intrinsic::lifetime_end: {
     // No stack colouring in O0, discard region information.
