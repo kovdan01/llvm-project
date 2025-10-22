@@ -4002,12 +4002,15 @@ void Verifier::visitCallBase(CallBase &Call) {
   }
 
   // Verify that callee and callsite agree on whether to use pointer auth.
-  Check(!(Call.getCalledFunction() && NumPtrauthBundles),
-        "Direct call cannot have a ptrauth bundle", Call);
   switch (Call.getIntrinsicID()) {
   case Intrinsic::not_intrinsic:
+    Check(!(Call.getCalledFunction() && NumPtrauthBundles),
+          "Direct call cannot have a ptrauth bundle", Call);
     Check(NumPtrauthBundles <= 1,
           "Multiple ptrauth operand bundles on a function call", Call);
+    break;
+  case Intrinsic::ptrauth_strip:
+    Check(NumPtrauthBundles == 1, "Expected exactly one ptrauth bundle", Call);
     break;
   default:
     Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle on intrinsic call",

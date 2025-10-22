@@ -372,6 +372,25 @@ def node;
 def srcvalue;
 
 def imm        : SDNode<"ISD::Constant"  , SDTIntLeaf , [], "ConstantSDNode">;
+
+// FIXME: Moving this block of ptrauth definitions above `def imm : ...`
+//        makes many tablegen tests fail. For example:
+//
+//        $ ./bin/llvm-tblgen -gen-dag-isel -I ../llvm/include ../llvm/test/TableGen/DAGDefaultOps.td -o ./test/TableGen/Output/DAGDefaultOps.td.tmp
+//        OptionalIntOperand: ../llvm/test/TableGen/DAGDefaultOps.td:28:5: error: In OptionalIntOperand: Cannot use 'ptrauth_bundle' in an output pattern!
+//        def OptionalIntOperand: OperandWithDefaultOps<i32, (ops (i32 0))>;
+//            ^
+//        llvm-tblgen: /data/ast/llvm-project/llvm/utils/TableGen/Common/CodeGenDAGPatterns.h:210: MVT llvm::TypeSetByHwMode::getMachineValueType() const: Assertion `isMachineValueType()' failed.
+def SDTPtrAuthBundle : SDTypeProfile<1, -1, [
+  SDTCisVT<0, OtherVT>
+]>;
+def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, OtherVT>
+]>;
+
+def ptrauth_bundle : SDNode<"ISD::PtrAuthBundle", SDTPtrAuthBundle, []>;
+def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip", SDTPtrAuthOneSchema, []>;
+
 def timm       : SDNode<"ISD::TargetConstant",SDTIntLeaf, [], "ConstantSDNode">;
 def fpimm      : SDNode<"ISD::ConstantFP", SDTFPLeaf  , [], "ConstantFPSDNode">;
 def vt         : SDNode<"ISD::VALUETYPE" , SDTOther   , [], "VTSDNode">;

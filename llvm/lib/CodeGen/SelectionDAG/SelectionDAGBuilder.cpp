@@ -6556,11 +6556,26 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
   if (auto *FPOp = dyn_cast<FPMathOperator>(&I))
     Flags.copyFMF(*FPOp);
 
+  auto CreatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = I.getOperandBundleAt(Index);
+    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+    SmallVector<SDValue> Ops;
+    for (Value *Operand : Bundle.Inputs)
+      Ops.push_back(getValue(Operand));
+    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+  };
+
   switch (Intrinsic) {
   default:
     // By default, turn this into a target intrinsic node.
     visitTargetIntrinsic(I, Intrinsic);
     return;
+  case Intrinsic::ptrauth_strip: {
+    setValue(&I, DAG.getNode(ISD::PtrAuthStrip, sdl, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0)));
+    return;
+  }
   case Intrinsic::vscale: {
     EVT VT = TLI.getValueType(DAG.getDataLayout(), I.getType());
     setValue(&I, DAG.getVScale(sdl, VT, APInt(VT.getSizeInBits(), 1)));

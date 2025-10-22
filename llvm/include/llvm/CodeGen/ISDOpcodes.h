@@ -99,6 +99,9 @@ enum NodeType {
   /// a constant global address signed using address-diversification, in code.
   PtrAuthGlobalAddress,
 
+  PtrAuthBundle,
+  PtrAuthStrip,
+
   /// The address of the GOT
   GLOBAL_OFFSET_TABLE,
 
