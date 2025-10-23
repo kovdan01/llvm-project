@@ -101,7 +101,7 @@ L *exact_multi(E *e) {
   // CHECK:   [[ADJUSTED_THIS:%.*]] = getelementptr inbounds i8, ptr %e, i64 %offset.to.top
   // CHECK:   [[ADJUSTED_THIS_VTABLE:%.*]] = load ptr, ptr [[ADJUSTED_THIS]]
   // CHECK:   [[ADJUSTED_THIS_VTABLEI:%.*]] = ptrtoint ptr [[ADJUSTED_THIS_VTABLE]] to i64
-  // CHECK:   [[ADJUSTED_THIS_STRIPPED_VTABLEI:%.*]] = tail call i64 @llvm.ptrauth.strip(i64 [[ADJUSTED_THIS_VTABLEI]], i32 0)
+  // CHECK:   [[ADJUSTED_THIS_STRIPPED_VTABLEI:%.*]] = tail call i64 @llvm.ptrauth.strip(i64 [[ADJUSTED_THIS_VTABLEI]]) [ "ptrauth"(i64 0) ]
   // CHECK:   [[SUCCESS:%.*]] = icmp eq i64 [[ADJUSTED_THIS_STRIPPED_VTABLEI]], ptrtoint (ptr getelementptr inbounds nuw inrange(-24, 16) (i8, ptr @_ZTV1L, i64 24) to i64)
   // CHECK:   br i1 [[SUCCESS]], label %dynamic_cast.postauth.success, label %dynamic_cast.postauth.complete
   // CHECK: dynamic_cast.postauth.success:

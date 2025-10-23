@@ -5751,6 +5751,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_ptrauth_strip: {
     // Emit the arguments.
     SmallVector<llvm::Value *, 5> Args;
+    SmallVector<llvm::OperandBundleDef> OBs;
     for (auto argExpr : E->arguments())
       Args.push_back(EmitScalarExpr(argExpr));
 
@@ -5777,7 +5778,12 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       break;
 
     case Builtin::BI__builtin_ptrauth_blend_discriminator:
+      break;
+
     case Builtin::BI__builtin_ptrauth_strip:
+      // FIXME i32 -> i64
+      OBs.emplace_back("ptrauth", ArrayRef({Args[1]}));
+      Args.pop_back();
       break;
     }
 
@@ -5800,7 +5806,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       llvm_unreachable("bad ptrauth intrinsic");
     }();
     auto Intrinsic = CGM.getIntrinsic(IntrinsicID);
-    llvm::Value *Result = EmitRuntimeCall(Intrinsic, Args);
+    llvm::Value *Result = EmitPtrAuthRuntimeCall(Intrinsic, Args, OBs);
 
     if (BuiltinID != Builtin::BI__builtin_ptrauth_sign_generic_data &&
         BuiltinID != Builtin::BI__builtin_ptrauth_blend_discriminator &&

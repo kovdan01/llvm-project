@@ -3337,24 +3337,24 @@ CodeGenFunction::EmitPointerAuthSign(const CGPointerAuthInfo &PointerAuth,
                                llvm::Intrinsic::ptrauth_sign);
 }
 
-static llvm::Value *EmitStrip(CodeGenFunction &CGF,
-                              const CGPointerAuthInfo &PointerAuth,
-                              llvm::Value *Pointer) {
-  auto StripIntrinsic = CGF.CGM.getIntrinsic(llvm::Intrinsic::ptrauth_strip);
+llvm::Value *CodeGenFunction::emitStrip(const CGPointerAuthInfo &PointerAuth,
+                                        llvm::Value *Pointer) {
+  auto StripIntrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_strip);
 
-  auto Key = CGF.Builder.getInt32(PointerAuth.getKey());
+  auto Key = Builder.getInt64(PointerAuth.getKey());
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
-  Pointer = CGF.EmitRuntimeCall(
-      StripIntrinsic, {CGF.Builder.CreatePtrToInt(Pointer, CGF.IntPtrTy), Key});
-  return CGF.Builder.CreateIntToPtr(Pointer, OrigType);
+  llvm::OperandBundleDef OB("ptrauth", ArrayRef<llvm::Value *>({Key}));
+  Pointer = EmitPtrAuthRuntimeCall(
+      StripIntrinsic, {Builder.CreatePtrToInt(Pointer, IntPtrTy)}, {OB});
+  return Builder.CreateIntToPtr(Pointer, OrigType);
 }
 
 llvm::Value *
 CodeGenFunction::EmitPointerAuthAuth(const CGPointerAuthInfo &PointerAuth,
                                      llvm::Value *Pointer) {
   if (PointerAuth.shouldStrip()) {
-    return EmitStrip(*this, PointerAuth, Pointer);
+    return emitStrip(PointerAuth, Pointer);
   }
   if (!PointerAuth.shouldAuth()) {
     return Pointer;

@@ -5048,6 +5048,21 @@ llvm::CallInst *CodeGenFunction::EmitRuntimeCall(llvm::FunctionCallee callee,
   return call;
 }
 
+llvm::CallInst *CodeGenFunction::EmitPtrAuthRuntimeCall(llvm::FunctionCallee callee,
+                                        ArrayRef<llvm::Value *> args,
+                                        ArrayRef<llvm::OperandBundleDef> bundles,
+                                        const Twine &name) {
+  llvm::CallInst *call = EmitRuntimeCall(callee, args, name);
+
+  SmallVector<llvm::OperandBundleDef, 3> allBundles;
+  call->getOperandBundlesAsDefs(allBundles);
+  llvm::append_range(allBundles, bundles);
+
+  llvm::CallInst *newCall = Builder.Insert(llvm::CallInst::Create(call, allBundles));
+  call->eraseFromParent();
+  return newCall;
+}
+
 /// Emits a call or invoke to the given noreturn runtime function.
 void CodeGenFunction::EmitNoreturnRuntimeCallOrInvoke(
     llvm::FunctionCallee callee, ArrayRef<llvm::Value *> args) {

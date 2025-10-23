@@ -25,7 +25,7 @@ void test_auth() {
 void test_strip() {
   // CHECK:      [[PTR:%.*]] = load ptr, ptr @fnptr,
   // CHECK-NEXT: [[T0:%.*]] = ptrtoint ptr [[PTR]] to i64
-  // CHECK-NEXT: [[T1:%.*]] = call i64 @llvm.ptrauth.strip(i64 [[T0]], i32 0)
+  // CHECK-NEXT: [[T1:%.*]] = call i64 @llvm.ptrauth.strip(i64 [[T0]]) [ "ptrauth"(i32 0) ]
   // CHECK-NEXT: [[RESULT:%.*]] = inttoptr  i64 [[T1]] to ptr
   // CHECK-NEXT: store ptr [[RESULT]], ptr @fnptr,
   fnptr = __builtin_ptrauth_strip(fnptr, 0);
