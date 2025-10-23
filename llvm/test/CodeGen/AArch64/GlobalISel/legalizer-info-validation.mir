@@ -99,6 +99,14 @@
 # DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
 #
+# DEBUG-NEXT: G_PTRAUTH_BUNDLE (opcode {{[0-9]+}}): 1 type index, 1 imm index
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
+# DEBUG-NEXT: G_PTRAUTH_STRIP (opcode {{[0-9]+}}): 1 type index, 1 imm index
+# DEBUG-NEXT: .. type index coverage check SKIPPED: user-defined predicate detected
+# DEBUG-NEXT: .. imm index coverage check SKIPPED: user-defined predicate detected
+#
 # DEBUG-NEXT: G_CONSTANT_POOL (opcode {{[0-9]+}}): 1 type index, 0 imm indices
 # DEBUG-NEXT: .. type index coverage check SKIPPED: no rules defined
 # DEBUG-NEXT: .. imm index coverage check SKIPPED: no rules defined
