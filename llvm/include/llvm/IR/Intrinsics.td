@@ -2824,15 +2824,12 @@ def int_vector_partial_reduce_fadd : DefaultAttrsIntrinsic<[LLVMMatchType<0>],
 // passed in that order.
 // Returns the first argument, with some known bits replaced with a signature.
 def int_ptrauth_sign :
-  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty, llvm_i32_ty, llvm_i64_ty],
-                        [IntrNoMem, ImmArg<ArgIndex<1>>]>;
+  DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer, using the specified key and discriminator.
 // Returns the first argument, with the signature bits removed.
 // The signature must be valid.
-def int_ptrauth_auth : Intrinsic<[llvm_i64_ty],
-                                 [llvm_i64_ty, llvm_i32_ty, llvm_i64_ty],
-                                 [IntrNoMem,ImmArg<ArgIndex<1>>]>;
+def int_ptrauth_auth : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer and resign it.
 // The second (key) and third (discriminator) arguments specify the signing
@@ -2841,11 +2838,7 @@ def int_ptrauth_auth : Intrinsic<[llvm_i64_ty],
 // The signature must be valid.
 // This is a combined form of @llvm.ptrauth.sign and @llvm.ptrauth.auth, with
 // an additional integrity guarantee on the intermediate value.
-def int_ptrauth_resign : Intrinsic<[llvm_i64_ty],
-                                   [llvm_i64_ty, llvm_i32_ty, llvm_i64_ty,
-                                    llvm_i32_ty, llvm_i64_ty],
-                                   [IntrNoMem, ImmArg<ArgIndex<1>>,
-                                    ImmArg<ArgIndex<3>>]>;
+def int_ptrauth_resign : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Strip the embedded signature out of a signed pointer.
 // The second argument specifies the key.

@@ -321,18 +321,19 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
   auto *OrigType = Value->getType();
   Value = Builder.CreatePtrToInt(Value, IntPtrTy);
 
-  auto *CurKey = Builder.getInt32(CurAuth.getKey());
-  auto *NewKey = Builder.getInt32(NewAuth.getKey());
+  llvm::Value *CurKey = Builder.getInt64(CurAuth.getKey());
+  llvm::Value *NewKey = Builder.getInt64(NewAuth.getKey());
 
   llvm::Value *CurDiscriminator = getDiscriminatorOrZero(CurAuth, Builder);
   llvm::Value *NewDiscriminator = getDiscriminatorOrZero(NewAuth, Builder);
 
-  // call i64 @llvm.ptrauth.resign(i64 %pointer,
-  //                               i32 %curKey, i64 %curDiscriminator,
-  //                               i32 %newKey, i64 %newDiscriminator)
+  llvm::OperandBundleDef CurSchema("ptrauth", ArrayRef({CurKey, CurDiscriminator}));
+  llvm::OperandBundleDef NewSchema("ptrauth", ArrayRef({NewKey, NewDiscriminator}));
+
+  // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(i64 %curKey, i64 %curDiscriminator),
+  //                                               "ptrauth"(i64 %newKey, i64 %newDiscriminator)]
   auto *Intrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign);
-  Value = EmitRuntimeCall(
-      Intrinsic, {Value, CurKey, CurDiscriminator, NewKey, NewDiscriminator});
+  Value = EmitPtrAuthRuntimeCall(Intrinsic, {Value}, {CurSchema, NewSchema});
 
   // Convert back to the original type.
   Value = Builder.CreateIntToPtr(Value, OrigType);

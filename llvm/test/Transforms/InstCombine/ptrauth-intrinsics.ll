@@ -7,8 +7,8 @@ define i64 @test_ptrauth_nop(ptr %p) {
 ; CHECK-NEXT:    ret i64 [[TMP0]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0, i32 1, i64 1234)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed, i32 1, i64 1234)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234) ]
   ret i64 %authed
 }
 
@@ -19,7 +19,7 @@ define i64 @test_ptrauth_nop_constant() {
 ; CHECK-LABEL: @test_ptrauth_nop_constant(
 ; CHECK-NEXT:    ret i64 ptrtoint (ptr @foo to i64)
 ;
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64), i32 1, i64 1234)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 1, i64 1234) ]
   ret i64 %authed
 }
 
@@ -29,124 +29,124 @@ define i64 @test_ptrauth_nop_constant_addrdisc() {
 ;
   %addr = ptrtoint ptr @foo to i64
   %blended = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64), i32 1, i64 %blended)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64)) [ "ptrauth"(i64 1, i64 %blended) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_mismatch(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_mismatch(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]], i32 1, i64 1234)
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]], i32 1, i64 10)
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 1, i64 10) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0, i32 1, i64 1234)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed, i32 1, i64 10)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 10) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_mismatch_keys(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_nop_mismatch_keys(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]], i32 0, i64 1234)
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]], i32 1, i64 1234)
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 0, i64 1234) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 1, i64 1234) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0, i32 0, i64 1234)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed, i32 1, i64 1234)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 0, i64 1234) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_sign_resign(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_sign_resign(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]], i32 0, i64 42)
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 0, i64 42) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0, i32 1, i64 1234)
-  %authed = call i64 @llvm.ptrauth.resign(i64 %signed, i32 1, i64 1234, i32 0, i64 42)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234) ]
+  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 42) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_resign_resign(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_resign_resign(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]], i32 1, i64 1234, i32 1, i64 3141)
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 1, i64 3141) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0, i32 1, i64 1234, i32 0, i64 42)
-  %authed = call i64 @llvm.ptrauth.resign(i64 %signed, i32 0, i64 42, i32 1, i64 3141)
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 42) ]
+  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 0, i64 42), "ptrauth"(i64 1, i64 3141) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_resign_auth(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_resign_auth(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP0]], i32 1, i64 1234)
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0, i32 1, i64 1234, i32 0, i64 42)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed, i32 0, i64 42)
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 42) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_resign_auth_mismatch(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_resign_auth_mismatch(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]], i32 1, i64 1234, i32 0, i64 10)
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]], i32 0, i64 42)
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 10) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 0, i64 42) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0, i32 1, i64 1234, i32 0, i64 10)
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed, i32 0, i64 42)
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 10) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_constant_mismatch() {
 ; CHECK-LABEL: @test_ptrauth_nop_constant_mismatch(
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234) to i64), i32 1, i64 12)
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 1, i64 12) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64), i32 1, i64 12)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 1, i64 12) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_constant_mismatch_key() {
 ; CHECK-LABEL: @test_ptrauth_nop_constant_mismatch_key(
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234) to i64), i32 0, i64 1234)
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 0, i64 1234) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64), i32 0, i64 1234)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 0, i64 1234) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_constant_addrdisc_mismatch() {
 ; CHECK-LABEL: @test_ptrauth_nop_constant_addrdisc_mismatch(
 ; CHECK-NEXT:    [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @foo to i64), i64 12)
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234, ptr @foo) to i64), i32 1, i64 [[BLENDED]])
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234, ptr @foo) to i64)) [ "ptrauth"(i64 1, i64 [[BLENDED]]) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %addr = ptrtoint ptr @foo to i64
   %blended = call i64 @llvm.ptrauth.blend(i64 %addr, i64 12)
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64), i32 1, i64 %blended)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64)) [ "ptrauth"(i64 1, i64 %blended) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_nop_constant_addrdisc_mismatch2() {
 ; CHECK-LABEL: @test_ptrauth_nop_constant_addrdisc_mismatch2(
 ; CHECK-NEXT:    [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @bar to i64), i64 1234)
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234, ptr @foo) to i64), i32 1, i64 [[BLENDED]])
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 ptrtoint (ptr ptrauth (ptr @foo, i32 1, i64 1234, ptr @foo) to i64)) [ "ptrauth"(i64 1, i64 [[BLENDED]]) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %addr = ptrtoint ptr @bar to i64
   %blended = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
-  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64), i32 1, i64 %blended)
+  %authed = call i64 @llvm.ptrauth.auth(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234, ptr @foo) to i64)) [ "ptrauth"(i64 1, i64 %blended) ]
   ret i64 %authed
 }
 
@@ -156,11 +156,6 @@ define i64 @test_ptrauth_resign_ptrauth_constant(ptr %p) {
 ;
 
   %tmp0 = ptrtoint ptr %p to i64
-  %authed = call i64 @llvm.ptrauth.resign(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64), i32 1, i64 1234, i32 0, i64 42)
+  %authed = call i64 @llvm.ptrauth.resign(i64 ptrtoint(ptr ptrauth(ptr @foo, i32 1, i64 1234) to i64)) [ "ptrauth"(i64 1, i64 1234), "ptrauth"(i64 0, i64 42) ]
   ret i64 %authed
 }
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.sign(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)
-declare i64 @llvm.ptrauth.blend(i64, i64)

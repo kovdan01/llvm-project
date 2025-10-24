@@ -1163,14 +1163,10 @@ bool AArch64CallLowering::lowerTailCall(
 
   // Authenticated tail calls always take key/discriminator arguments.
   if (Opc == AArch64::AUTH_TCRETURN || Opc == AArch64::AUTH_TCRETURN_BTI) {
-    const unsigned Key = getIConstantVRegVal(Info.PAI->Operands[0], MRI)->getZExtValue();
-    MIB.addImm(Key);
-
-    Register AddrDisc = 0;
-    uint16_t IntDisc = 0;
-    std::tie(IntDisc, AddrDisc) =
+    auto [Key, IntDisc, AddrDisc] =
         extractPtrauthBlendDiscriminators(Info.PAI->Operands, MRI);
 
+    MIB.addImm(Key);
     MIB.addImm(IntDisc);
     MIB.addUse(AddrDisc);
     if (AddrDisc != AArch64::NoRegister) {
@@ -1435,14 +1431,9 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   Mask = getMaskForArgs(OutArgs, Info, *TRI, MF);
 
   if (Opc == AArch64::BLRA || Opc == AArch64::BLRA_RVMARKER) {
-    const unsigned Key = getIConstantVRegVal(Info.PAI->Operands[0], MRI)->getZExtValue();
-    MIB.addImm(Key);
-
-    Register AddrDisc = 0;
-    uint16_t IntDisc = 0;
-    std::tie(IntDisc, AddrDisc) =
+    auto [Key, IntDisc, AddrDisc] =
         extractPtrauthBlendDiscriminators(Info.PAI->Operands, MRI);
-
+    MIB.addImm(Key);
     MIB.addImm(IntDisc);
     MIB.addUse(AddrDisc);
     if (AddrDisc != AArch64::NoRegister) {

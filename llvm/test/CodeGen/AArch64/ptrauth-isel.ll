@@ -45,7 +45,7 @@ define i64 @small_imm_disc_optimized(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 42)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
   ret i64 %signed
 }
 
@@ -74,7 +74,7 @@ define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 42)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
   ret i64 %signed
 }
 
@@ -101,7 +101,7 @@ define i64 @large_imm_disc_wreg(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 12345678)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 12345678) ]
   ret i64 %signed
 }
 
@@ -126,7 +126,7 @@ define i64 @large_imm_disc_xreg(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 123456789012345)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 123456789012345) ]
   ret i64 %signed
 }
 
@@ -161,7 +161,7 @@ define i64 @blended_disc_non_optimized(i64 %addr, i64 %addrdisc) noinline optnon
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
   %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }
 
@@ -194,7 +194,7 @@ define i64 @blend_and_sign_same_bb(i64 %addr) {
 entry:
   %addrdisc = load i64, ptr @discvar
   %disc = call i64 @llvm.ptrauth.blend(i64 %addrdisc, i64 42)
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }
 
@@ -264,6 +264,6 @@ next:
   br label %exit
 
 exit:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr, i32 2, i64 %disc)
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %disc) ]
   ret i64 %signed
 }

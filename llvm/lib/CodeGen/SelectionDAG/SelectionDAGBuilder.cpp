@@ -6570,6 +6570,24 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     // By default, turn this into a target intrinsic node.
     visitTargetIntrinsic(I, Intrinsic);
     return;
+  case Intrinsic::ptrauth_auth: {
+    setValue(&I, DAG.getNode(ISD::PtrAuthAuth, sdl, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0)));
+    return;
+  }
+  case Intrinsic::ptrauth_sign: {
+    setValue(&I, DAG.getNode(ISD::PtrAuthSign, sdl, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0)));
+    return;
+  }
+  case Intrinsic::ptrauth_resign: {
+    setValue(&I, DAG.getNode(ISD::PtrAuthResign, sdl, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0), CreatePtrAuthBundle(1)));
+    return;
+  }
   case Intrinsic::ptrauth_strip: {
     setValue(&I, DAG.getNode(ISD::PtrAuthStrip, sdl, MVT::i64,
                              getValue(I.getArgOperand(0)),

@@ -56,7 +56,7 @@ bool tryEmitBZero(MachineInstr &MI, MachineIRBuilder &MIRBuilder, bool MinSize);
 /// Analyze a ptrauth discriminator value to try to find the constant integer
 /// and address parts, cracking a ptrauth_blend intrinsic if there is one.
 /// \returns integer/address disc. parts, with NoRegister if no address disc.
-std::tuple<uint16_t, Register>
+std::tuple<uint64_t, uint64_t, Register>
 extractPtrauthBlendDiscriminators(SmallVector<Register> Operands, MachineRegisterInfo &MRI);
 
 /// Find the AArch64 condition codes necessary to represent \p P for a scalar

@@ -18,7 +18,7 @@ define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autia x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1) ]
   ret i64 %tmp
 }
 
@@ -34,7 +34,7 @@ define i64 @test_auth_ia_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autiza x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 0)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 0) ]
   ret i64 %tmp
 }
 
@@ -50,7 +50,7 @@ define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autib x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 %arg1)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1) ]
   ret i64 %tmp
 }
 
@@ -66,7 +66,7 @@ define i64 @test_auth_ib_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autizb x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 0)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 1, i64 0) ]
   ret i64 %tmp
 }
 
@@ -82,7 +82,7 @@ define i64 @test_auth_da(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autda x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %arg1)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1) ]
   ret i64 %tmp
 }
 
@@ -98,7 +98,7 @@ define i64 @test_auth_da_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdza x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 0)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 0) ]
   ret i64 %tmp
 }
 
@@ -114,7 +114,7 @@ define i64 @test_auth_db(i64 %arg, i64 %arg1) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdb x0, x1
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 %arg1)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 3, i64 %arg1) ]
   ret i64 %tmp
 }
 
@@ -130,7 +130,7 @@ define i64 @test_auth_db_zero(i64 %arg) {
 ; ELF:       // %bb.0:
 ; ELF-NEXT:    autdzb x0
 ; ELF-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 0)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -160,7 +160,7 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 %arg1, i32 0, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -188,7 +188,7 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 1, i64 %arg1, i32 0, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 1, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -216,7 +216,7 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 0, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -244,7 +244,7 @@ define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacia x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 0, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 %arg1), "ptrauth"(i64 0, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -272,7 +272,7 @@ define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacib x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 1, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 %arg1), "ptrauth"(i64 1, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -300,7 +300,7 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacda x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 2, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 %arg1), "ptrauth"(i64 2, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -328,7 +328,7 @@ define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdb x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 3, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 3, i64 %arg1), "ptrauth"(i64 3, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -356,7 +356,7 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdb x16, x2
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 0, i32 3, i64 %arg2)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 0, i64 0), "ptrauth"(i64 3, i64 %arg2) ]
   ret i64 %tmp
 }
 
@@ -384,7 +384,7 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; FPAC-NEXT:    pacdzb x16
 ; FPAC-NEXT:    mov x0, x16
 ; FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 3, i64 0)
+  %tmp = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1), "ptrauth"(i64 3, i64 0) ]
   ret i64 %tmp
 }
 
@@ -421,9 +421,6 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; ELF-FPAC:       %bb.0:
 ; ELF-FPAC-NEXT:    autia x0, x1
 ; ELF-FPAC-NEXT:    ret
-  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
+  %tmp = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 0, i64 %arg1) ]
   ret i64 %tmp
 }
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)

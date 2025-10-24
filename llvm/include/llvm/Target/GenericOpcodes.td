@@ -144,6 +144,24 @@ def G_PTRAUTH_BUNDLE : GenericInstruction {
   let variadicOpsType = type0;
 }
 
+def G_PTRAUTH_AUTH : GenericInstruction {
+  let OutOperandList = (outs type0:$dst);
+  let InOperandList = (ins type0:$value, untyped_imm_0:$schema);
+  let hasSideEffects = 0;
+}
+
+def G_PTRAUTH_SIGN : GenericInstruction {
+  let OutOperandList = (outs type0:$dst);
+  let InOperandList = (ins type0:$value, untyped_imm_0:$schema);
+  let hasSideEffects = 0;
+}
+
+def G_PTRAUTH_RESIGN : GenericInstruction {
+  let OutOperandList = (outs type0:$dst);
+  let InOperandList = (ins type0:$value, untyped_imm_0:$old_schema, untyped_imm_0:$new_schema);
+  let hasSideEffects = 0;
+}
+
 def G_PTRAUTH_STRIP : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
   let InOperandList = (ins type0:$value, untyped_imm_0:$schema);

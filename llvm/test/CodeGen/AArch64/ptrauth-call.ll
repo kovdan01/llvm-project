@@ -298,7 +298,7 @@ define void @test_tailcall_omit_mov_x16_x16(ptr %objptr) #0 {
   %objptr.int = ptrtoint ptr %objptr to i64
   %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
   %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int, i32 2, i64 %vtable.discr)
+  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 %vtable.discr) ]
   %vtable.unsigned = inttoptr i64 %vtable.unsigned.int to ptr
   %virt.func.signed = load ptr, ptr %vtable.unsigned, align 8
   %virt.func.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.unsigned.int, i64 54167)
@@ -334,7 +334,7 @@ define i32 @test_call_omit_extra_moves(ptr %objptr) #0 {
   %objptr.int = ptrtoint ptr %objptr to i64
   %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
   %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
-  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int, i32 2, i64 %vtable.discr)
+  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int) [ "ptrauth"(i64 2, i64 %vtable.discr) ]
   %vtable = inttoptr i64 %vtable.int to ptr
   %callee.signed = load ptr, ptr %vtable
   %callee.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.int, i64 34646)
@@ -679,8 +679,5 @@ define i32 @test_direct_call_addr_blend_gep_different_index_types() #0 {
 @f_struct.ref.ib.123.addr = external global ptr
 
 declare void @f()
-
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.blend(i64, i64)
 
 attributes #0 = { nounwind }

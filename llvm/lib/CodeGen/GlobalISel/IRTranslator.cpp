@@ -2217,6 +2217,31 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   switch (ID) {
   default:
     break;
+  case Intrinsic::ptrauth_auth: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register Bundle = TranslatePtrAuthBundle(0);
+
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_AUTH, {Dst}, {V, Bundle});
+    return true;
+  }
+  case Intrinsic::ptrauth_sign: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register Bundle = TranslatePtrAuthBundle(0);
+
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SIGN, {Dst}, {V, Bundle});
+    return true;
+  }
+  case Intrinsic::ptrauth_resign: {
+    Register Dst = getOrCreateVReg(CI);
+    Register V = getOrCreateVReg(*CI.getArgOperand(0));
+    Register OldBundle = TranslatePtrAuthBundle(0);
+    Register NewBundle = TranslatePtrAuthBundle(1);
+
+    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_RESIGN, {Dst}, {V, OldBundle, NewBundle});
+    return true;
+  }
   case Intrinsic::ptrauth_strip: {
     Register Dst = getOrCreateVReg(CI);
     Register V = getOrCreateVReg(*CI.getArgOperand(0));

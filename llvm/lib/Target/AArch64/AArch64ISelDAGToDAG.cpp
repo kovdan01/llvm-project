@@ -1509,11 +1509,22 @@ void AArch64DAGToDAGISel::SelectTable(SDNode *N, unsigned NumVecs, unsigned Opc,
   ReplaceNode(N, CurDAG->getMachineNode(Opc, dl, VT, Ops));
 }
 
-static std::tuple<SDValue, SDValue>
-extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
-  SDLoc DL(Disc);
+static std::tuple<SDValue, SDValue, SDValue>
+extractPtrauthBlendDiscriminators(SDValue Bundle, SelectionDAG *DAG) {
+  SDLoc DL(Bundle);
   SDValue AddrDisc;
   SDValue ConstDisc;
+
+  assert(Bundle->getOpcode() == ISD::PtrAuthBundle);
+  unsigned KeyC = cast<ConstantSDNode>(Bundle->getOperand(0))->getZExtValue();
+  SDValue Key = DAG->getTargetConstant(KeyC, DL, MVT::i64);
+
+  if (Bundle->getNumOperands() == 3)
+    return std::make_tuple(Key, Bundle->getOperand(1), Bundle->getOperand(2));
+
+  // Be compatible for now.
+  assert(Bundle->getNumOperands() == 2);
+  SDValue Disc = Bundle->getOperand(1);
 
   // If this is a blend, remember the constant and address discriminators.
   // Otherwise, it's either a constant discriminator, or a non-blended
@@ -1531,30 +1542,26 @@ extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
   // discriminator be computed separately.
   auto *ConstDiscN = dyn_cast<ConstantSDNode>(ConstDisc);
   if (!ConstDiscN || !isUInt<16>(ConstDiscN->getZExtValue()))
-    return std::make_tuple(DAG->getTargetConstant(0, DL, MVT::i64), Disc);
+    return std::make_tuple(Key, DAG->getTargetConstant(0, DL, MVT::i64), Disc);
 
   // If there's no address discriminator, use XZR directly.
   if (!AddrDisc)
     AddrDisc = DAG->getRegister(AArch64::XZR, MVT::i64);
 
   return std::make_tuple(
+      Key,
       DAG->getTargetConstant(ConstDiscN->getZExtValue(), DL, MVT::i64),
       AddrDisc);
 }
 
 void AArch64DAGToDAGISel::SelectPtrauthAuth(SDNode *N) {
   SDLoc DL(N);
-  // IntrinsicID is operand #0
-  SDValue Val = N->getOperand(1);
-  SDValue AUTKey = N->getOperand(2);
-  SDValue AUTDisc = N->getOperand(3);
+  assert(N->getOpcode() == ISD::PtrAuthAuth);
+  SDValue Val = N->getOperand(0);
+  SDValue AUTSchema = N->getOperand(1);
 
-  unsigned AUTKeyC = cast<ConstantSDNode>(AUTKey)->getZExtValue();
-  AUTKey = CurDAG->getTargetConstant(AUTKeyC, DL, MVT::i64);
-
-  SDValue AUTAddrDisc, AUTConstDisc;
-  std::tie(AUTConstDisc, AUTAddrDisc) =
-      extractPtrauthBlendDiscriminators(AUTDisc, CurDAG);
+  auto [AUTKey, AUTConstDisc, AUTAddrDisc] =
+      extractPtrauthBlendDiscriminators(AUTSchema, CurDAG);
 
   if (!Subtarget->isX16X17Safer()) {
     SDValue Ops[] = {Val, AUTKey, AUTConstDisc, AUTAddrDisc};
@@ -1574,26 +1581,15 @@ void AArch64DAGToDAGISel::SelectPtrauthAuth(SDNode *N) {
 
 void AArch64DAGToDAGISel::SelectPtrauthResign(SDNode *N) {
   SDLoc DL(N);
-  // IntrinsicID is operand #0
-  SDValue Val = N->getOperand(1);
-  SDValue AUTKey = N->getOperand(2);
-  SDValue AUTDisc = N->getOperand(3);
-  SDValue PACKey = N->getOperand(4);
-  SDValue PACDisc = N->getOperand(5);
+  assert(N->getOpcode() == ISD::PtrAuthResign);
+  SDValue Val = N->getOperand(0);
+  SDValue AUTSchema = N->getOperand(1);
+  SDValue PACSchema = N->getOperand(2);
 
-  unsigned AUTKeyC = cast<ConstantSDNode>(AUTKey)->getZExtValue();
-  unsigned PACKeyC = cast<ConstantSDNode>(PACKey)->getZExtValue();
-
-  AUTKey = CurDAG->getTargetConstant(AUTKeyC, DL, MVT::i64);
-  PACKey = CurDAG->getTargetConstant(PACKeyC, DL, MVT::i64);
-
-  SDValue AUTAddrDisc, AUTConstDisc;
-  std::tie(AUTConstDisc, AUTAddrDisc) =
-      extractPtrauthBlendDiscriminators(AUTDisc, CurDAG);
-
-  SDValue PACAddrDisc, PACConstDisc;
-  std::tie(PACConstDisc, PACAddrDisc) =
-      extractPtrauthBlendDiscriminators(PACDisc, CurDAG);
+  auto [AUTKey, AUTConstDisc, AUTAddrDisc] =
+      extractPtrauthBlendDiscriminators(AUTSchema, CurDAG);
+  auto [PACKey, PACConstDisc, PACAddrDisc] =
+      extractPtrauthBlendDiscriminators(PACSchema, CurDAG);
 
   SDValue X16Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
                                          AArch64::X16, Val, SDValue());
@@ -4812,6 +4808,14 @@ void AArch64DAGToDAGISel::Select(SDNode *Node) {
   default:
     break;
 
+  case ISD::PtrAuthAuth:
+    SelectPtrauthAuth(Node);
+    return;
+
+  case ISD::PtrAuthResign:
+    SelectPtrauthResign(Node);
+    return;
+
   case ISD::ATOMIC_CMP_SWAP:
     if (SelectCMP_SWAP(Node))
       return;
@@ -5791,14 +5795,6 @@ void AArch64DAGToDAGISel::Select(SDNode *Node) {
       break;
     case Intrinsic::aarch64_tagp:
       SelectTagP(Node);
-      return;
-
-    case Intrinsic::ptrauth_auth:
-      SelectPtrauthAuth(Node);
-      return;
-
-    case Intrinsic::ptrauth_resign:
-      SelectPtrauthResign(Node);
       return;
 
     case Intrinsic::aarch64_neon_tbl2:

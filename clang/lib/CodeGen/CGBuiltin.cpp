@@ -5764,12 +5764,23 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     case Builtin::BI__builtin_ptrauth_auth_and_resign:
       if (Args[4]->getType()->isPointerTy())
         Args[4] = Builder.CreatePtrToInt(Args[4], IntPtrTy);
-      [[fallthrough]];
+      if (Args[2]->getType()->isPointerTy())
+        Args[2] = Builder.CreatePtrToInt(Args[2], IntPtrTy);
+
+      OBs.emplace_back("ptrauth", ArrayRef({Args[1], Args[2]}));
+      OBs.emplace_back("ptrauth", ArrayRef({Args[3], Args[4]}));
+
+      Args.resize(1);
+      break;
 
     case Builtin::BI__builtin_ptrauth_auth:
     case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
       if (Args[2]->getType()->isPointerTy())
         Args[2] = Builder.CreatePtrToInt(Args[2], IntPtrTy);
+
+      OBs.emplace_back("ptrauth", ArrayRef({Args[1], Args[2]}));
+
+      Args.resize(1);
       break;
 
     case Builtin::BI__builtin_ptrauth_sign_generic_data:

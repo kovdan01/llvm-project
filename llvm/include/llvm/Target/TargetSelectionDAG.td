@@ -387,9 +387,15 @@ def SDTPtrAuthBundle : SDTypeProfile<1, -1, [
 def SDTPtrAuthOneSchema : SDTypeProfile<1, 2, [     // auth, sign, strip
   SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>
 ]>;
+def SDTPtrAuthTwoSchemas : SDTypeProfile<1, 3, [    // resign
+  SDTCisVT<0, i64>, SDTCisVT<1, i64>, SDTCisVT<2, untyped>, SDTCisVT<3, untyped>
+]>;
 
 def ptrauth_bundle : SDNode<"ISD::PtrAuthBundle", SDTPtrAuthBundle, []>;
-def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip", SDTPtrAuthOneSchema, []>;
+def ptrauth_auth   : SDNode<"ISD::PtrAuthAuth",   SDTPtrAuthOneSchema, []>;
+def ptrauth_sign   : SDNode<"ISD::PtrAuthSign",   SDTPtrAuthOneSchema, []>;
+def ptrauth_strip  : SDNode<"ISD::PtrAuthStrip",  SDTPtrAuthOneSchema, []>;
+def ptrauth_resign : SDNode<"ISD::PtrAuthResign", SDTPtrAuthTwoSchemas, []>;
 
 def timm       : SDNode<"ISD::TargetConstant",SDTIntLeaf, [], "ConstantSDNode">;
 def fpimm      : SDNode<"ISD::ConstantFP", SDTFPLeaf  , [], "ConstantFPSDNode">;

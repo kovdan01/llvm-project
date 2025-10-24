@@ -74,7 +74,7 @@ define i64 @test_auth_blend(i64 %arg, i64 %arg1) {
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 65535)
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %tmp0)
+  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0) ]
   ret i64 %tmp1
 }
 
@@ -136,7 +136,7 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
   %tmp1 = call i64 @llvm.ptrauth.blend(i64 %arg2, i64 56789)
-  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %tmp1)
+  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 %tmp1) ]
   ret i64 %tmp2
 }
 
@@ -194,7 +194,7 @@ define i64 @test_resign_blend_and_const(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 56789)
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 56789) ]
   ret i64 %tmp1
 }
 
@@ -249,7 +249,7 @@ define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 12345)
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %tmp0, i32 3, i64 %arg2)
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0), "ptrauth"(i64 3, i64 %arg2) ]
   ret i64 %tmp1
 }
 
@@ -295,10 +295,7 @@ define i64 @test_auth_too_large_discriminator(i64 %arg, i64 %arg1) {
 ; TRAP-DARWIN-NEXT: mov x0, x16
 ; TRAP-NEXT:        ret
   %tmp0 = call i64 @llvm.ptrauth.blend(i64 %arg1, i64 65536)
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %tmp0)
+  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %tmp0) ]
   ret i64 %tmp1
 }
 
-declare i64 @llvm.ptrauth.auth(i64, i32, i64)
-declare i64 @llvm.ptrauth.resign(i64, i32, i64, i32, i64)
-declare i64 @llvm.ptrauth.blend(i64, i64)
