@@ -17,7 +17,7 @@ void fun() {}
 // ARM:   and i32 {{.*}}, -2, !nosanitize !5
 // ARM:   inttoptr i32 {{.*}} to ptr, !nosanitize !5
 // AUTH:  %[[STRIPPED:.*]] = ptrtoint ptr {{.*}} to i64, !nosanitize
-// AUTH:  call i64 @llvm.ptrauth.auth(i64 %[[STRIPPED]], i32 0, i64 0), !nosanitize
+// AUTH:  call i64 @llvm.ptrauth.auth(i64 %[[STRIPPED]]) [ "ptrauth"(i64 0, i64 0) ], !nosanitize
 // CHECK: getelementptr <{ i32, i32 }>, ptr {{.*}}, i32 -1, i32 0, !nosanitize
 // CHECK: load i32, ptr {{.*}}, align {{.*}}, !nosanitize
 // CHECK: icmp eq i32 {{.*}}, -1056584962, !nosanitize

@@ -26,4 +26,4 @@ namespace Test1 {
 // CHECK: %[[This:.*]] = load ptr
 // CHECK: %[[SignedVTable:.*]] = load ptr, ptr %[[This]], align 8
 // CHECK: %[[SignedVTableAsInt:.*]] = ptrtoint ptr %[[SignedVTable]] to i64
-// CHECK: %[[VTable:.*]] = call i64 @llvm.ptrauth.auth(i64 %[[SignedVTableAsInt]], i32 2, i64 0)
+// CHECK: %[[VTable:.*]] = call i64 @llvm.ptrauth.auth(i64 %[[SignedVTableAsInt]]) [ "ptrauth"(i64 2, i64 0) ]

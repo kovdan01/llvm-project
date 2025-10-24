@@ -34,7 +34,7 @@ void setTestStructIsa(struct TestStruct *t, Class c) {
   // CHECK: [[CAST_ISA_SLOT:%.*]] = ptrtoint ptr [[ISA_SLOT]] to i64
   // CHECK: [[BLENDED_VALUE:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ISA_SLOT]], i64 1234)
   // CHECK: [[CAST_C:%.*]] = ptrtoint ptr [[C]] to i64
-  // CHECK: [[AUTHENTICATED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[CAST_C]], i32 2, i64 [[BLENDED_VALUE]])
+  // CHECK: [[AUTHENTICATED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[CAST_C]]) [ "ptrauth"(i64 2, i64 [[BLENDED_VALUE]]) ]
 }
 
 // CHECK-LABEL: define void @setTestClassIsa(ptr %t, ptr %c) #0 {
@@ -51,7 +51,7 @@ void setTestClassIsa(TestClass *t, Class c) {
   // CHECK: [[CAST_ISA_SLOT:%.*]] = ptrtoint ptr [[ADDED_PTR]] to i64
   // CHECK: [[BLENDED_VALUE:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ISA_SLOT]], i64 1234)
   // CHECK: [[CAST_C_VALUE:%.*]] = ptrtoint ptr [[C_VALUE]] to i64
-  // CHECK: [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[CAST_C_VALUE]], i32 2, i64 [[BLENDED_VALUE]])
+  // CHECK: [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[CAST_C_VALUE]]) [ "ptrauth"(i64 2, i64 [[BLENDED_VALUE]]) ]
 }
 
 // CHECK-LABEL: define ptr @getTestStructIsa(ptr %t) #0 {
@@ -64,7 +64,7 @@ Class getTestStructIsa(struct TestStruct *t) {
   // CHECK: [[CAST_ISA_SLOT:%.*]] = ptrtoint ptr %isa to i64
   // CHECK: [[BLENDED_VALUE:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_ISA_SLOT]], i64 1234)
   // CHECK: [[CAST_ISA_VALUE:%.*]] = ptrtoint ptr [[ISA_VALUE]] to i64
-  // CHECK: [[SIGNED_VALUE:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_ISA_VALUE]], i32 2, i64 [[BLENDED_VALUE]])
+  // CHECK: [[SIGNED_VALUE:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_ISA_VALUE]]) [ "ptrauth"(i64 2, i64 [[BLENDED_VALUE]]) ]
 }
 
 // CHECK-LABEL: define ptr @getTestClassIsa(ptr %t) #0 {
@@ -80,7 +80,7 @@ Class getTestClassIsa(TestClass *t) {
   // CHECK: [[BLENDED_VALUE:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[INT_VALUE]], i64 1234)
   // CHECK: [[NULL_CHECK:%.*]] = icmp ne ptr [[LOADED_VALUE]], null
   // CHECK: [[CAST_VALUE:%.*]] = ptrtoint ptr [[LOADED_VALUE]] to i64
-  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VALUE]], i32 2, i64 [[BLENDED_VALUE]])
+  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VALUE]]) [ "ptrauth"(i64 2, i64 [[BLENDED_VALUE]]) ]
 }
 
 // Just enough to verify we do actually authenticate qualified Class
@@ -97,7 +97,7 @@ Class getTestConstClassIsa(TestConstClass *t) {
   // CHECK: [[BLENDED_VALUE:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[INT_VALUE]], i64 1234)
   // CHECK: [[NULL_CHECK:%.*]] = icmp ne ptr [[LOADED_VALUE]], null
   // CHECK: [[CAST_VALUE:%.*]] = ptrtoint ptr [[LOADED_VALUE]] to i64
-  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VALUE]], i32 2, i64 [[BLENDED_VALUE]])
+  // CHECK: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VALUE]]) [ "ptrauth"(i64 2, i64 [[BLENDED_VALUE]]) ]
 }
 
 #endif

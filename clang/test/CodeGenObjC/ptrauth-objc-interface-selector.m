@@ -33,42 +33,42 @@
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal ptr @"\01-[Test test:]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}, i32 3, i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}), "ptrauth"(i64 3, i64 {{%.*}}) ]
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = load volatile ptr, ptr {{%.*}}, align 8
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}, i32 3, i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}), "ptrauth"(i64 3, i64 {{%.*}}) ]
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22467)
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = ptrtoint ptr {{%.*}} to i64
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22467)
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = ptrtoint ptr {{%.*}} to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}, i32 3, i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}), "ptrauth"(i64 3, i64 {{%.*}}) ]
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal ptr @"\01-[Test auto_sel_property]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal void @"\01-[Test setAuto_sel_property:]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal ptr @"\01-[Test const_auto_sel_property]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal void @"\01-[Test setConst_auto_sel_property:]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal ptr @"\01-[Test volatile_auto_sel_property]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 // CHECK-AUTHENTICATED-SEL-LABEL: define internal void @"\01-[Test setVolatile_auto_sel_property:]"
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.sign(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 
 @implementation Test
 - (SEL)test:(Test *)in {
@@ -87,7 +87,7 @@ void auto_sel(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR:%.*]] to i64
 // CHECK-AUTHENTICATED-SEL: [[SRC_DESCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_SRC_ADDR]], i64 22466)
 // CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]], i32 3, i64 [[DST_DESCRIMINATOR]], i32 3, i64 [[SRC_DESCRIMINATOR]])
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 [[DST_DESCRIMINATOR]]), "ptrauth"(i64 3, i64 [[SRC_DESCRIMINATOR]]) ]
 
 // CHECK-UNAUTHENTICATED-SEL-LABEL: define void @auto_sel
 SEL const_auto_sel(Test *in) {
@@ -97,7 +97,7 @@ SEL const_auto_sel(Test *in) {
 // CHECK-AUTHENTICATED-SEL-LABEL: define ptr @const_auto_sel
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 22466)
 // CHECK-AUTHENTICATED-SEL: {{%.*}} = ptrtoint ptr {{%.*}} to i64
-// CHECK-AUTHENTICATED-SEL: [[AUTHENTICATED:%.*]] = call i64 @llvm.ptrauth.auth(i64 {{%.*}}, i32 3, i64 {{%.*}})
+// CHECK-AUTHENTICATED-SEL: [[AUTHENTICATED:%.*]] = call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 3, i64 {{%.*}}) ]
 // CHECK-AUTHENTICATED-SEL: [[RESULT:%.*]] = inttoptr i64 [[AUTHENTICATED]] to ptr
 
 void volatile_auto_sel(Test *out, Test *in) {
@@ -109,7 +109,7 @@ void volatile_auto_sel(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR:%.*]] to i64
 // CHECK-AUTHENTICATED-SEL: [[SRC_DESCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_SRC_ADDR]], i64 22466)
 // CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]], i32 3, i64 [[DST_DESCRIMINATOR]], i32 3, i64 [[SRC_DESCRIMINATOR]])
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 [[DST_DESCRIMINATOR]]), "ptrauth"(i64 3, i64 [[SRC_DESCRIMINATOR]]) ]
 
 void manual(Test *out, Test *in) {
   out->manual = in->manual;
@@ -120,11 +120,11 @@ void manual(Test *out, Test *in) {
 // CHECK-AUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR:%.*]] to i64
 // CHECK-AUTHENTICATED-SEL: [[SRC_DESCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_SRC_ADDR]], i64 22467)
 // CHECK-AUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]], i32 3, i64 [[DST_DESCRIMINATOR]], i32 3, i64 [[SRC_DESCRIMINATOR]])
+// CHECK-AUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 [[DST_DESCRIMINATOR]]), "ptrauth"(i64 3, i64 [[SRC_DESCRIMINATOR]]) ]
 
 // CHECK-UNAUTHENTICATED-SEL-LABEL: define void @manual
 // CHECK-UNAUTHENTICATED-SEL: [[DST_DESCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_DST_ADDR:%.*]], i64 22467)
 // CHECK-UNAUTHENTICATED-SEL: [[CAST_SRC_ADDR:%.*]] = ptrtoint ptr [[SRC_ADDR:%.*]] to i64
 // CHECK-UNAUTHENTICATED-SEL: [[SRC_DESCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[CAST_SRC_ADDR]], i64 22467)
 // CHECK-UNAUTHENTICATED-SEL: [[SRC_SEL:%.*]] = ptrtoint ptr [[SRC_SEL_ADDR:%.*]] to i64
-// CHECK-UNAUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]], i32 3, i64 [[DST_DESCRIMINATOR]], i32 3, i64 [[SRC_DESCRIMINATOR]])
+// CHECK-UNAUTHENTICATED-SEL: {{%.*}} = call i64 @llvm.ptrauth.resign(i64 [[SRC_SEL]]) [ "ptrauth"(i64 3, i64 [[DST_DESCRIMINATOR]]), "ptrauth"(i64 3, i64 [[SRC_DESCRIMINATOR]]) ]

@@ -5755,6 +5755,12 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     for (auto argExpr : E->arguments())
       Args.push_back(EmitScalarExpr(argExpr));
 
+    auto ConvertToIntPtr = [&](Value *V) {
+      if (V->getType()->isPointerTy())
+        return Builder.CreatePtrToInt(V, IntPtrTy);
+      return Builder.CreateZExt(V, IntPtrTy);
+    };
+
     // Cast the value to intptr_t, saving its original type.
     llvm::Type *OrigValueType = Args[0]->getType();
     if (OrigValueType->isPointerTy())
@@ -5762,23 +5768,18 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
 
     switch (BuiltinID) {
     case Builtin::BI__builtin_ptrauth_auth_and_resign:
-      if (Args[4]->getType()->isPointerTy())
-        Args[4] = Builder.CreatePtrToInt(Args[4], IntPtrTy);
-      if (Args[2]->getType()->isPointerTy())
-        Args[2] = Builder.CreatePtrToInt(Args[2], IntPtrTy);
-
-      OBs.emplace_back("ptrauth", ArrayRef({Args[1], Args[2]}));
-      OBs.emplace_back("ptrauth", ArrayRef({Args[3], Args[4]}));
+      OBs.emplace_back("ptrauth", ArrayRef({ ConvertToIntPtr(Args[1]),
+                                             ConvertToIntPtr(Args[2]) }));
+      OBs.emplace_back("ptrauth", ArrayRef({ ConvertToIntPtr(Args[3]),
+                                             ConvertToIntPtr(Args[4]) }));
 
       Args.resize(1);
       break;
 
     case Builtin::BI__builtin_ptrauth_auth:
     case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
-      if (Args[2]->getType()->isPointerTy())
-        Args[2] = Builder.CreatePtrToInt(Args[2], IntPtrTy);
-
-      OBs.emplace_back("ptrauth", ArrayRef({Args[1], Args[2]}));
+      OBs.emplace_back("ptrauth", ArrayRef({ ConvertToIntPtr(Args[1]),
+                                             ConvertToIntPtr(Args[2]) }));
 
       Args.resize(1);
       break;

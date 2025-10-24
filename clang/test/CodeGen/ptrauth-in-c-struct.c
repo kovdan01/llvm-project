@@ -59,7 +59,7 @@ int g0;
 // CHECK: %[[V14:.*]] = ptrtoint ptr %[[V6]] to i64
 // CHECK: %[[V15:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V14]], i64 50)
 // CHECK: %[[V17:.*]] = ptrtoint ptr %[[V11]] to i64
-// CHECK: %[[V18:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V17]], i32 1, i64 %[[V13]], i32 1, i64 %[[V15]])
+// CHECK: %[[V18:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V17]]) [ "ptrauth"(i64 1, i64 %[[V13]]), "ptrauth"(i64 1, i64 %[[V15]]) ]
 
 void test_copy_constructor_SA(SA *s) {
   SA t = *s;
@@ -83,7 +83,7 @@ void test_copy_constructor_SA(SA *s) {
 // CHECK: %[[V14:.*]] = ptrtoint ptr %[[V6]] to i64
 // CHECK: %[[V15:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V14]], i64 30)
 // CHECK: %[[V17:.*]] = ptrtoint ptr %[[V11]] to i64
-// CHECK: %[[V18:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V17]], i32 2, i64 %[[V13]], i32 2, i64 %[[V15]])
+// CHECK: %[[V18:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V17]]) [ "ptrauth"(i64 2, i64 %[[V13]]), "ptrauth"(i64 2, i64 %[[V15]]) ]
 
 void test_copy_constructor_SA2(SA2 *s) {
   SA2 t = *s;
@@ -169,13 +169,13 @@ void test_parameter_SI(SI a) {
 // CHECK: %[[F1:.*]] = getelementptr inbounds nuw %[[STRUCT_SA]], ptr %{{.*}}, i32 0, i32 1
 // CHECK: %[[V0:.*]] = ptrtoint ptr %[[F1]] to i64
 // CHECK: %[[V1:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V0]], i64 50)
-// CHECK: %[[V2:.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @g0 to i64), i32 1, i64 %[[V1]])
+// CHECK: %[[V2:.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @g0 to i64)) [ "ptrauth"(i64 1, i64 %[[V1]]) ]
 // CHECK: %[[V3:.*]] = inttoptr i64 %[[V2]] to ptr
 // CHECK: store ptr %[[V3]], ptr %[[F1]], align 8
 // CHECK: %[[F12:.*]] = getelementptr inbounds nuw %[[STRUCT_SA]], ptr %{{.*}}, i32 0, i32 1
 // CHECK: %[[V4:.*]] = ptrtoint ptr %[[F12]] to i64
 // CHECK: %[[V5:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V4]], i64 50)
-// CHECK: %[[V6:.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @g0 to i64), i32 1, i64 %[[V5]])
+// CHECK: %[[V6:.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @g0 to i64)) [ "ptrauth"(i64 1, i64 %[[V5]]) ]
 // CHECK: %[[V7:.*]] = inttoptr i64 %[[V6]] to ptr
 // CHECK: store ptr %[[V7]], ptr %[[F12]], align 8
 

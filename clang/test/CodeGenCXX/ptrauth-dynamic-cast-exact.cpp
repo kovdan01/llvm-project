@@ -49,7 +49,7 @@ C *exact_to_C(A *a) {
   // CHECK: [[VPTR_ADDRI:%.*]] = ptrtoint ptr %a to i64
   // CHECK: [[VPTR_ADDR_DISC:%.*]] = tail call i64 @llvm.ptrauth.blend(i64 [[VPTR_ADDRI]], i64 62866)
   // CHECK: [[UNAUTHED_VPTRI:%.*]] = ptrtoint ptr [[UNAUTHED_VPTR]] to i64
-  // CHECK: [[AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[UNAUTHED_VPTRI]], i32 2, i64 [[VPTR_ADDR_DISC]])
+  // CHECK: [[AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[UNAUTHED_VPTRI]]) [ "ptrauth"(i64 2, i64 [[VPTR_ADDR_DISC]]) ]
   // CHECK: [[IS_EXPECTED:%.*]] = icmp eq i64 [[AUTHED_VPTRI]], ptrtoint (ptr getelementptr inbounds nuw inrange(-16, 24) (i8, ptr @_ZTV1C, i64 16) to i64)
   // CHECK: br i1 [[IS_EXPECTED]], label %dynamic_cast.end, label %dynamic_cast.null
   // CHECK: [[NULL_CHECKED_RESULT:%.*]] = phi ptr [ %a, %dynamic_cast.notnull ], [ null, %dynamic_cast.null ]
@@ -64,7 +64,7 @@ D *exact_t_D(A *a) {
   // CHECK:   [[SRC_VPTR_ADDRI:%.*]] = ptrtoint ptr %a to i64
   // CHECK:   [[SRC_VPTR_DISC:%.*]] = tail call i64 @llvm.ptrauth.blend(i64 [[SRC_VPTR_ADDRI]], i64 62866)
   // CHECK:   [[SRC_UNAUTHED_VPTRI:%.*]] = ptrtoint ptr [[SRC_UNAUTHED_VPTR]] to i64
-  // CHECK:   [[SRC_AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[SRC_UNAUTHED_VPTRI]], i32 2, i64 [[SRC_VPTR_DISC]])
+  // CHECK:   [[SRC_AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[SRC_UNAUTHED_VPTRI]]) [ "ptrauth"(i64 2, i64 [[SRC_VPTR_DISC]]) ]
   // CHECK:   [[SUCCESS:%.*]] = icmp eq i64 [[SRC_AUTHED_VPTRI]], ptrtoint (ptr getelementptr inbounds nuw inrange(-16, 16) (i8, ptr @_ZTV1D, i64 56) to i64)
   // CHECK:   br i1 [[SUCCESS]], label %dynamic_cast.postauth.success, label %dynamic_cast.postauth.complete
   // CHECK: dynamic_cast.postauth.success:
@@ -73,7 +73,7 @@ D *exact_t_D(A *a) {
   // CHECK:   [[ADJUSTED_VPTR_ADDRI:%.*]] = ptrtoint ptr [[ADJUSTED_THIS]] to i64
   // CHECK:   [[ADJUSTED_VPTR_DISC:%.*]] = tail call i64 @llvm.ptrauth.blend(i64 [[ADJUSTED_VPTR_ADDRI]], i64 28965)
   // CHECK:   [[ADJUSTED_UNAUTHED_VPTRI:%.*]] = ptrtoint ptr [[ADJUSTED_UNAUTHED_VPTR]] to i64
-  // CHECK:   [[ADJUSTED_AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[ADJUSTED_UNAUTHED_VPTRI]], i32 2, i64 [[ADJUSTED_VPTR_DISC]])
+  // CHECK:   [[ADJUSTED_AUTHED_VPTRI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[ADJUSTED_UNAUTHED_VPTRI]]) [ "ptrauth"(i64 2, i64 [[ADJUSTED_VPTR_DISC]]) ]
   // CHECK:   [[ADJUSTED_AUTHED_VPTR:%.*]] = inttoptr i64 [[ADJUSTED_AUTHED_VPTRI]] to ptr
   // CHECK:   br label %dynamic_cast.postauth.complete
   // CHECK: dynamic_cast.postauth.complete:
@@ -94,7 +94,7 @@ L *exact_multi(E *e) {
   // CHECK:   [[THIS_ADDRI:%.*]] = ptrtoint ptr %e to i64
   // CHECK:   [[VTABLE_DISC:%.*]] = tail call i64 @llvm.ptrauth.blend(i64 [[THIS_ADDRI]], i64 12810)
   // CHECK:   [[VTABLE_ADDRI:%.*]] = ptrtoint ptr [[VTABLE_ADDR]] to i64
-  // CHECK:   [[AUTHED_VTABLEI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[VTABLE_ADDRI]], i32 2, i64 [[VTABLE_DISC]])
+  // CHECK:   [[AUTHED_VTABLEI:%.*]] = tail call i64 @llvm.ptrauth.auth(i64 [[VTABLE_ADDRI]]) [ "ptrauth"(i64 2, i64 [[VTABLE_DISC]]) ]
   // CHECK:   [[AUTHED_VTABLE:%.*]] = inttoptr i64 [[AUTHED_VTABLEI]] to ptr
   // CHECK:   [[PRIMARY_BASE_OFFSET:%.*]] = getelementptr inbounds i8, ptr [[AUTHED_VTABLE]], i64 -16
   // CHECK:   %offset.to.top = load i64, ptr [[PRIMARY_BASE_OFFSET]]
@@ -107,7 +107,7 @@ L *exact_multi(E *e) {
   // CHECK: dynamic_cast.postauth.success:
   // CHECK:   [[ADJUSTED_THISI:%.*]] = ptrtoint ptr [[ADJUSTED_THIS]] to i64
   // CHECK:   [[DEST_DISC:%.*]] = tail call i64 @llvm.ptrauth.blend(i64 [[ADJUSTED_THISI]], i64 41434)
-  // CHECK:   tail call i64 @llvm.ptrauth.auth(i64 [[ADJUSTED_THIS_VTABLEI]], i32 2, i64 [[DEST_DISC]])
+  // CHECK:   tail call i64 @llvm.ptrauth.auth(i64 [[ADJUSTED_THIS_VTABLEI]]) [ "ptrauth"(i64 2, i64 [[DEST_DISC]]) ]
   // CHECK:   br label %dynamic_cast.postauth.complete
   // CHECK: dynamic_cast.postauth.complete:
   // CHECK:   [[AUTHED_ADJUSTED_THIS:%.*]] = phi ptr [ [[ADJUSTED_THIS]], %dynamic_cast.postauth.success ], [ null, %dynamic_cast.notnull ]
