@@ -78,25 +78,25 @@ struct Derived5 : VirtualBase2, VirtualBase1 {
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN12VirtualBase1C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN12VirtualBase1C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN12VirtualBase2C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN12VirtualBase2C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived4C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived4C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived5C1Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived5C1Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
 
 
 VirtualBase1 g_vb1;
@@ -164,82 +164,82 @@ extern "C" void cross_check_vtables(Base1 *b1,
 
 // CHECK-LABEL: define{{.*}} void @cross_check_vtables(
 // CHECK: "; b1->a()",
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; b2->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE2_B_DISC]]) ]
 // CHECK: "; d1->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; d1->c()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED1_C_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[DERIVED1_C_DISC]]) ]
 // CHECK: "; d2->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; d2->c()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED2_C_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[DERIVED2_C_DISC]]) ]
 // CHECK: "; d3->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; d3->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE2_B_DISC]]) ]
 // CHECK: "; d3->i()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED3_I_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[DERIVED3_I_DISC]]) ]
 // CHECK: "; vb1->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; vb1->f()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]]) ]
 // CHECK: "; vb2->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; vb2->g()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]]) ]
 // CHECK: "; d4->a()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_A_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE1_A_DISC]]) ]
 // CHECK: "; d4->b()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_B_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[BASE2_B_DISC]]) ]
 // CHECK: "; d4->f()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[VIRTUALBASE1_F_DISC]]) ]
 // CHECK: "; d4->g()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[VIRTUALBASE2_G_DISC]]) ]
 // CHECK: "; d4->h()"
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[DERIVED4_H_DISC]])
+// CHECK: call i64 @llvm.ptrauth.auth{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call void %{{.*}} [ "ptrauth"(i64 0, i64 {{%.*}}, i64 [[DERIVED4_H_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN5Base1C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN5Base1C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN5Base2C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN5Base2C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived1C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived1C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived2C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived2C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
 
 // DARWIN-LABEL: define {{.*}} ptr @_ZN8Derived3C2Ev
 // ELF-LABEL:    define {{.*}} void @_ZN8Derived3C2Ev
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]])
-// CHECK: call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]])
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE1_VTABLE_DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.sign{{.*}} [ "ptrauth"(i64 2, i64 {{%.*}}, i64 [[BASE2_VTABLE_DISC]]) ]

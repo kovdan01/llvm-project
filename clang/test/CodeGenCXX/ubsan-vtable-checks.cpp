@@ -38,9 +38,8 @@ int get_v(T* t) {
   // CHECK-PTRAUTH: {{%.*}} = mul i64 [[STRIPPED_INT]], {{.*}}
 
   // Verify that we authenticate for the actual vcall
-  // CHECK-PTRAUTH: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 17113)
   // CHECK-PTRAUTH: [[CAST_VTABLE:%.*]] = ptrtoint ptr %vtable2 to i64
-  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 [[BLENDED]]) ]
+  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 {{%.*}}, i64 17113) ]
   // CHECK-PTRAUTH: [[AUTHED_PTR:%.*]] = inttoptr i64 [[AUTHED_INT]] to ptr
   // CHECK-PTRAUTH: {{%.*}} = getelementptr inbounds ptr, ptr [[AUTHED_PTR]], i64 2
   return t->v();
@@ -66,9 +65,8 @@ void delete_it(T *t) {
   // Second, we check that vtable is actually loaded once the type check is done.
   // ptrauth for the virtual function load
   // CHECK-PTRAUTH: [[VTABLE2:%.*]] = load ptr, ptr {{.*}}
-  // CHECK-PTRAUTH: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 %{{.*}}, i64 17113)
   // CHECK-PTRAUTH: [[CAST_VTABLE:%.*]] = ptrtoint ptr [[VTABLE2]] to i64
-  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 [[BLENDED]]) ]
+  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 %{{.*}}, i64 17113) ]
   // CHECK-PTRAUTH: [[AUTHED_PTR:%.*]] = inttoptr i64 [[AUTHED_INT]] to ptr
   // CHECK-PTRAUTH: getelementptr inbounds ptr, ptr
   // CHECK-PTRAUTH {{%.*}} = getelementptr inbounds ptr, ptr [[AUTHED_PTR]], i64 1
@@ -88,9 +86,8 @@ U* dyncast(T *t) {
   // CHECK-PTRAUTH: [[STRIPPED_INT:%.*]] = ptrtoint ptr [[STRIPPED_PTR]] to i64
   // CHECK-PTRAUTH: {{%.*}} = mul i64 [[STRIPPED_INT]], {{.*}}
   // CHECK-VPTR: call void @__ubsan_handle_dynamic_type_cache_miss_abort
-  // CHECK-PTRAUTH: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 {{%.*}}, i64 17113)
   // CHECK-PTRAUTH: [[CAST_VTABLE:%.*]] = ptrtoint ptr %vtable1 to i64
-  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 [[BLENDED]]) ]
+  // CHECK-PTRAUTH: [[AUTHED_INT:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 2, i64 {{%.*}}, i64 17113) ]
   // CHECK-PTRAUTH: [[AUTHED_PTR:%.*]] = inttoptr i64 [[AUTHED_INT]] to ptr
   // CHECK-PTRAUTH: {{%.*}} = load volatile i8, ptr [[AUTHED_PTR]], align 8
   // Second, we check that dynamic_cast is actually called once the type check is done.

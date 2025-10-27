@@ -13,35 +13,34 @@
 #ifndef LLVM_CLANG_LIB_CODEGEN_CGPOINTERAUTHINFO_H
 #define LLVM_CLANG_LIB_CODEGEN_CGPOINTERAUTHINFO_H
 
-#include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
+#include <tuple>
 
 namespace clang {
 namespace CodeGen {
 
 class CGPointerAuthInfo {
-private:
-  PointerAuthenticationMode AuthenticationMode : 2;
-  unsigned IsIsaPointer : 1;
-  unsigned AuthenticatesNullValues : 1;
-  unsigned Key : 2;
-  llvm::Value *Discriminator;
-
 public:
   CGPointerAuthInfo()
       : AuthenticationMode(PointerAuthenticationMode::None),
         IsIsaPointer(false), AuthenticatesNullValues(false), Key(0),
-        Discriminator(nullptr) {}
+        Discriminator(nullptr), ExtraDiscriminator(nullptr) {}
   CGPointerAuthInfo(unsigned Key, PointerAuthenticationMode AuthenticationMode,
                     bool IsIsaPointer, bool AuthenticatesNullValues,
-                    llvm::Value *Discriminator)
+                    llvm::Value *Discriminator, llvm::Value *ExtraDiscriminator)
       : AuthenticationMode(AuthenticationMode), IsIsaPointer(IsIsaPointer),
         AuthenticatesNullValues(AuthenticatesNullValues), Key(Key),
-        Discriminator(Discriminator) {
+        Discriminator(Discriminator), ExtraDiscriminator(ExtraDiscriminator) {
     assert(!Discriminator || Discriminator->getType()->isIntegerTy() ||
            Discriminator->getType()->isPointerTy());
+    assert(!ExtraDiscriminator || ExtraDiscriminator->getType()->isIntegerTy());
+
+    if (!Discriminator) {
+      this->Discriminator = ExtraDiscriminator;
+      this->ExtraDiscriminator = nullptr;
+    }
   }
 
   explicit operator bool() const { return isSigned(); }
@@ -54,9 +53,15 @@ public:
     assert(isSigned());
     return Key;
   }
+
   llvm::Value *getDiscriminator() const {
     assert(isSigned());
     return Discriminator;
+  }
+
+  llvm::Value *getExtraDiscriminator() const {
+    assert(isSigned());
+    return ExtraDiscriminator;
   }
 
   PointerAuthenticationMode getAuthenticationMode() const {
@@ -81,16 +86,30 @@ public:
     return AuthenticationMode == PointerAuthenticationMode::SignAndAuth;
   }
 
+  bool isBlended() const { return ExtraDiscriminator != nullptr; }
+
   friend bool operator!=(const CGPointerAuthInfo &LHS,
                          const CGPointerAuthInfo &RHS) {
-    return LHS.Key != RHS.Key || LHS.Discriminator != RHS.Discriminator ||
-           LHS.AuthenticationMode != RHS.AuthenticationMode;
+    return !(LHS == RHS);
   }
 
   friend bool operator==(const CGPointerAuthInfo &LHS,
                          const CGPointerAuthInfo &RHS) {
-    return !(LHS != RHS);
+    auto AsTuple = [](const CGPointerAuthInfo &Info) {
+      return std::make_tuple(Info.AuthenticationMode, Info.IsIsaPointer,
+                             Info.AuthenticatesNullValues, Info.Key,
+                             Info.Discriminator, Info.ExtraDiscriminator);
+    };
+    return AsTuple(LHS) == AsTuple(RHS);
   }
+
+private:
+  PointerAuthenticationMode AuthenticationMode : 2;
+  unsigned IsIsaPointer : 1;
+  unsigned AuthenticatesNullValues : 1;
+  unsigned Key : 2;
+  llvm::Value *Discriminator;
+  llvm::Value *ExtraDiscriminator;
 };
 
 } // end namespace CodeGen

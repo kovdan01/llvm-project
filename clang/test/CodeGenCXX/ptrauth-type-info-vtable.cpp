@@ -92,9 +92,8 @@ extern "C" void test_vtable(std::type_info* t) {
 // DISC: [[T:%.*]] = load ptr, ptr [[T_ADDR]], align 8
 // DISC: [[VPTR:%.*]] = load ptr, ptr [[T]], align 8
 // DISC: [[ADDR:%.*]] = ptrtoint ptr [[T]] to i64
-// DISC: [[DISCRIMINATOR:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[ADDR]], i64 [[STDTYPEINFO_DISC]])
 // DISC: [[VPTRI:%.*]] = ptrtoint ptr [[VPTR]] to i64
-// DISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[VPTRI]]) [ "ptrauth"(i64 2, i64 [[DISCRIMINATOR]]) ]
+// DISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[VPTRI]]) [ "ptrauth"(i64 2, i64 [[ADDR]], i64 [[STDTYPEINFO_DISC]]) ]
 
 extern "C" const void *ensure_typeinfo() {
   return new TestStruct;

@@ -9,7 +9,7 @@ void (*fptr)(void);
 // CHECK: define {{(dso_local )?}}void @test1
 void test1() {
   // CHECK: [[LOAD:%.*]] = load ptr, ptr @cptr
-  // CHECK: call void [[LOAD]]() [ "ptrauth"(i32 0, i64 0) ]
+  // CHECK: call void [[LOAD]]() [ "ptrauth"(i64 0, i64 0) ]
   // CHECK: ret void
 
   (*(fptr_t)cptr)();

@@ -203,8 +203,7 @@ V1::~V1() {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 53119)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 53119) ]
 
 void testB0m0(B0 *a) {
   a->m0();
@@ -218,8 +217,7 @@ void testB0m0(B0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 1
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 15165)
-// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 15165) ]
 
 void testB0m1(B0 *a) {
   a->m1();
@@ -233,8 +231,7 @@ void testB0m1(B0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 2
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 43073)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 43073) ]
 
 void testB0m2(B0 *a) {
   a->m2();
@@ -248,8 +245,7 @@ void testB0m2(B0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 53119)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 53119) ]
 
 void testD0m0(D0 *a) {
   a->m0();
@@ -263,8 +259,7 @@ void testD0m0(D0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 5
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 35045)
-// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 35045) ]
 
 void testD0m1(D0 *a) {
   a->m1();
@@ -278,8 +273,7 @@ void testD0m1(D0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 2
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 43073)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 43073) ]
 
 void testD0m2(D0 *a) {
   a->m2();
@@ -293,8 +287,7 @@ void testD0m2(D0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 6
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 10565)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 10565) ]
 
 void testD0m3(D0 *a) {
   a->m3();
@@ -309,8 +302,7 @@ void testD0m3(D0 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 53119)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 53119) ]
 
 void testD1m0(D1 *a) {
   a->m0();
@@ -324,8 +316,7 @@ void testD1m0(D1 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 5
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 52864)
-// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(16) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 52864) ]
 
 void testD1m1(D1 *a) {
   a->m1();
@@ -339,8 +330,7 @@ void testD1m1(D1 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 2
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 43073)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(12) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 43073) ]
 
 void testD1m2(D1 *a) {
   a->m2();
@@ -355,8 +345,7 @@ void testD1m2(D1 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 53119)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 53119) ]
 
 void testD2m0(D2 *a) {
   a->m0();
@@ -370,8 +359,7 @@ void testD2m0(D2 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 5
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 35045)
-// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 35045) ]
 
 void testD2m1(D2 *a) {
   a->m1();
@@ -399,8 +387,7 @@ void testD2m2D1(D2 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 6
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 10565)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(36) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 10565) ]
 
 void testD2m3(D2 *a) {
   a->m3();
@@ -414,8 +401,7 @@ void testD2m3(D2 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 0
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 44578)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 44578) ]
 
 void testD3m0(D3 *a) {
   a->m0();
@@ -429,8 +415,7 @@ void testD3m0(D3 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 1
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 30766)
-// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) [ "ptrauth"(i64 0, i64 %[[T6]], i64 30766) ]
 
 void testD3m1(D3 *a) {
   a->m1();
@@ -454,8 +439,7 @@ void testD3m1(D3 *a) {
 // CHECK: %[[VFN:.*]] = getelementptr inbounds ptr, ptr %[[V6]], i64 2
 // CHECK: %[[V7:.*]] = load ptr, ptr %[[VFN]], align 8
 // CHECK: %[[V8:.*]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[V9:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[V8]], i64 43073)
-// CHECK: call void %[[V7]](ptr noundef nonnull align 8 dereferenceable(12) %[[ADD_PTR]]) [ "ptrauth"(i32 0, i64 %[[V9]]) ]
+// CHECK: call void %[[V7]](ptr noundef nonnull align 8 dereferenceable(12) %[[ADD_PTR]]) [ "ptrauth"(i64 0, i64 %[[V8]], i64 43073) ]
 
 void testD3m2(D3 *a) {
   a->m2();
@@ -470,8 +454,7 @@ void testD3m2(D3 *a) {
 // CHECK: %[[VFN:[a-z]+]] = getelementptr inbounds ptr, ptr %[[T4]], i64 3
 // CHECK: %[[T5:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 62452)
-// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// CHECK: call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i64 0, i64 %[[T6]], i64 62452) ]
 
 void testD3Destructor0(D3 *a) {
   delete a;
@@ -493,9 +476,8 @@ void testD3Destructor0(D3 *a) {
 // CHECK: %[[VFN:[a-z0-9]+]] = getelementptr inbounds ptr, ptr %[[T11]], i64 2
 // CHECK: %[[T12:[0-9]+]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T13:[0-9]+]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T14:[0-9]+]] = call i64 @llvm.ptrauth.blend(i64 %[[T13]], i64 57279)
-// DARWIN: %call = call noundef ptr %[[T12]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i32 0, i64 %[[T14]]) ]
-// ELF:    call void %[[T12]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i32 0, i64 %[[T14]]) ]
+// DARWIN: %call = call noundef ptr %[[T12]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i64 0, i64 %[[T13]], i64 57279) ]
+// ELF:    call void %[[T12]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i64 0, i64 %[[T13]], i64 57279) ]
 // CHECK: call void @_ZdlPv(ptr noundef %[[T7]])
 
 void testD3Destructor1(D3 *a) {
@@ -511,9 +493,8 @@ void testD3Destructor1(D3 *a) {
 // CHECK: %[[VFN:.*]] = getelementptr inbounds ptr, ptr %[[T4]], i64 2
 // CHECK: %[[T5:.*]] = load ptr, ptr %[[VFN]]
 // CHECK: %[[T6:.*]] = ptrtoint ptr %[[VFN]] to i64
-// CHECK: %[[T7:.*]] = call i64 @llvm.ptrauth.blend(i64 %[[T6]], i64 57279)
-// DARWIN: %call = call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i32 0, i64 %[[T7]]) ]
-// ELF:    call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i32 0, i64 %[[T7]]) ]
+// DARWIN: %call = call noundef ptr %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i64 0, i64 %[[T6]], i64 57279) ]
+// ELF:    call void %[[T5]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(32) %{{.*}}) #{{.*}} [ "ptrauth"(i64 0, i64 %[[T6]], i64 57279) ]
 
 void testD3Destructor2(D3 *a) {
   a->~D3();

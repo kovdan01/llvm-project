@@ -14,7 +14,7 @@ void test_indirect_call(void (*fp(void))) {
   // CHECK: %[[FP_ADDR:.*]] = alloca ptr, align 8
   // CHECK: store ptr %[[FP]], ptr %[[FP_ADDR]], align 8
   // CHECK: %[[V0:.*]] = load ptr, ptr %[[FP_ADDR]], align 8
-  // CHECK: %[[CALL:.*]] = call ptr %[[V0]]() [ "ptrauth"(i32 0, i64 0) ]
+  // CHECK: %[[CALL:.*]] = call ptr %[[V0]]() [ "ptrauth"(i64 0, i64 0) ]
   fp();
 }
 

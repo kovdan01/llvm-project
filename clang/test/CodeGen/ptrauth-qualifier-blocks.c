@@ -30,14 +30,12 @@ void test_block_address_capture() {
   // CHECK: store i32 1107296256, ptr
   // CHECK: [[CAPTURE:%.*]] = getelementptr inbounds {{.*}} [[BLOCK]], i32 0, i32 5
   // CHECK: [[LOAD:%.*]] = load ptr, ptr [[VAR]],
-  // CHECK: [[T0:%.*]] = ptrtoint ptr [[VAR]] to i64
-  // CHECK: [[OLDDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 30)
-  // CHECK: [[T0:%.*]] = ptrtoint ptr [[CAPTURE]] to i64
-  // CHECK: [[NEWDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 30)
+  // CHECK: [[T01:%.*]] = ptrtoint ptr [[VAR]] to i64
+  // CHECK: [[T02:%.*]] = ptrtoint ptr [[CAPTURE]] to i64
   // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
   // CHECK: br i1 [[T0]]
   // CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-  // CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[OLDDISC]]), "ptrauth"(i64 1, i64 [[NEWDISC]]) ]
+  // CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[T01]], i64 30), "ptrauth"(i64 1, i64 [[T02]], i64 30) ]
   // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
   // CHECK: [[T0:%.*]] = phi
   // CHECK: store ptr [[T0]], ptr [[CAPTURE]]
@@ -45,21 +43,18 @@ void test_block_address_capture() {
   use_block(^{ return ptr->value; });
 }
 // CHECK-LABEL: define internal i32 @__test_block_address_capture_block_invoke
-// CHECK: [[DISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 {{.*}}, i64 30)
-// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 [[DISC]]) ]
+// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 {{.*}}, i64 30) ]
 
 // CHECK: linkonce_odr hidden void @__copy_helper_block_8_32p1d30(
 // CHECK: [[OLDSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 5
 // CHECK: [[NEWSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 5
 // CHECK: [[LOAD:%.*]] = load ptr, ptr [[OLDSLOT]],
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[OLDSLOT]] to i64
-// CHECK: [[OLDDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 30)
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
-// CHECK: [[NEWDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 30)
+// CHECK: [[T01:%.*]] = ptrtoint ptr [[OLDSLOT]] to i64
+// CHECK: [[T02:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
 // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK: br i1 [[T0]]
 // CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[OLDDISC]]), "ptrauth"(i64 1, i64 [[NEWDISC]]) ]
+// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[T01]], i64 30), "ptrauth"(i64 1, i64 [[T02]], i64 30) ]
 // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK: [[T0:%.*]] = phi
 // CHECK: store ptr [[T0]], ptr [[NEWSLOT]]
@@ -101,14 +96,12 @@ void test_block_address_byref_capture() {
 // CHECK: [[NEWSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 6
 // CHECK: [[OLDSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 6
 // CHECK: [[LOAD:%.*]] = load ptr, ptr [[OLDSLOT]],
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[OLDSLOT]] to i64
-// CHECK: [[OLDDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 60)
-// CHECK: [[T0:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
-// CHECK: [[NEWDISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[T0]], i64 60)
+// CHECK: [[T01:%.*]] = ptrtoint ptr [[OLDSLOT]] to i64
+// CHECK: [[T02:%.*]] = ptrtoint ptr [[NEWSLOT]] to i64
 // CHECK: [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK: br i1 [[T0]]
 // CHECK: [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[OLDDISC]]), "ptrauth"(i64 1, i64 [[NEWDISC]]) ]
+// CHECK: [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[T01]], i64 60), "ptrauth"(i64 1, i64 [[T02]], i64 60) ]
 // CHECK: [[T2:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK: [[T0:%.*]] = phi
 // CHECK: store ptr [[T0]], ptr [[NEWSLOT]]

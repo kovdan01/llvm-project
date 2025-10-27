@@ -875,10 +875,15 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
     assert(Schema.getKey() == AuthInfo.getKey() &&
            "Keys for virtual and non-virtual member functions must match");
     auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
+    assert(!AuthInfo.isBlended() &&
+           isa<llvm::ConstantInt>(NonVirtualDiscriminator));
+    // FIXME This does not involve call to @llvm.ptrauth.blend(), but such
+    //       usage of constant modifier is unsafe.
+
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
         Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI);
+        Schema.authenticatesNullValues(), DiscriminatorPHI, nullptr);
   }
 
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
@@ -913,6 +918,7 @@ static llvm::Constant *pointerAuthResignConstant(
   assert(CPA->getKey()->getZExtValue() == CurAuthInfo.getKey() &&
          CPA->getAddrDiscriminator()->isZeroValue() &&
          CPA->getDiscriminator() == CurAuthInfo.getDiscriminator() &&
+         !CurAuthInfo.isBlended() && !NewAuthInfo.isBlended() &&
          "unexpected key or discriminators");
 
   return CGM.getConstantSignedPointer(
@@ -1772,7 +1778,7 @@ llvm::Value *ItaniumCXXABI::emitExactDynamicCast(
     // authenticate the resulting v-table at the end of the cast check.
     PerformPostCastAuthentication = CGF.getLangOpts().PointerAuthCalls;
     CGPointerAuthInfo StrippingAuthInfo(0, PointerAuthenticationMode::Strip,
-                                        false, false, nullptr);
+                                        false, false, nullptr, nullptr);
     Address VTablePtrPtr = ThisAddr.withElementType(CGF.VoidPtrPtrTy);
     VTable = CGF.Builder.CreateLoad(VTablePtrPtr, "vtable");
     if (PerformPostCastAuthentication)

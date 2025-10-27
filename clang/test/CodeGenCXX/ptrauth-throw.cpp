@@ -22,10 +22,10 @@ void f() {
 
 // __cxa_throw is defined to take its destructor as "void (*)(void *)" in the ABI.
 // CHECK-LABEL: define{{.*}} void @__cxa_throw({{.*}})
-// CHECK: call void {{%.*}}(ptr noundef {{%.*}}) [ "ptrauth"(i32 0, i64 0) ]
+// CHECK: call void {{%.*}}(ptr noundef {{%.*}}) [ "ptrauth"(i64 0, i64 0) ]
 
 // CHECKDISC-LABEL: define{{.*}} void @__cxa_throw({{.*}})
-// CHECKDISC: call void {{%.*}}(ptr noundef {{%.*}}) [ "ptrauth"(i32 0, i64 10942) ]
+// CHECKDISC: call void {{%.*}}(ptr noundef {{%.*}}) [ "ptrauth"(i64 0, i64 10942) ]
 
 extern "C" void __cxa_throw(void *exception, void *, void (*dtor)(void *)) {
   dtor(exception);

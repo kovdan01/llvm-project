@@ -5,7 +5,7 @@ void f(void);
 auto &f_ref = f;
 
 // CHECK: define {{(dso_local )?}}void @_Z1gv(
-// CHECK: call void ptrauth (ptr @_Z1fv, i32 0)() [ "ptrauth"(i32 0, i64 0) ]
+// CHECK: call void ptrauth (ptr @_Z1fv, i32 0)() [ "ptrauth"(i64 0, i64 0) ]
 
 void g() { f_ref(); }
 

@@ -97,9 +97,9 @@ void test_call_lvalue_cast() {
   // TYPE: entry:
   // TYPE-NEXT: [[RESIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @f, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 0, i64 2712) ]
   // TYPE-NEXT: [[RESIGN_INT:%.*]] = inttoptr i64 [[RESIGN]] to ptr
-  // TYPE-NEXT: call void [[RESIGN_INT]](i32 noundef 42) [ "ptrauth"(i32 0, i64 2712) ]
+  // TYPE-NEXT: call void [[RESIGN_INT]](i32 noundef 42) [ "ptrauth"(i64 0, i64 2712) ]
   // ZERO-NOT: @llvm.ptrauth.resign
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 42) [ "ptrauth"(i32 0, i64 0) ]
+  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 42) [ "ptrauth"(i64 0, i64 0) ]
 }
 
 

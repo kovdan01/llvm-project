@@ -3291,13 +3291,17 @@ void CodeGenFunction::EmitPointerAuthOperandBundle(
   if (!PointerAuth.isSigned())
     return;
 
-  auto *Key = Builder.getInt32(PointerAuth.getKey());
+  SmallVector<llvm::Value *> Args;
+  Args.push_back(Builder.getInt64(PointerAuth.getKey()));
+  if (!PointerAuth.getDiscriminator() && !PointerAuth.getExtraDiscriminator()) {
+    Args.push_back(Builder.getInt64(0));
+  } else {
+    if (llvm::Value *V = PointerAuth.getDiscriminator())
+      Args.push_back(V);
+    if (llvm::Value *V = PointerAuth.getExtraDiscriminator())
+      Args.push_back(V);
+  }
 
-  llvm::Value *Discriminator = PointerAuth.getDiscriminator();
-  if (!Discriminator)
-    Discriminator = Builder.getSize(0);
-
-  llvm::Value *Args[] = {Key, Discriminator};
   Bundles.emplace_back("ptrauth", Args);
 }
 
@@ -3308,14 +3312,9 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
   if (!PointerAuth)
     return Pointer;
 
-  llvm::Value *Key = CGF.Builder.getInt64(PointerAuth.getKey());
-
-  llvm::Value *Discriminator = PointerAuth.getDiscriminator();
-  if (!Discriminator) {
-    Discriminator = CGF.Builder.getSize(0);
-  }
-
-  llvm::OperandBundleDef OB("ptrauth", ArrayRef({Key, Discriminator}));
+  SmallVector<llvm::OperandBundleDef, 1> OBs;
+  CGF.EmitPointerAuthOperandBundle(PointerAuth, OBs);
+  assert(OBs.size() == 1);
 
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
@@ -3323,7 +3322,7 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
 
   // call i64 @llvm.ptrauth.sign.i64(i64 %pointer, i32 %key, i64 %discriminator)
   auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID);
-  Pointer = CGF.EmitPtrAuthRuntimeCall(Intrinsic, {Pointer}, {OB});
+  Pointer = CGF.EmitPtrAuthRuntimeCall(Intrinsic, {Pointer}, OBs);
 
   // Convert back to the original type.
   Pointer = CGF.Builder.CreateIntToPtr(Pointer, OrigType);
