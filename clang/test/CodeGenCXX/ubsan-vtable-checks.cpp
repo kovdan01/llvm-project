@@ -82,7 +82,6 @@ U* dyncast(T *t) {
   // CHECK-VPTR-NOT: call ptr @__{{dynamic_cast|RTDynamicCast}}
   // CHECK-VPTR: br i1 {{.*}} label %{{.*}}
   // CHECK-PTRAUTH: [[V0:%.*]] = ptrtoint ptr {{%.*}} to i64
-  // CHECK-PTRAUTH: [[BLENDED:%.*]] = call i64 @llvm.ptrauth.blend(i64 [[V0]], i64 17113)
   // CHECK-PTRAUTH: [[CAST_VTABLE:%.*]] = ptrtoint ptr {{%.*}} to i64
   // CHECK-PTRAUTH: [[STRIPPED_VTABLE:%.*]] = call i64 @llvm.ptrauth.strip(i64 [[CAST_VTABLE]]) [ "ptrauth"(i64 0) ]
   // CHECK-PTRAUTH: [[STRIPPED_PTR:%.*]] = inttoptr i64 [[STRIPPED_VTABLE]] to ptr

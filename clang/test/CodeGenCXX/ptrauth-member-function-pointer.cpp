@@ -182,14 +182,16 @@ struct Class0 {
 // Check that the return value of the musttail call isn't copied to a temporary.
 
 // CHECK: define linkonce_odr hidden [2 x i64] @_ZN8Derived010return_aggEv_vfpthunk_(ptr noundef %{{.*}})
-// CHECK: %[[CALL:.*]] = musttail call [2 x i64] %{{.*}}(ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %{{.*}}) [ "ptrauth"(i32 0, i64 %{{.*}}) ]
+// CHECK: %[[DISC:.*]] = call i64 @llvm.ptrauth.blend(i64 {{.*}}, i64 13445)
+// CHECK: %[[CALL:.*]] = musttail call [2 x i64] %{{.*}}(ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[DISC]]) ]
 // CHECK-NEXT: ret [2 x i64] %[[CALL]]
 
 // Check that the sret pointer passed to the caller is forwarded to the musttail
 // call.
 
 // CHECK: define linkonce_odr hidden void @_ZN8Derived04sretEv_vfpthunk_(ptr dead_on_unwind noalias writable sret(%struct.A1) align 4 %[[AGG_RESULT:.*]], ptr noundef %{{.*}})
-// CHECK: musttail call void %{{.*}}(ptr dead_on_unwind writable  sret(%struct.A1) align 4 %[[AGG_RESULT]], ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %{{.*}}) [ "ptrauth"(i32 0, i64 %{{.*}}) ]
+// CHECK: %[[DISC:.*]] = call i64 @llvm.ptrauth.blend(i64 {{.*}}, i64 41281)
+// CHECK: musttail call void %{{.*}}(ptr dead_on_unwind writable  sret(%struct.A1) align 4 %[[AGG_RESULT]], ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %{{.*}}) [ "ptrauth"(i32 0, i64 %[[DISC]]) ]
 // CHECK-NEXT: ret void
 
 // Check that the thunk function doesn't destruct the trivial_abi argument.

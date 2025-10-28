@@ -45,7 +45,8 @@ void test_block_address_capture() {
   use_block(^{ return ptr->value; });
 }
 // CHECK-LABEL: define internal i32 @__test_block_address_capture_block_invoke
-// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 {{%.*}}) ]
+// CHECK: [[DISC:%.*]] = call i64 @llvm.ptrauth.blend(i64 {{.*}}, i64 30)
+// CHECK: call i64 @llvm.ptrauth.auth(i64 {{%.*}}) [ "ptrauth"(i64 1, i64 [[DISC]]) ]
 
 // CHECK: linkonce_odr hidden void @__copy_helper_block_8_32p1d30(
 // CHECK: [[OLDSLOT:%.*]] = getelementptr inbounds {{.*}} {{.*}}, i32 0, i32 5
