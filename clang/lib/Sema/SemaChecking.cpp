@@ -1784,6 +1784,7 @@ static ExprResult PointerAuthBlendDiscriminator(Sema &S, CallExpr *Call) {
   if (checkPointerAuthValue(S, Call->getArgs()[0], PAO_BlendPointer) ||
       checkPointerAuthValue(S, Call->getArgs()[1], PAO_BlendInteger))
     return ExprError();
+  // FIXME Reject calls to blend not as an argument of auth/sign/resign.
 
   Call->setType(S.Context.getUIntPtrType());
   return Call;
