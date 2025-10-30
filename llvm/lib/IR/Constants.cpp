@@ -2236,7 +2236,7 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
   return Base1 == Base2 && Off1 == Off2;
 }
 
-bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
                                             const DataLayout &DL) const {
   if (BundleOperands.size() == 3)
     return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1],
@@ -2246,6 +2246,11 @@ bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
   return false;
 }
 
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
+                                            const DataLayout &DL) const {
+  SmallVector<Value *> Ops(BundleOperands.begin(), BundleOperands.end());
+  return isKnownCompatibleWith(Ops, DL);
+}
 
 //---- ConstantExpr::get() implementations.
 //

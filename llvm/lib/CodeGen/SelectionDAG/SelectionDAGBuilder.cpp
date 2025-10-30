@@ -6559,9 +6559,14 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
   auto CreatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = I.getOperandBundleAt(Index);
     assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+
+    SmallVector<Value *> Inputs;
+    TLI.normalizePtrAuthBundle(I, Bundle, Inputs);
+
     SmallVector<SDValue> Ops;
-    for (Value *Operand : Bundle.Inputs)
+    for (Value *Operand : Inputs)
       Ops.push_back(getValue(Operand));
+
     return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
   };
 
@@ -9795,15 +9800,18 @@ void SelectionDAGBuilder::visitCall(const CallInst &I) {
 
 void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
     const CallBase &CB, const BasicBlock *EHPadBB) {
+  const TargetLowering &TLI = DAG.getTargetLoweringInfo();
   auto PAB = CB.getOperandBundle("ptrauth");
   const Value *CalleeV = CB.getCalledOperand();
 
   assert(!isa<IntrinsicInst>(CB));
 
+  SmallVector<Value *> BundleOperands;
+  TLI.normalizePtrAuthBundle(CB, *PAB, BundleOperands);
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
   if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
-    if (CalleeCPA->isKnownCompatibleWith(PAB->Inputs, DAG.getDataLayout()))
+    if (CalleeCPA->isKnownCompatibleWith(BundleOperands, DAG.getDataLayout()))
       return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
                          CB.isMustTailCall(), EHPadBB);
 
@@ -9813,7 +9821,7 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   // Otherwise, do an authenticated indirect call.
 
   TargetLowering::PtrAuthInfo PAI;
-  for (const Value *V : PAB->Inputs)
+  for (const Value *V : BundleOperands)
     PAI.Operands.push_back(getValue(V));
 
   LowerCallTo(CB, getValue(CalleeV), CB.isTailCall(), CB.isMustTailCall(),

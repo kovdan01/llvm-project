@@ -29764,6 +29764,63 @@ AArch64TargetLowering::EmitKCFICheck(MachineBasicBlock &MBB,
       .getInstr();
 }
 
+// On AArch64, a normalized "ptrauth" bundle has the form:
+// - "ptrauth"(i64 key) for a call to ptrauth_strip intrinsic
+// - "ptrauth"(i64 key, i64 addr_discr, i64 int_disc) otherwise
+void AArch64TargetLowering::normalizePtrAuthBundle(
+    const CallBase &I, OperandBundleUse OB,
+    SmallVectorImpl<Value *> &Output) const {
+  LLVMContext &Ctx = I.getContext();
+  assert(OB.getTagID() == LLVMContext::OB_ptrauth);
+
+  // Validate target-specific assumptions at least once even in no-assertion
+  // builds, as the IR may be provided by the user.
+
+  auto ReportIf = [&I](bool ErrorCondition, StringRef Msg) {
+    if (!ErrorCondition)
+      return;
+    StringRef FunctionName = I.getFunction()->getName();
+    reportFatalUsageError(FunctionName + ": " + Msg);
+  };
+
+  ReportIf(OB.Inputs.size() < 1 || OB.Inputs.size() > 3,
+           "ptrauth bundles must have from 1 to 3 operands on AArch64");
+
+  // The first operand is always the key ID.
+  ReportIf(!isa<ConstantInt>(OB.Inputs[0]),
+           "Key must be constant in ptrauth bundle on AArch64");
+
+  // FIXME
+  Output.push_back(ConstantInt::get(Ctx, APInt(64, cast<ConstantInt>(OB.Inputs[0])->getZExtValue())));
+
+  // ptrauth_strip requires a single-operand bundle.
+  if (I.getIntrinsicID() == Intrinsic::ptrauth_strip) {
+    ReportIf(OB.Inputs.size() != 1,
+             "@llvm.ptrauth.strip accepts 1-element ptrauth bundle on AArch64");
+    return;
+  }
+
+  // Otherwise we should normalize to a three-operand form.
+
+  if (OB.Inputs.size() == 3) {
+    auto *IntDiscr = dyn_cast<ConstantInt>(OB.Inputs[2]);
+    ReportIf(!IntDiscr || !isUInt<16>(IntDiscr->getZExtValue()),
+             "Constant modifier must be uint16 in ptrauth bundle on AArch64");
+
+    // Nothing to normalize for a valid three-element bundle.
+    Output.append({OB.Inputs[1], OB.Inputs[2]});
+    return;
+  }
+
+  Value *Disc = OB.Inputs[1];
+  Value *Zero = ConstantInt::get(Ctx, APInt::getZero(64));
+  if (isa<ConstantInt>(Disc) &&
+      isUInt<16>(cast<ConstantInt>(Disc)->getZExtValue()))
+    Output.append({Zero, Disc});
+  else
+    Output.append({Disc, Zero});
+}
+
 bool AArch64TargetLowering::enableAggressiveFMAFusion(EVT VT) const {
   return Subtarget->hasAggressiveFMA() && VT.isFloatingPoint();
 }

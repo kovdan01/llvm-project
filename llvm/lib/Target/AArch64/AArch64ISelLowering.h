@@ -469,6 +469,9 @@ public:
 
   bool supportPtrAuthBundles() const override { return true; }
 
+  void normalizePtrAuthBundle(const CallBase &I, OperandBundleUse OB,
+                              SmallVectorImpl<Value *> &Output) const override;
+
   bool supportKCFIBundles() const override { return true; }
 
   MachineInstr *EmitKCFICheck(MachineBasicBlock &MBB,

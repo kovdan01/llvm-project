@@ -2206,11 +2206,16 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   auto TranslatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = CI.getOperandBundleAt(Index);
     assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+
+    SmallVector<Value *> Operands;
+    TLI->normalizePtrAuthBundle(CI, Bundle, Operands);
+
     Register Res = MRI->createGenericVirtualRegister(LLT::token());
     auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
     Builder.addDef(Res);
-    for (Value *Operand : Bundle.Inputs)
+    for (Value *Operand : Operands)
       Builder.addUse(getOrCreateVReg(*Operand));
+
     return Res;
   };
 
@@ -2796,15 +2801,18 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
 
     assert(!isa<IntrinsicInst>(CB));
 
+    SmallVector<Value *> BundleOperands;
+    TLI->normalizePtrAuthBundle(CB, *Bundle, BundleOperands);
+
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.
     // CallLowering will use the raw pointer if it doesn't find the PAI.
     const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CB.getCalledOperand());
     if (!CalleeCPA || !isa<Function>(CalleeCPA->getPointer()) ||
-        !CalleeCPA->isKnownCompatibleWith(Bundle->Inputs, *DL)) {
+        !CalleeCPA->isKnownCompatibleWith(BundleOperands, *DL)) {
       // If we can't make it direct, package the bundle into PAI.
       PAI = CallLowering::PtrAuthInfo();
-      for (const Value *V : Bundle->Inputs)
+      for (const Value *V : BundleOperands)
         PAI->Operands.push_back(getOrCreateVReg(*V));
     }
   }
