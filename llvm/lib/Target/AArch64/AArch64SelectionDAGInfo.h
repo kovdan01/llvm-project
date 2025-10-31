@@ -62,6 +62,13 @@ public:
                                             SDValue Chain, SDValue Dst,
                                             SDValue Src, SDValue Size,
                                             RTLIB::Libcall LC) const;
+
+  std::tuple<SDValue, SDValue, SDValue>
+  extractPtrauthBlendDiscriminators(ArrayRef<SDValue> Operands, const SDLoc &DL,
+                                    SelectionDAG *DAG) const;
+
+  std::tuple<SDValue, SDValue, SDValue>
+  extractPtrauthBlendDiscriminators(SDValue Bundle, SelectionDAG *DAG) const;
 };
 } // namespace llvm
 

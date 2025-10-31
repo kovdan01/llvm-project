@@ -99,40 +99,19 @@ bool AArch64GISelUtils::tryEmitBZero(MachineInstr &MI,
 std::tuple<uint64_t, uint64_t, Register>
 AArch64GISelUtils::extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
                                                      MachineRegisterInfo &MRI) {
+  // Should be handled by AArch64TargetLowering::normalizePtrAuthBundle.
+  assert(Operands.size() == 3);
+
   uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
-  if (Operands.size() == 3) {
-    uint64_t ConstDiscVal = getIConstantVRegVal(Operands[2], MRI)->getZExtValue();
-    assert(isUInt<16>(ConstDiscVal));
-    return { KeyVal, ConstDiscVal, Operands[1] };
-  }
+  uint64_t ConstDiscVal = getIConstantVRegVal(Operands[2], MRI)->getZExtValue();
+  assert(isUInt<16>(ConstDiscVal));
 
-  // Stay fully compatible for now.
-  Register Disc = Operands[1];
+  Register AddrDisc = Operands[1];
+  std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
+  if (AddrDiscVal && AddrDiscVal->isZero())
+    AddrDisc = AArch64::NoRegister;
 
-  Register AddrDisc = Disc;
-  uint16_t ConstDisc = 0;
-
-  if (auto ConstDiscVal = getIConstantVRegVal(Disc, MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = AArch64::NoRegister;
-    }
-    return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
-  }
-
-  const MachineInstr *DiscMI = MRI.getVRegDef(Disc);
-  if (!DiscMI || DiscMI->getOpcode() != TargetOpcode::G_INTRINSIC ||
-      DiscMI->getOperand(1).getIntrinsicID() != Intrinsic::ptrauth_blend)
-    return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
-
-  if (auto ConstDiscVal =
-          getIConstantVRegVal(DiscMI->getOperand(3).getReg(), MRI)) {
-    if (isUInt<16>(ConstDiscVal->getZExtValue())) {
-      ConstDisc = ConstDiscVal->getZExtValue();
-      AddrDisc = DiscMI->getOperand(2).getReg();
-    }
-  }
-  return std::make_tuple(KeyVal, ConstDisc, AddrDisc);
+  return { KeyVal, ConstDiscVal, AddrDisc };
 }
 
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(

@@ -12,6 +12,7 @@
 
 #include "AArch64SelectionDAGInfo.h"
 #include "AArch64MachineFunctionInfo.h"
+#include "llvm/CodeGen/SDPatternMatch.h"
 
 #define GET_SDNODE_DESC
 #include "AArch64GenSDNodeInfo.inc"
@@ -340,4 +341,35 @@ SDValue AArch64SelectionDAGInfo::EmitTargetCodeForSetTag(
 
   DAG.setNodeMemRefs(cast<MachineSDNode>(St), {BaseMemOperand});
   return SDValue(St, 2);
+}
+
+std::tuple<SDValue, SDValue, SDValue>
+AArch64SelectionDAGInfo::extractPtrauthBlendDiscriminators(
+    ArrayRef<SDValue> Operands, const SDLoc &DL, SelectionDAG *DAG) const {
+  using namespace SDPatternMatch;
+
+  // Should be handled by AArch64TargetLowering::normalizePtrAuthBundle.
+  assert(Operands.size() == 3);
+
+  auto *KeyN = cast<ConstantSDNode>(Operands[0]);
+  auto *ConstDiscN = cast<ConstantSDNode>(Operands[2]);
+
+  SDValue AddrDisc = Operands[1];
+  if (sd_match(Operands[1], m_SpecificInt(0)))
+    AddrDisc = DAG->getRegister(AArch64::XZR, MVT::i64);
+
+  return std::make_tuple(
+      DAG->getTargetConstant(KeyN->getZExtValue(), DL, MVT::i64),
+      DAG->getTargetConstant(ConstDiscN->getZExtValue(), DL, MVT::i64),
+      AddrDisc);
+}
+
+std::tuple<SDValue, SDValue, SDValue>
+AArch64SelectionDAGInfo::extractPtrauthBlendDiscriminators(
+    SDValue Bundle, SelectionDAG *DAG) const {
+  assert(Bundle->getOpcode() == ISD::PtrAuthBundle);
+  SDLoc DL(Bundle);
+  SmallVector<SDValue, 3> Operands(Bundle->ops());
+
+  return extractPtrauthBlendDiscriminators(Operands, DL, DAG);
 }

@@ -351,46 +351,6 @@ static bool isZeroingInactiveLanes(SDValue Op) {
   }
 }
 
-static std::tuple<SDValue, SDValue>
-extractPtrauthBlendDiscriminators(SmallVector<SDValue> Operands, SelectionDAG *DAG) {
-  SDValue AddrDisc;
-  SDValue ConstDisc;
-
-  if (Operands.size() == 3)
-    return {Operands[2], Operands[1]};
-
-  // Stay fully compatible for now.
-  SDValue Disc = Operands[1];
-  SDLoc DL(Disc);
-
-  // If this is a blend, remember the constant and address discriminators.
-  // Otherwise, it's either a constant discriminator, or a non-blended
-  // address discriminator.
-  if (Disc->getOpcode() == ISD::INTRINSIC_WO_CHAIN &&
-      Disc->getConstantOperandVal(0) == Intrinsic::ptrauth_blend) {
-    AddrDisc = Disc->getOperand(1);
-    ConstDisc = Disc->getOperand(2);
-  } else {
-    ConstDisc = Disc;
-  }
-
-  // If the constant discriminator (either the blend RHS, or the entire
-  // discriminator value) isn't a 16-bit constant, bail out, and let the
-  // discriminator be computed separately.
-  const auto *ConstDiscN = dyn_cast<ConstantSDNode>(ConstDisc);
-  if (!ConstDiscN || !isUInt<16>(ConstDiscN->getZExtValue()))
-    return std::make_tuple(DAG->getTargetConstant(0, DL, MVT::i64), Disc);
-
-  // If there's no address discriminator, use NoRegister, which we'll later
-  // replace with XZR, or directly use a Z variant of the inst. when available.
-  if (!AddrDisc)
-    AddrDisc = DAG->getRegister(AArch64::NoRegister, MVT::i64);
-
-  return std::make_tuple(
-      DAG->getTargetConstant(ConstDiscN->getZExtValue(), DL, MVT::i64),
-      AddrDisc);
-}
-
 AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
                                              const AArch64Subtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
@@ -3303,43 +3263,19 @@ void AArch64TargetLowering::fixupPtrauthDiscriminator(
 
   Register AddrDisc = AddrDiscOp.getReg();
   int64_t IntDisc = IntDiscOp.getImm();
-  assert(IntDisc == 0 && "Blend components are already expanded");
-
-  const MachineInstr *DiscMI = stripVRegCopies(MRI, AddrDisc);
-  if (DiscMI) {
-    switch (DiscMI->getOpcode()) {
-    case AArch64::MOVKXi:
-      // blend(addr, imm) which is lowered as "MOVK addr, #imm, #48".
-      // #imm should be an immediate and not a global symbol, for example.
-      if (DiscMI->getOperand(2).isImm() &&
-          DiscMI->getOperand(3).getImm() == 48) {
-        AddrDisc = DiscMI->getOperand(1).getReg();
-        IntDisc = DiscMI->getOperand(2).getImm();
-      }
-      break;
-    case AArch64::MOVi32imm:
-    case AArch64::MOVi64imm:
-      // Small immediate integer constant passed via VReg.
-      if (DiscMI->getOperand(1).isImm() &&
-          isUInt<16>(DiscMI->getOperand(1).getImm())) {
-        AddrDisc = AArch64::NoRegister;
-        IntDisc = DiscMI->getOperand(1).getImm();
-      }
-      break;
-    }
-  }
 
   // For uniformity, always use NoRegister, as XZR is not necessarily contained
   // in the requested register class.
   if (AddrDisc == AArch64::XZR)
     AddrDisc = AArch64::NoRegister;
-
+#if 0
   // Make sure AddrDisc operand respects the register class imposed by MI.
   if (AddrDisc && MRI.getRegClass(AddrDisc) != AddrDiscRC) {
     Register TmpReg = MRI.createVirtualRegister(AddrDiscRC);
     BuildMI(*BB, MI, DL, TII->get(AArch64::COPY), TmpReg).addReg(AddrDisc);
     AddrDisc = TmpReg;
   }
+#endif
 
   AddrDiscOp.setReg(AddrDisc);
   IntDiscOp.setImm(IntDisc);
@@ -9379,6 +9315,7 @@ static bool shouldLowerTailCallStackArg(const MachineFunction &MF,
 SDValue
 AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
                                  SmallVectorImpl<SDValue> &InVals) const {
+  const AArch64SelectionDAGInfo *SDI = Subtarget->getSelectionDAGInfo();
   SelectionDAG &DAG = CLI.DAG;
   SDLoc &DL = CLI.DL;
   SmallVector<ISD::OutputArg, 32> &Outs = CLI.Outs;
@@ -9977,16 +9914,14 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   }
 
   if (CLI.PAI) {
-    // Split the discriminator into address/integer components.
-    SDValue AddrDisc, IntDisc;
-    std::tie(IntDisc, AddrDisc) =
-        extractPtrauthBlendDiscriminators(CLI.PAI->Operands, &DAG);
+    auto [Key, IntDisc, AddrDisc] =
+        SDI->extractPtrauthBlendDiscriminators(CLI.PAI->Operands, DL, &DAG);
 
     if (Opc == AArch64ISD::CALL_RVMARKER)
       Opc = AArch64ISD::AUTH_CALL_RVMARKER;
     else
       Opc = IsTailCall ? AArch64ISD::AUTH_TC_RETURN : AArch64ISD::AUTH_CALL;
-    Ops.push_back(CLI.PAI->Operands[0]);
+    Ops.push_back(Key);
     Ops.push_back(IntDisc);
     Ops.push_back(AddrDisc);
   }
@@ -10486,7 +10421,7 @@ AArch64TargetLowering::LowerDarwinGlobalTLSAddress(SDValue Op,
   // With ptrauth-calls, the tlv access thunk pointer is authenticated (IA, 0).
   if (DAG.getMachineFunction().getFunction().hasFnAttribute("ptrauth-calls")) {
     Opcode = AArch64ISD::AUTH_CALL;
-    Ops.push_back(DAG.getConstant(AArch64PACKey::IA, DL, MVT::i32));
+    Ops.push_back(DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i64));
     Ops.push_back(DAG.getTargetConstant(0, DL, MVT::i64)); // Integer Disc.
     Ops.push_back(DAG.getRegister(AArch64::NoRegister, MVT::i64)); // Addr Disc.
   }
