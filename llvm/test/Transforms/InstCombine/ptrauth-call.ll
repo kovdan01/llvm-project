@@ -40,8 +40,7 @@ define i32 @test_ptrauth_call_blend(i32 %a0) {
 ; CHECK-NEXT:    [[V0:%.*]] = call i32 @f(i32 [[A0:%.*]])
 ; CHECK-NEXT:    ret i32 [[V0]]
 ;
-  %v = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 1234)
-  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 %v) ]
+  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 1234) ]
   ret i32 %v0
 }
 
@@ -74,24 +73,18 @@ define i32 @test_ptrauth_call_mismatch_disc(i32 %a0) {
 
 define i32 @test_ptrauth_call_mismatch_blend(i32 %a0) {
 ; CHECK-LABEL: @test_ptrauth_call_mismatch_blend(
-; CHECK-NEXT:    [[V:%.*]] = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 0)
-; CHECK-NEXT:    [[V0:%.*]] = call i32 ptrauth (ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 [[A0:%.*]]) [ "ptrauth"(i32 1, i64 [[V]]) ]
+; CHECK-NEXT:    [[V0:%.*]] = call i32 ptrauth (ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 [[A0:%.*]]) [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 0) ]
 ; CHECK-NEXT:    ret i32 [[V0]]
 ;
-  %v = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 0)
-  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 %v) ]
+  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f_both_disc.ref to i64), i64 0) ]
   ret i32 %v0
 }
 
 define i32 @test_ptrauth_call_mismatch_blend_addr(i32 %a0) {
 ; CHECK-LABEL: @test_ptrauth_call_mismatch_blend_addr(
-; CHECK-NEXT:    [[V:%.*]] = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f_addr_disc.ref to i64), i64 1234)
-; CHECK-NEXT:    [[V0:%.*]] = call i32 ptrauth (ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 [[A0:%.*]]) [ "ptrauth"(i32 1, i64 [[V]]) ]
+; CHECK-NEXT:    [[V0:%.*]] = call i32 ptrauth (ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 [[A0:%.*]]) [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f_addr_disc.ref to i64), i64 1234) ]
 ; CHECK-NEXT:    ret i32 [[V0]]
 ;
-  %v = call i64 @llvm.ptrauth.blend(i64 ptrtoint (ptr @f_addr_disc.ref to i64), i64 1234)
-  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 %v) ]
+  %v0 = call i32 ptrauth(ptr @f, i32 1, i64 1234, ptr @f_both_disc.ref)(i32 %a0) [ "ptrauth"(i32 1, i64 ptrtoint (ptr @f_addr_disc.ref to i64), i64 1234) ]
   ret i32 %v0
 }
-
-declare i64 @llvm.ptrauth.blend(i64, i64)
