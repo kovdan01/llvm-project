@@ -1581,11 +1581,46 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
           {F->arg_begin()->getType(), F->getArg(1)->getType()});
       return true;
     }
+    if (Name.consume_front("ptrauth.")) {
+      // @llvm.ptrauth.sign.generic does not require upgrade.
+      // FIXME Has to match intrinsics by name prefix, otherwise intrinsics
+      //       auto-declaration is not handled correctly.
+      if (Name == "sign.generic")
+        break;
+
+      // @llvm.ptrauth.blend is dropped altogether.
+      if (Name == "blend") {
+        NewFn = nullptr;
+        return true;
+      }
+
+      // All other @llvm.ptrauth.* are upgraded to single-argument intrinsics
+      // with signing schemas passed via separate call operand bundles.
+      if (F->getFunctionType()->getNumParams() == 1)
+        break;
+
+      Intrinsic::ID ID;
+      ID = StringSwitch<Intrinsic::ID>(Name)
+              .StartsWith("auth", Intrinsic::ptrauth_auth)
+              .StartsWith("sign", Intrinsic::ptrauth_sign)
+              .StartsWith("resign", Intrinsic::ptrauth_resign)
+              .StartsWith("strip", Intrinsic::ptrauth_strip)
+              .Default(Intrinsic::not_intrinsic);
+      if (ID == Intrinsic::not_intrinsic)
+        break;
+
+      rename(F);
+      NewFn = Intrinsic::getOrInsertDeclaration(F->getParent(), ID);
+      return true;
+    }
     break;
 
   case 'r': {
     if (Name.consume_front("riscv.")) {
       Intrinsic::ID ID;
+      // FIXME: Matching on the precise string instead of a substring seems to
+      //        be incompatible with auto-declaration of intrinsics, see
+      //        rv32zknd-intrinsic-autoupgrade.ll for example.
       ID = StringSwitch<Intrinsic::ID>(Name)
                .Case("aes32dsi", Intrinsic::riscv_aes32dsi)
                .Case("aes32dsmi", Intrinsic::riscv_aes32dsmi)
@@ -4665,6 +4700,141 @@ static void upgradeDbgIntrinsicToDbgRecord(StringRef Name, CallBase *CI) {
   CI->getParent()->insertDbgRecordBefore(DR, CI->getIterator());
 }
 
+static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs) {
+  IRBuilder<> Builder(CI);
+  Value *Callee = CI->getCalledOperand();
+  SmallVector<Value *> Args;
+  llvm::append_range(Args, CI->args());
+  CallBase *NewCI = Builder.CreateCall(CI->getFunctionType(), Callee,
+                                       Args, OBs);
+  NewCI->takeName(CI);
+  CI->replaceAllUsesWith(NewCI);
+  CI->eraseFromParent();
+
+  return NewCI;
+}
+
+// Transitions a ptrauth intrinsic call site to a half-upgraded state:
+// 1) call %0(a, b, c, d, e) -> call %0(a, 0, 0, 0, 0) [ "ptrauth"(b, c),
+//                                                       "ptrauth"(d, e) ]
+// 2) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(b, c) ]
+// 3) call %0(a, b)          -> call %0(a, 0)    [ "ptrauth"(b) ]
+// 4) any call site with operand bundles attached - kept intact
+//
+// Upgrading ptrauth intrinsics requires inspecting their discriminator
+// operand(s), which can be computed by a separate call to blend().
+//
+// Because @llvm.ptruath.blend intrinsic is removed by AutoUpgrader, the
+// original computation of the discriminator may be removed before regular
+// processing of its users occurs. For that reason, as soon as the particular
+// call to @llvm.ptrauth.blend() is processed, all its users must be ready to
+// absorb the arguments of the original blend call, even if the user is not
+// fully resolved at that time.
+//
+// Thankfully, the transformations to be applied to any *supported* call site
+// can be chosen depending merely on the number of arguments and operand
+// bundles: in the example above, 1) corresponds to resign() call, 2) to auth()
+// and sign(), 3) to strip() and 4) naturally captures the only original use
+// case of "ptrauth" bundles (indirect authenticated calls) as well as any
+// @llvm.ptrauth.* intrinsics which were lazily processed already.
+//
+// Note that the half-upgraded call formally uses the same called function
+// and the same function signature as the original one.
+//
+// FIXME Catch unsupported cases like this:
+//
+//       %blend = call i64 @llvm.ptrauth.blend(...)
+//       %callee = load ptr, ptr fn_ptr
+//       call void %callee(i64 %some_arg, i32 %other_arg, i64 %blend)
+static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
+  if (CI->getNumOperandBundles())
+    return CI;
+
+  LLVMContext &Ctx = CI->getContext();
+  Value *Zero32 = ConstantInt::get(Ctx, APInt::getZero(32));
+  Value *Zero64 = ConstantInt::get(Ctx, APInt::getZero(64));
+  SmallVector<OperandBundleDef, 2> OBs;
+
+  switch (CI->arg_size()) {
+  default:
+#ifndef NDEBUG
+    CI->dump();
+#endif
+    llvm_unreachable("Unexpected intrinsic");
+  case 2:
+    // strip(value, key) -> strip(value, 0) [ "ptrauth"(key) ]
+    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1)}));
+    CI->setArgOperand(1, Zero32);
+    break;
+  case 3:
+    // auth(value, key, disc) -> auth(value, 0, 0) [ "ptrauth"(key, disc) ]
+    // sign(value, key, disc) -> sign(value, 0, 0) [ "ptrauth"(key, disc) ]
+    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1), CI->getArgOperand(2)}));
+    CI->setArgOperand(1, Zero32);
+    CI->setArgOperand(2, Zero64);
+    break;
+  case 5:
+    // resign(value, old_key, old_disc, new_key, new_disc) ->
+    //     resign(value, 0, 0, 0, 0) [ "ptrauth"(old_key, old_disc),
+    //                                 "ptrauth"(new_key, new_disc) ]
+    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1), CI->getArgOperand(2)}));
+    CI->setArgOperand(1, Zero32);
+    CI->setArgOperand(2, Zero64);
+    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(3), CI->getArgOperand(4)}));
+    CI->setArgOperand(3, Zero32);
+    CI->setArgOperand(4, Zero64);
+  }
+
+  // Attach operand bundles by re-creating the call.
+  return setOperandBundles(CI, OBs);
+}
+
+// Fully process a call to @llvm.ptrauth.blend(), lazily updating its users
+// to the extent that they are able to absorb the information from BlendCall.
+static void upgradePtrAuthBlend(CallBase *BlendCall) {
+  // Collect all call instructions to be upgraded before performing any
+  // modifications.
+  SmallPtrSet<CallBase *, 4> UpgradableUsers;
+  for (User *U : BlendCall->users())
+    if (auto *Call = dyn_cast<CallBase>(U))
+      UpgradableUsers.insert(Call);
+
+  Value *AddrDisc = BlendCall->getArgOperand(0);
+  Value *IntDisc = BlendCall->getArgOperand(1);
+
+  for (CallBase *Call : UpgradableUsers) {
+    // Lazily migrate the user to "ptrauth" bundles first.
+    Call = upgradeToPtrAuthBundles(Call);
+
+    SmallVector<OperandBundleDef> OBs;
+    Call->getOperandBundlesAsDefs(OBs);
+
+    // Expand all bundles which refer to *this* blend() call.
+    // This may affect multiple bundles in case of resign() intrinsic which
+    // only changes the key.
+    for (unsigned I = 0, N = OBs.size(); I < N; ++I) {
+      auto OB = Call->getOperandBundleAt(I);
+      // Skip non-ptrauth bundles.
+      if (OB.getTagID() != LLVMContext::OB_ptrauth)
+        continue;
+      // Skip bundles not in the form "ptrauth"(key, %this_blend_call).
+      if (OB.Inputs.size() != 2 || OB.Inputs[1] != BlendCall)
+        continue;
+
+      Value * NewBundleOperands[] = {OB.Inputs[0], AddrDisc, IntDisc};
+      OBs[I] = OperandBundleDef("ptrauth", NewBundleOperands);
+    }
+
+    setOperandBundles(Call, OBs);
+  }
+
+  if (!BlendCall->users().empty()) {
+    errs() << "Cannot upgrade all uses of @llvm.ptrauth.blend in function:\n";
+    BlendCall->getFunction()->print(errs());
+    reportFatalUsageError("Cannot upgrade some uses of @llvm.ptrauth.blend().");
+  }
+}
+
 /// Upgrade a call to an old intrinsic. All argument and return casting must be
 /// provided to seamlessly integrate with existing context.
 void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
@@ -4696,6 +4866,8 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
 
     if (!IsX86 && Name == "stackprotectorcheck") {
       Rep = nullptr;
+    } else if (Name == "ptrauth.blend") {
+      upgradePtrAuthBlend(CI);
     } else if (IsNVVM) {
       Rep = upgradeNVVMIntrinsicCall(Name, CI, F, Builder);
     } else if (IsX86) {
@@ -5382,6 +5554,19 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
     NewCall = Builder.CreateCall(NewFn, Args);
     break;
   }
+  case Intrinsic::ptrauth_auth:
+  case Intrinsic::ptrauth_sign:
+  case Intrinsic::ptrauth_resign:
+  case Intrinsic::ptrauth_strip:
+    CI = upgradeToPtrAuthBundles(CI);
+    Builder.SetInsertPoint(CI);
+
+    Value *Args[] = {CI->getArgOperand(0)};
+    SmallVector<OperandBundleDef, 2> OBs;
+    CI->getOperandBundlesAsDefs(OBs);
+
+    NewCall = Builder.CreateCall(NewFn, Args, OBs);
+    break;
   }
   assert(NewCall && "Should have either set this variable or returned through "
                     "the default case");

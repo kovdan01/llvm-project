@@ -10869,14 +10869,6 @@ let Predicates = [HasMOPS_GO, HasMTE] in {
 }
 
 //-----------------------------------------------------------------------------
-// v8.3 Pointer Authentication late patterns
-
-def : Pat<(int_ptrauth_blend GPR64:$Rd, imm64_0_65535:$imm),
-          (MOVKXi GPR64:$Rd, (trunc_imm imm64_0_65535:$imm), 48)>;
-def : Pat<(int_ptrauth_blend GPR64:$Rd, GPR64:$Rn),
-          (BFMXri GPR64:$Rd, GPR64:$Rn, 16, 15)>;
-
-//-----------------------------------------------------------------------------
 
 // This gets lowered into an instruction sequence of 20 bytes
 let Defs = [X16, X17], mayStore = 1, isCodeGenOnly = 1, Size = 20 in
