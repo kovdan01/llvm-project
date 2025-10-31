@@ -2138,18 +2138,20 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
                                             const Value *AddrDiscriminator,
                                             const Value *IntDisc,
                                             const DataLayout &DL) const {
-
-  if (getKey() != Key)
-    return false;
-
-  // Three-operand bundle implies blend!
-  if (!hasAddressDiscriminator())
+  // If the keys are different, there's no chance for this to be compatible.
+  // FIXME: Should we enforce i64 everywhere?
+  if (getKey()->getZExtValue() != cast<ConstantInt>(Key)->getZExtValue())
     return false;
 
   if (getDiscriminator() != IntDisc)
     return false;
 
-  // FIXME: Copied from the original method:
+  // Key and IntDisc are compatible, let's check AddrDiscriminator.
+
+  // If neither this constant nor the requested schema has an address
+  // discriminator, we are done.
+  if (!hasAddressDiscriminator() && match(AddrDiscriminator, m_Zero()))
+    return true;
 
   // Discriminators are i64, so the provided addr disc may be a ptrtoint.
   if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDiscriminator))
