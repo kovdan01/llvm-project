@@ -66,8 +66,7 @@ define void @f_gc_transition(ptr %ptr) {
 }
 
 define void @f_clang_arc_attachedcall() {
-; CHECK: requires one function as an argument
-; CHECK-NEXT: call ptr @foo0() [ "clang.arc.attachedcall"() ]
+; CHECK-NOT: requires one function as an argument
 ; CHECK-NEXT: Multiple "clang.arc.attachedcall" operand bundles
 ; CHECK-NEXT: call ptr @foo0() [ "clang.arc.attachedcall"(ptr @llvm.objc.retainAutoreleasedReturnValue), "clang.arc.attachedcall"(ptr @llvm.objc.retainAutoreleasedReturnValue) ]
 ; CHECK-NEXT: must call a function returning a pointer

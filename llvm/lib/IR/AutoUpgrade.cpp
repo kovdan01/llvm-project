@@ -4750,10 +4750,23 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   if (CI->getNumOperandBundles())
     return CI;
 
-  LLVMContext &Ctx = CI->getContext();
-  Value *Zero32 = ConstantInt::get(Ctx, APInt::getZero(32));
-  Value *Zero64 = ConstantInt::get(Ctx, APInt::getZero(64));
   SmallVector<OperandBundleDef, 2> OBs;
+
+  auto TryUpgradingToConstantI64 = [](Value *V) -> Value * {
+    auto *Const = dyn_cast<ConstantInt>(V);
+    if (!Const || Const->getType()->isIntegerTy(64))
+      return V;
+    return ConstantInt::get(V->getContext(), Const->getValue().zext(64));
+  };
+  auto UpgradeToBundle = [&](unsigned KeyIndex, unsigned DiscIndex) {
+    Value *Key = CI->getArgOperand(KeyIndex);
+    Value *Disc = CI->getArgOperand(DiscIndex);
+    Value *Inputs[] = {TryUpgradingToConstantI64(Key), Disc};
+    OBs.emplace_back("ptrauth", Inputs);
+
+    CI->setArgOperand(KeyIndex,  ConstantInt::get(Key->getType(),  0));
+    CI->setArgOperand(DiscIndex, ConstantInt::get(Disc->getType(), 0));
+  };
 
   switch (CI->arg_size()) {
   default:
@@ -4761,28 +4774,26 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
     CI->dump();
 #endif
     llvm_unreachable("Unexpected intrinsic");
-  case 2:
+  case 2: {
     // strip(value, key) -> strip(value, 0) [ "ptrauth"(key) ]
-    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1)}));
-    CI->setArgOperand(1, Zero32);
+    Value *Key = CI->getArgOperand(1);
+    Value *Inputs[] = {TryUpgradingToConstantI64(Key)};
+    OBs.emplace_back("ptrauth", Inputs);
+    CI->setArgOperand(1, ConstantInt::get(Key->getType(), 0));
     break;
+  }
   case 3:
     // auth(value, key, disc) -> auth(value, 0, 0) [ "ptrauth"(key, disc) ]
     // sign(value, key, disc) -> sign(value, 0, 0) [ "ptrauth"(key, disc) ]
-    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1), CI->getArgOperand(2)}));
-    CI->setArgOperand(1, Zero32);
-    CI->setArgOperand(2, Zero64);
+    UpgradeToBundle(1, 2);
     break;
   case 5:
     // resign(value, old_key, old_disc, new_key, new_disc) ->
     //     resign(value, 0, 0, 0, 0) [ "ptrauth"(old_key, old_disc),
     //                                 "ptrauth"(new_key, new_disc) ]
-    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(1), CI->getArgOperand(2)}));
-    CI->setArgOperand(1, Zero32);
-    CI->setArgOperand(2, Zero64);
-    OBs.emplace_back("ptrauth", ArrayRef({CI->getArgOperand(3), CI->getArgOperand(4)}));
-    CI->setArgOperand(3, Zero32);
-    CI->setArgOperand(4, Zero64);
+    UpgradeToBundle(1, 2);
+    UpgradeToBundle(3, 4);
+    break;
   }
 
   // Attach operand bundles by re-creating the call.
@@ -6592,4 +6603,18 @@ void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
     return OBD.getTag() == "clang.arc.attachedcall" &&
            OBD.inputs().empty();
   });
+
+  for (unsigned I = 0, N = Bundles.size(); I < N; ++I) {
+    OperandBundleDef &OB = Bundles[I];
+    if (OB.getTag() == "ptrauth" && OB.inputs().size() == 2) {
+      auto *Key = dyn_cast<ConstantInt>(OB.inputs()[0]);
+      if (!Key || !Key->getType()->isIntegerTy(32))
+        continue;
+
+      SmallVector<Value *> Inputs(OB.inputs());
+      Inputs[0] = ConstantInt::get(Key->getContext(),
+                                   Key->getValue().zext(64));
+      Bundles[I] = OperandBundleDef("ptrauth", Inputs);
+    }
+  }
 }

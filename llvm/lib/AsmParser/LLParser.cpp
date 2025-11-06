@@ -3350,6 +3350,20 @@ bool LLParser::parseOptionalOperandBundles(
   return false;
 }
 
+static void upgradeOperandBundles(
+    SmallVectorImpl<OperandBundleDef> &BundleList) {
+  // AutoUpgrader.h exposes an API that accepts std::vector<OperandBundleDef>.
+  // Skip meaningless allocations if no bundles were parsed.
+  // FIXME Is it possible to change UpgradeOperandBundles function to accept
+  //       SmallVectorImpl instead of std::vector?
+  if (BundleList.empty())
+    return;
+
+  std::vector<OperandBundleDef> BundleVector(BundleList.begin(), BundleList.end());
+  UpgradeOperandBundles(BundleVector);
+  BundleList.assign(BundleVector.begin(), BundleVector.end());
+}
+
 bool LLParser::checkValueID(LocTy Loc, StringRef Kind, StringRef Prefix,
                             unsigned NextID, unsigned ID) {
   if (ID < NextID)
@@ -7729,6 +7743,8 @@ bool LLParser::parseInvoke(Instruction *&Inst, PerFunctionState &PFS) {
       parseTypeAndBasicBlock(UnwindBB, PFS))
     return true;
 
+  upgradeOperandBundles(BundleList);
+
   // If RetType is a non-function pointer type, then this is the short syntax
   // for the call, which means that RetType is just the return type.  Infer the
   // rest of the function argument types from the arguments that are present.
@@ -8023,6 +8039,8 @@ bool LLParser::parseCallBr(Instruction *&Inst, PerFunctionState &PFS) {
       parseTypeAndBasicBlock(DefaultDest, PFS) ||
       parseToken(lltok::lsquare, "expected '[' in callbr"))
     return true;
+
+  upgradeOperandBundles(BundleList);
 
   // parse the destination list.
   SmallVector<BasicBlock *, 16> IndirectDests;
@@ -8434,6 +8452,8 @@ bool LLParser::parseCall(Instruction *&Inst, PerFunctionState &PFS,
       parseFnAttributeValuePairs(FnAttrs, FwdRefAttrGrps, false, BuiltinLoc) ||
       parseOptionalOperandBundles(BundleList, PFS))
     return true;
+
+  upgradeOperandBundles(BundleList);
 
   // If RetType is a non-function pointer type, then this is the short syntax
   // for the call, which means that RetType is just the return type.  Infer the
