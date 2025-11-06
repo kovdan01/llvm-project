@@ -25,7 +25,7 @@ define void @call(ptr %obj) {
 
 cont:
   ; CHECK: call void @vf(
-  call void %fptr(ptr %obj) [ "ptrauth"(i32 5, i64 120) ]
+  call void %fptr(ptr %obj) [ "ptrauth"(i64 5, i64 120) ]
   ret void
 
 trap:

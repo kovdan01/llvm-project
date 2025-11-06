@@ -83,7 +83,7 @@
 ; CHECK-NEXT:  .byte 0                           {{.*}} On action: cleanup
 
 define i32 @test_invoke_ia_0(ptr %arg0) #0 personality ptr @__gxx_personality_v0 {
-  %tmp0 = invoke i32 %arg0() [ "ptrauth"(i32 0, i64 0) ] to label %continuebb
+  %tmp0 = invoke i32 %arg0() [ "ptrauth"(i64 0, i64 0) ] to label %continuebb
             unwind label %unwindbb
 
 unwindbb:
@@ -233,7 +233,7 @@ continuebb:
 define void @test_invoke_ib_42_catch(ptr %fptr) #0 personality ptr @__gxx_personality_v0 {
   %tmp0 = call ptr @__cxa_allocate_exception(i64 8)
   store ptr getelementptr inbounds ([6 x i8], ptr @hello_str, i64 0, i64 0), ptr %tmp0, align 8
-  invoke void %fptr(ptr %tmp0, ptr @_ZTIPKc, ptr null) [ "ptrauth"(i32 1, i64 42) ]
+  invoke void %fptr(ptr %tmp0, ptr @_ZTIPKc, ptr null) [ "ptrauth"(i64 1, i64 42) ]
           to label %continuebb unwind label %catchbb
 
 catchbb:
@@ -331,7 +331,7 @@ continuebb:
 ; CHECK-NEXT:  .byte 0                           {{.*}} On action: cleanup
 
 define i32 @test_invoke_ia_0_direct() #0 personality ptr @__gxx_personality_v0 {
-  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0)() [ "ptrauth"(i32 0, i64 0) ] to label %continuebb
+  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0)() [ "ptrauth"(i64 0, i64 0) ] to label %continuebb
             unwind label %unwindbb
 
 unwindbb:
@@ -443,7 +443,7 @@ continuebb:
 ; CHECK-NEXT:  .byte 0                           {{.*}} On action: cleanup
 
 define i32 @test_invoke_ib_2_direct_mismatch() #0 personality ptr @__gxx_personality_v0 {
-  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0, i64 1234)() [ "ptrauth"(i32 1, i64 2) ] to label %continuebb
+  %tmp0 = invoke i32 ptrauth (ptr @baz, i32 0, i64 1234)() [ "ptrauth"(i64 1, i64 2) ] to label %continuebb
             unwind label %unwindbb
 
 unwindbb:
