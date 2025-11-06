@@ -883,7 +883,7 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
     DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
     PointerAuth = CGPointerAuthInfo(
         Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI, nullptr);
+        Schema.authenticatesNullValues(), DiscriminatorPHI);
   }
 
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
@@ -1778,7 +1778,7 @@ llvm::Value *ItaniumCXXABI::emitExactDynamicCast(
     // authenticate the resulting v-table at the end of the cast check.
     PerformPostCastAuthentication = CGF.getLangOpts().PointerAuthCalls;
     CGPointerAuthInfo StrippingAuthInfo(0, PointerAuthenticationMode::Strip,
-                                        false, false, nullptr, nullptr);
+                                        false, false);
     Address VTablePtrPtr = ThisAddr.withElementType(CGF.VoidPtrPtrTy);
     VTable = CGF.Builder.CreateLoad(VTablePtrPtr, "vtable");
     if (PerformPostCastAuthentication)

@@ -87,7 +87,7 @@ CGPointerAuthInfo CodeGenModule::getFunctionPointerAuthInfo(QualType T) {
 
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            /*IsaPointer=*/false, /*AuthenticatesNull=*/false,
-                           Discriminator, nullptr);
+                           Discriminator);
 }
 
 /// Emit the concrete pointer authentication informaton for the
@@ -491,12 +491,12 @@ CGPointerAuthInfo CodeGenModule::getMemberFunctionPointerAuthInfo(QualType FT) {
   assert(!Schema.isAddressDiscriminated() &&
          "function pointers cannot use address-specific discrimination");
 
-  llvm::ConstantInt *Discriminator =
+  llvm::ConstantInt *ExtraDiscriminator =
       getPointerAuthOtherDiscriminator(Schema, GlobalDecl(), FT);
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            /* IsIsaPointer */ false,
                            /* AuthenticatesNullValues */ false, nullptr,
-                           Discriminator);
+                           ExtraDiscriminator);
 }
 
 llvm::Constant *CodeGenModule::getMemberFunctionPointer(llvm::Constant *Pointer,
