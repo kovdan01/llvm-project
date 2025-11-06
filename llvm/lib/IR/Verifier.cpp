@@ -3969,8 +3969,8 @@ void Verifier::visitCallBase(CallBase &Call) {
       ++NumPtrauthBundles;
       Check(!BU.Inputs.empty(), "Expected non-empty ptrauth bundle", Call);
       for (Value *V : BU.Inputs)
-        Check(V->getType()->isIntegerTy(32) || V->getType()->isIntegerTy(64),
-              "Ptrauth bundle must only contain i32 or i64 operands", Call);
+        Check(V->getType()->isIntegerTy(64),
+              "Ptrauth bundle must only contain i64 operands", Call);
     } else if (Tag == LLVMContext::OB_kcfi) {
       Check(!FoundKCFIBundle, "Multiple kcfi operand bundles", Call);
       FoundKCFIBundle = true;
@@ -4015,7 +4015,7 @@ void Verifier::visitCallBase(CallBase &Call) {
     Check(NumPtrauthBundles == 1, "Expected exactly one ptrauth bundle", Call);
     break;
   case Intrinsic::ptrauth_resign:
-    Check(NumPtrauthBundles == 2, "Expected exactly one ptrauth bundle", Call);
+    Check(NumPtrauthBundles == 2, "Expected exactly two ptrauth bundles", Call);
     break;
   default:
     Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle on intrinsic call",
