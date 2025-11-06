@@ -295,7 +295,7 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
   // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(i64 %curKey, i64 %curDiscriminator),
   //                                               "ptrauth"(i64 %newKey, i64 %newDiscriminator)]
   auto *Intrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign);
-  Value = EmitPtrAuthRuntimeCall(Intrinsic, {Value}, OBs);
+  Value = EmitRuntimeCall(Intrinsic, {Value}, OBs);
 
   // Convert back to the original type.
   Value = Builder.CreateIntToPtr(Value, OrigType);

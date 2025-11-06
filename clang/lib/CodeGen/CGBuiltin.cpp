@@ -5819,7 +5819,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       llvm_unreachable("bad ptrauth intrinsic");
     }();
     auto Intrinsic = CGM.getIntrinsic(IntrinsicID);
-    llvm::Value *Result = EmitPtrAuthRuntimeCall(Intrinsic, Args, OBs);
+    llvm::Value *Result = EmitRuntimeCall(Intrinsic, Args, OBs);
 
     if (BuiltinID != Builtin::BI__builtin_ptrauth_sign_generic_data &&
         OrigValueType->isPointerTy()) {

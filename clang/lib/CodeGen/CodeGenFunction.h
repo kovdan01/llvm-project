@@ -4553,10 +4553,10 @@ public:
   llvm::CallInst *EmitRuntimeCall(llvm::FunctionCallee callee,
                                   ArrayRef<llvm::Value *> args,
                                   const Twine &name = "");
-  llvm::CallInst *EmitPtrAuthRuntimeCall(llvm::FunctionCallee callee,
-                                         ArrayRef<llvm::Value *> args,
-                                         ArrayRef<llvm::OperandBundleDef> bundles,
-                                         const Twine &name = "");
+  llvm::CallInst *EmitRuntimeCall(llvm::FunctionCallee callee,
+                                  ArrayRef<llvm::Value *> args,
+                                  ArrayRef<llvm::OperandBundleDef> extraBundles,
+                                  const Twine &name = "");
   llvm::CallInst *EmitNounwindRuntimeCall(llvm::FunctionCallee callee,
                                           const Twine &name = "");
   llvm::CallInst *EmitNounwindRuntimeCall(llvm::FunctionCallee callee,

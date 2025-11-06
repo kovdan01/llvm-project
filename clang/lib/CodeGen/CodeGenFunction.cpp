@@ -3322,7 +3322,7 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
 
   // call i64 @llvm.ptrauth.sign.i64(i64 %pointer, i32 %key, i64 %discriminator)
   auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID);
-  Pointer = CGF.EmitPtrAuthRuntimeCall(Intrinsic, {Pointer}, OBs);
+  Pointer = CGF.EmitRuntimeCall(Intrinsic, {Pointer}, OBs);
 
   // Convert back to the original type.
   Pointer = CGF.Builder.CreateIntToPtr(Pointer, OrigType);
@@ -3346,7 +3346,7 @@ llvm::Value *CodeGenFunction::emitStrip(const CGPointerAuthInfo &PointerAuth,
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
   llvm::OperandBundleDef OB("ptrauth", ArrayRef<llvm::Value *>({Key}));
-  Pointer = EmitPtrAuthRuntimeCall(
+  Pointer = EmitRuntimeCall(
       StripIntrinsic, {Builder.CreatePtrToInt(Pointer, IntPtrTy)}, {OB});
   return Builder.CreateIntToPtr(Pointer, OrigType);
 }
