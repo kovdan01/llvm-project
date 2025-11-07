@@ -123,3 +123,11 @@ exit:
   %res = call i64 @llvm.ptrauth.resign(i64 %p, i32 1, i64 %tmp, i32 2, i64 %tmp)
   ret void
 }
+
+define i64 @test_unused_blend(i64 %addr) {
+; CHECK-LABEL: @test_unused_blend(
+; CHECK-NEXT:    ret i64 [[ADDR:%.*]]
+;
+  %tmp = call i64 @llvm.ptrauth.blend(i64 %addr, i64 1234)
+  ret i64 %addr
+}
