@@ -5743,8 +5743,11 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_ptrauth_sign_constant:
     return RValue::get(ConstantEmitter(*this).emitAbstract(E, E->getType()));
 
-  case Builtin::BI__builtin_ptrauth_blend_discriminator:
-    llvm_unreachable("Standalone blend builtin is not supported");
+  case Builtin::BI__builtin_ptrauth_blend_discriminator: {
+    CGM.Error(E->getExprLoc(), "Standalone blend builtin is not supported");
+    llvm::Type *Ty = ConvertType(E->getType());
+    return RValue::get(llvm::UndefValue::get(Ty));
+  }
 
   case Builtin::BI__builtin_ptrauth_auth:
   case Builtin::BI__builtin_ptrauth_auth_and_resign:
