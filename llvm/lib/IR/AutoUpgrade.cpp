@@ -4747,6 +4747,10 @@ static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs)
 //       %callee = load ptr, ptr fn_ptr
 //       call void %callee(i64 %some_arg, i32 %other_arg, i64 %blend)
 static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
+  // Skip: intrinsic calls are never indirect.
+  if (CI->isIndirectCall())
+    return CI;
+  // Skip: current version or already converted to using bundles.
   if (CI->getNumOperandBundles())
     return CI;
 
@@ -4770,10 +4774,9 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
 
   switch (CI->arg_size()) {
   default:
-#ifndef NDEBUG
-    CI->dump();
-#endif
-    llvm_unreachable("Unexpected intrinsic");
+    // Unknown intrinsic or regular function - skip it now, it will be
+    // reported later as a usage that was not eliminated.
+    return CI;
   case 2: {
     // strip(value, key) -> strip(value, 0) [ "ptrauth"(key) ]
     Value *Key = CI->getArgOperand(1);
