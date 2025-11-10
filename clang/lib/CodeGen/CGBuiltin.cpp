@@ -5754,7 +5754,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_ptrauth_sign_generic_data:
   case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
   case Builtin::BI__builtin_ptrauth_strip: {
-    SmallVector<llvm::Value *, 5> Args;
+    SmallVector<llvm::Value *, 2> Args;
     SmallVector<llvm::OperandBundleDef> OBs;
 
     auto ConvertToInt64 = [&](llvm::Value *V) {

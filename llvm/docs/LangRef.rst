@@ -5288,18 +5288,12 @@ Its type is the same as the first argument.  An integer constant discriminator
 and an address discriminator may be optionally specified.  Otherwise, they have
 values ``i64 0`` and ``ptr null``.
 
-If the address discriminator is ``null`` then the expression is equivalent to
+The expression '``ptrauth(ptr CST, i32 KEY, i64 DISC, ptr ADDRDISC)``' is
+equivalent to
 
 .. code-block:: llvm
 
-    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i32 KEY, i64 DISC) ]
-    %val = inttoptr i64 %tmp to ptr
-
-Otherwise, the expression is equivalent to:
-
-.. code-block:: llvm
-
-    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i32 KEY, i64 ptrtoint (ptr ADDRDISC to i64), i64 DISC) ]
+    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 KEY, i64 ptrtoint (ptr ADDRDISC to i64), i64 DISC) ]
     %val = inttoptr i64 %tmp to ptr
 
 .. _constantexprs:
