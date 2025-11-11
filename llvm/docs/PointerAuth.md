@@ -303,18 +303,16 @@ support for instructions that manipulate Pointer Authentication Codes (PAC).
 Sign and auth operations are parameterized by a constant key identifier and
 a 64-bit discriminator value which is computed according to signing schema.
 
-On AArch64, `ptrauth` bundle may have from one to three operands, the former
-always being constant integer denoting the [key](#keys) identifier and the rest
-operands describing the discriminator being used:
+On AArch64, `ptrauth` bundle may have either one or three operands, depending
+on the callee. The former operand is always a constant integer denoting the
+[key identifier](#keys) and the rest operands describe the discriminator:
 * `"ptrauth"(i64 <key>)`: the operation uses the key `<key>` and the
-  discriminator is zero or not applicable. It is the only form accepted by
-  `@llvm.ptrauth.strip` intrinsic.
-* `"ptrauth"(i64 <key>, i64 raw_disc)`: the 64-bit discriminator value is
-  passed as-is, either constant or not. If constant value is passed, and it
-  fits in 16 bits, it is safely materialized right before its usage.
-* `"ptrauth"(i64 <key>, i64 %addr_modif, i64 <const_modif>)`: the discriminator
+  discriminator is not applicable. This form is used by `@llvm.ptrauth.strip`
+  intrinsic.
+* `"ptrauth"(i64 <key>, i64 <const_modif>, i64 %addr_modif)`: the discriminator
   to be used is computed by [blending](#blend-operation) an integer modifier
-  into an address modifier.
+  into an address modifier. `const_modif` must be unsigned 16-bit integer
+  constant and zero value means `addr_modif` is used without any blending.
 
 #### Keys
 

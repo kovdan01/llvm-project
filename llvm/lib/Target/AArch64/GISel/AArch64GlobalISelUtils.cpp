@@ -99,14 +99,13 @@ bool AArch64GISelUtils::tryEmitBZero(MachineInstr &MI,
 std::tuple<uint64_t, uint64_t, Register>
 AArch64GISelUtils::extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
                                                      MachineRegisterInfo &MRI) {
-  // Should be handled by AArch64TargetLowering::normalizePtrAuthBundle.
   assert(Operands.size() == 3);
 
   uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
-  uint64_t ConstDiscVal = getIConstantVRegVal(Operands[2], MRI)->getZExtValue();
+  uint64_t ConstDiscVal = getIConstantVRegVal(Operands[1], MRI)->getZExtValue();
   assert(isUInt<16>(ConstDiscVal));
 
-  Register AddrDisc = Operands[1];
+  Register AddrDisc = Operands[2];
   std::optional<APInt> AddrDiscVal = getIConstantVRegVal(AddrDisc, MRI);
   if (AddrDiscVal && AddrDiscVal->isZero())
     AddrDisc = AArch64::NoRegister;

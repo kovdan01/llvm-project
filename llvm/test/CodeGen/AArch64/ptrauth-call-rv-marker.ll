@@ -24,7 +24,7 @@ define void @rv_marker_ptrauth_blraa(i8* ()** %arg0, i64 %arg1) {
 ;
 entry:
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -39,7 +39,7 @@ define void @rv_marker_ptrauth_blraa_unsafeClaim(i8* ()** %arg0, i64 %arg1) {
 ;
 entry:
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.unsafeClaimAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.unsafeClaimAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -54,7 +54,7 @@ define void @rv_marker_ptrauth_blraa_disc_imm16(i8* ()** %arg0) {
 ; CHECK-NEXT:    bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 45431), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 45431, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -72,7 +72,7 @@ define void @rv_marker_ptrauth_blraa_multiarg(i8* (i64, i64, i64)** %arg0, i64 %
 ;
 entry:
   %tmp0 = load i8* (i64, i64, i64)*, i8* (i64, i64, i64)** %arg0
-  %call0 = call i8* %tmp0(i64 %c, i64 %b, i64 %a) [ "ptrauth"(i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0(i64 %c, i64 %b, i64 %a) [ "ptrauth"(i64 0, i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -86,7 +86,7 @@ define void @rv_marker_ptrauth_blrab(i8* ()** %arg0, i64 %arg1) {
 ; CHECK-NEXT:   bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 0, i64 %arg1), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -101,7 +101,7 @@ define void @rv_marker_ptrauth_blrab_disc_imm16(i8* ()** %arg0) {
 ; CHECK-NEXT:   bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 256), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 256, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -115,7 +115,7 @@ define void @rv_marker_ptrauth_blraaz(i8* ()** %arg0) {
 ; CHECK-NEXT:   bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 0, i64 0, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -129,7 +129,7 @@ define void @rv_marker_ptrauth_blrabz(i8* ()** %arg0) {
 ; CHECK-NEXT:   bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* ()*, i8* ()** %arg0
-  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0() [ "ptrauth"(i64 1, i64 0, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void
@@ -147,7 +147,7 @@ define void @rv_marker_ptrauth_blrabz_multiarg(i8* (i64, i64, i64)** %arg0, i64 
 ; CHECK-NEXT:    bl objc_retainAutoreleasedReturnValue
 ;
   %tmp0 = load i8* (i64, i64, i64)*, i8* (i64, i64, i64)** %arg0
-  %call0 = call i8* %tmp0(i64 %c, i64 %b, i64 %a) [ "ptrauth"(i64 1, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
+  %call0 = call i8* %tmp0(i64 %c, i64 %b, i64 %a) [ "ptrauth"(i64 1, i64 0, i64 0), "clang.arc.attachedcall"(i8* (i8*)* @llvm.objc.retainAutoreleasedReturnValue) ]
   tail call void @foo2(i8* %call0)
   tail call void @llvm.objc.release(i8* %call0)
   ret void

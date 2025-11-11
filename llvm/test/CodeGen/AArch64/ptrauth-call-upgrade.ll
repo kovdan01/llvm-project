@@ -3,8 +3,8 @@
 
 define void @test_call_imm_disc(ptr %fn) {
 ; CHECK-LABEL: @test_call_imm_disc(
-; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 0) ]
-; CHECK-NEXT:    call void [[FN]]() [ "ptrauth"(i64 1, i64 42) ]
+; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 0, i64 0) ]
+; CHECK-NEXT:    call void [[FN]]() [ "ptrauth"(i64 1, i64 42, i64 0) ]
 ; CHECK-NEXT:    ret void
 ;
   call void %fn() [ "ptrauth"(i32 1, i64 0) ]
@@ -14,7 +14,7 @@ define void @test_call_imm_disc(ptr %fn) {
 
 define void @test_call_addr_disc(ptr %fn, i64 %addr) {
 ; CHECK-LABEL: @test_call_addr_disc(
-; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 [[ADDR:%.*]]) ]
+; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 0, i64 [[ADDR:%.*]]) ]
 ; CHECK-NEXT:    ret void
 ;
   call void %fn() [ "ptrauth"(i32 1, i64 %addr) ]
@@ -23,7 +23,7 @@ define void @test_call_addr_disc(ptr %fn, i64 %addr) {
 
 define void @test_call_blended_disc(ptr %fn, i64 %addr) {
 ; CHECK-LABEL: @test_call_blended_disc(
-; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 [[ADDR:%.*]], i64 42) ]
+; CHECK-NEXT:    call void [[FN:%.*]]() [ "ptrauth"(i64 1, i64 42, i64 [[ADDR:%.*]]) ]
 ; CHECK-NEXT:    ret void
 ;
   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)

@@ -348,15 +348,14 @@ AArch64SelectionDAGInfo::extractPtrauthBlendDiscriminators(
     ArrayRef<SDValue> Operands, const SDLoc &DL, SelectionDAG *DAG) const {
   using namespace SDPatternMatch;
 
-  // Should be handled by AArch64TargetLowering::normalizePtrAuthBundle.
   assert(Operands.size() == 3);
 
   auto *KeyN = cast<ConstantSDNode>(Operands[0]);
-  auto *ConstDiscN = cast<ConstantSDNode>(Operands[2]);
+  auto *ConstDiscN = cast<ConstantSDNode>(Operands[1]);
 
-  SDValue AddrDisc = Operands[1];
-  if (sd_match(Operands[1], m_SpecificInt(0)))
-    AddrDisc = DAG->getRegister(AArch64::XZR, MVT::i64);
+  SDValue AddrDisc = Operands[2];
+  if (sd_match(AddrDisc, m_SpecificInt(0)))
+    AddrDisc = DAG->getRegister(AArch64::NoRegister, MVT::i64);
 
   return std::make_tuple(
       DAG->getTargetConstant(KeyN->getZExtValue(), DL, MVT::i64),

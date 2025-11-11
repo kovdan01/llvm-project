@@ -2281,18 +2281,19 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
   bool IsZeroDisc = DiscReg == AArch64::XZR;
 
   if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
+    emitMovXReg(AArch64::X16, BrTarget);
     // Have to emit separate auth and branch instructions for D-key.
     MCInst AUTInst;
     AUTInst.setOpcode(getAUTOpcodeForKey(Key, IsZeroDisc));
-    AUTInst.addOperand(MCOperand::createReg(BrTarget));
-    AUTInst.addOperand(MCOperand::createReg(BrTarget));
+    AUTInst.addOperand(MCOperand::createReg(AArch64::X16));
+    AUTInst.addOperand(MCOperand::createReg(AArch64::X16));
     if (!IsZeroDisc)
       AUTInst.addOperand(MCOperand::createReg(DiscReg));
     EmitToStreamer(AUTInst);
 
     MCInst BranchInst;
     BranchInst.setOpcode(IsCall ? AArch64::BLR : AArch64::BR);
-    BranchInst.addOperand(MCOperand::createReg(BrTarget));
+    BranchInst.addOperand(MCOperand::createReg(AArch64::X16));
     EmitToStreamer(BranchInst);
     return;
   }
@@ -3027,7 +3028,17 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     Register AddrDisc = MI->getOperand(4).getReg();
 
-    Register ScratchReg = Callee == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+    // AUTH_TCRETURN[_BTI] pseudos are permitted to clobber both X16 and X17.
+    // At the same time, depending on the instruction either Callee or AddrDisc
+    // may be passed in X16 or X17. It is okay to have ScratchDiscReg equal to
+    // DiscReg and and/or ScratchCalleeCopyReg equal to Callee, as long as
+    // Callee != ScratchDiscReg (since Callee is read after the discriminator
+    // computation writes its result).
+    // FIXME: Come up with a cleaner approach.
+    Register ScratchDiscReg = AArch64::X16;
+    Register ScratchCalleeCopyReg = AArch64::X17;
+    if (Callee == ScratchDiscReg)
+      std::swap(ScratchDiscReg, ScratchCalleeCopyReg);
 
     emitPtrauthTailCallHardening(MI);
 
@@ -3041,24 +3052,27 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     // restriction manually not to clobber an unexpected register.
     bool AddrDiscIsImplicitDef =
         AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
-    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
+    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchDiscReg,
                                                 AddrDiscIsImplicitDef);
 
     const bool IsZero = DiscReg == AArch64::XZR;
 
     if (Key == AArch64PACKey::DA || Key == AArch64PACKey::DB) {
       // Have to emit separate auth and branch instructions for D-key.
+      if (Callee != ScratchCalleeCopyReg)
+        emitMovXReg(ScratchCalleeCopyReg, Callee);
+
       MCInst AUTInst;
       AUTInst.setOpcode(getAUTOpcodeForKey(Key, IsZero));
-      AUTInst.addOperand(MCOperand::createReg(Callee));
-      AUTInst.addOperand(MCOperand::createReg(Callee));
+      AUTInst.addOperand(MCOperand::createReg(ScratchCalleeCopyReg));
+      AUTInst.addOperand(MCOperand::createReg(ScratchCalleeCopyReg));
       if (!IsZero)
         AUTInst.addOperand(MCOperand::createReg(DiscReg));
       EmitToStreamer(AUTInst);
 
       MCInst BranchInst;
       BranchInst.setOpcode(AArch64::BR);
-      BranchInst.addOperand(MCOperand::createReg(Callee));
+      BranchInst.addOperand(MCOperand::createReg(ScratchCalleeCopyReg));
       EmitToStreamer(BranchInst);
       return;
     }

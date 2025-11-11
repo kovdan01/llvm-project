@@ -104,7 +104,7 @@ define void @test(i64 %p, ptr %auth_like_fn, i64 %addr) {
 ; "ptrauth" operand bundles must be indirect.
 
 ; DIRECT-THREE-ARGS:      Direct call cannot have a ptrauth bundle
-; DIRECT-THREE-ARGS-NEXT:   call void @auth_like_fn(i64 %p, i32 0, i64 0) [ "ptrauth"(i64 1, i64 %addr, i64 42) ]
+; DIRECT-THREE-ARGS-NEXT:   call void @auth_like_fn(i64 %p, i32 0, i64 0) [ "ptrauth"(i64 1, i64 42, i64 %addr) ]
 ; DIRECT-THREE-ARGS-NEXT: error: input module is broken!
 
 declare void @auth_like_fn(i64 %0, i32 %1, i64 %2)
@@ -121,27 +121,20 @@ define void @test(i64 %p, i64 %addr) {
 ; This test case does not involve auto-upgrading, but it shows the behavior of
 ; the IR verifier if any unrelated intrinsic would be formally auto-upgraded.
 
-; WRONG-INTRINSIC-WITH-PTRAUTH-BUNDLE:      Unexpected ptrauth bundle on intrinsic call
-; WRONG-INTRINSIC-WITH-PTRAUTH-BUNDLE-NEXT:   %1 = call i64 @llvm.ptrauth.sign.generic(i64 %p, i64 0) [ "ptrauth"(i64 1, i64 %addr, i64 42) ]
+; WRONG-INTRINSIC-WITH-PTRAUTH-BUNDLE:      Unexpected ptrauth bundle
+; WRONG-INTRINSIC-WITH-PTRAUTH-BUNDLE-NEXT:   %1 = call i64 @llvm.ptrauth.sign.generic(i64 %p, i64 0) [ "ptrauth"(i64 1, i64 42, i64 %addr) ]
 ; WRONG-INTRINSIC-WITH-PTRAUTH-BUNDLE-NEXT: /data/ast/llvm-project/build/bin/opt: -: error: input module is broken!
 
 define void @test(i64 %p, ptr %auth_like_fn, i64 %addr) {
-  %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
   ; The below call uses the new-style all-i64 ptrauth bundle.
-  call i64 @llvm.ptrauth.sign.generic(i64 %p, i64 0) [ "ptrauth"(i64 1, i64 %disc) ]
+  call i64 @llvm.ptrauth.sign.generic(i64 %p, i64 0) [ "ptrauth"(i64 1, i64 42, i64 %addr) ]
   ret void
 }
 
 ;--- wrong-position-in-bundle.ll
 ; RUN: not opt -passes=verify -S < %t/wrong-position-in-bundle.ll 2>&1 | FileCheck --check-prefix=WRONG-POSITION-IN-BUNDLE %s
 
-; WRONG-POSITION-IN-BUNDLE:      Cannot upgrade all uses of @llvm.ptrauth.blend in function:
-; WRONG-POSITION-IN-BUNDLE-NEXT: define void @test(i64 %p, i64 %addr) {
-; WRONG-POSITION-IN-BUNDLE-NEXT:   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
-; WRONG-POSITION-IN-BUNDLE-NEXT:   %1 = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 %disc, i64 1) ]
-; WRONG-POSITION-IN-BUNDLE-NEXT:   ret void
-; WRONG-POSITION-IN-BUNDLE-NEXT: }
-; WRONG-POSITION-IN-BUNDLE-NEXT: LLVM ERROR: Cannot upgrade some uses of @llvm.ptrauth.blend().
+; WRONG-POSITION-IN-BUNDLE: LLVM ERROR: Cannot upgrade: expected constant ptrauth key ID
 
 define void @test(i64 %p, i64 %addr) {
   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
@@ -152,13 +145,7 @@ define void @test(i64 %p, i64 %addr) {
 ;--- both-positions-in-bundle.ll
 ; RUN: not opt -passes=verify -S < %t/both-positions-in-bundle.ll 2>&1 | FileCheck --check-prefix=BOTH-POSITIONS-IN-BUNDLE %s
 
-; BOTH-POSITIONS-IN-BUNDLE:      Cannot upgrade all uses of @llvm.ptrauth.blend in function:
-; BOTH-POSITIONS-IN-BUNDLE-NEXT: define void @test(i64 %p, i64 %addr) {
-; BOTH-POSITIONS-IN-BUNDLE-NEXT:   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)
-; BOTH-POSITIONS-IN-BUNDLE-NEXT:   %1 = call i64 @llvm.ptrauth.auth(i64 %p) [ "ptrauth"(i64 %disc, i64 %addr, i64 42) ]
-; BOTH-POSITIONS-IN-BUNDLE-NEXT:   ret void
-; BOTH-POSITIONS-IN-BUNDLE-NEXT: }
-; BOTH-POSITIONS-IN-BUNDLE-NEXT: LLVM ERROR: Cannot upgrade some uses of @llvm.ptrauth.blend().
+; BOTH-POSITIONS-IN-BUNDLE: LLVM ERROR: Cannot upgrade: expected constant ptrauth key ID
 
 define void @test(i64 %p, i64 %addr) {
   %disc = call i64 @llvm.ptrauth.blend(i64 %addr, i64 42)

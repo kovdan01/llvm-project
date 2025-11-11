@@ -147,7 +147,10 @@ def G_PTRAUTH_BUNDLE : GenericInstruction {
 def G_PTRAUTH_AUTH : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
   let InOperandList = (ins type0:$value, untyped_imm_0:$schema);
-  let hasSideEffects = 0;
+  // Authentication should not be speculated: moving G_PTRAUTH_AUTH above the
+  // point where it is known to succeed under correct program operation may
+  // lead to program crashes.
+  let hasSideEffects = 1;
 }
 
 def G_PTRAUTH_SIGN : GenericInstruction {
@@ -159,7 +162,8 @@ def G_PTRAUTH_SIGN : GenericInstruction {
 def G_PTRAUTH_RESIGN : GenericInstruction {
   let OutOperandList = (outs type0:$dst);
   let InOperandList = (ins type0:$value, untyped_imm_0:$old_schema, untyped_imm_0:$new_schema);
-  let hasSideEffects = 0;
+  // Resign includes authentication and thus should not be speculated.
+  let hasSideEffects = 1;
 }
 
 def G_PTRAUTH_STRIP : GenericInstruction {

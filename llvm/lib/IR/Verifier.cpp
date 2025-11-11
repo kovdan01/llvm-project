@@ -3929,10 +3929,6 @@ void Verifier::visitCallBase(CallBase &Call) {
   if (Intrinsic::ID ID = Call.getIntrinsicID())
     visitIntrinsicCall(ID, Call);
 
-  auto IsConstantInt = [](Value *V, unsigned BitWidth) {
-    return isa<ConstantInt>(V) && V->getType()->isIntegerTy(BitWidth);
-  };
-
   // Verify that a callsite has at most one "deopt", at most one "funclet", at
   // most one "gc-transition", at most one "cfguardtarget", at most one
   // "preallocated" operand bundle, and at most one "ptrauth" operand bundle.
@@ -3976,7 +3972,8 @@ void Verifier::visitCallBase(CallBase &Call) {
       FoundKCFIBundle = true;
       Check(BU.Inputs.size() == 1, "Expected exactly one kcfi bundle operand",
             Call);
-      Check(IsConstantInt(BU.Inputs[0], 32),
+      Check(isa<ConstantInt>(BU.Inputs[0]) &&
+                BU.Inputs[0]->getType()->isIntegerTy(32),
             "Kcfi bundle operand must be an i32 constant", Call);
     } else if (Tag == LLVMContext::OB_preallocated) {
       Check(!FoundPreallocatedBundle, "Multiple preallocated operand bundles",
@@ -4018,8 +4015,7 @@ void Verifier::visitCallBase(CallBase &Call) {
     Check(NumPtrauthBundles == 2, "Expected exactly two ptrauth bundles", Call);
     break;
   default:
-    Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle on intrinsic call",
-          Call);
+    Check(NumPtrauthBundles == 0, "Unexpected ptrauth bundle", Call);
     break;
   }
 

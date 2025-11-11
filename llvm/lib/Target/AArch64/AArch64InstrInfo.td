@@ -2128,7 +2128,7 @@ let Predicates = [HasPAuth] in {
     let mayStore = 0;
     let mayLoad = 0;
     let isCall = 1;
-    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
+    let Size = 20; // See AUTH_TCRETURN.
     let Defs = [X16,X17,LR];
     let Uses = [SP];
   }
@@ -2159,8 +2159,8 @@ let Predicates = [HasPAuth] in {
     let isTerminator = 1;
     let isBarrier = 1;
     let isIndirectBranch = 1;
-    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
-    let Defs = [X17];
+    let Size = 20; // See AUTH_TCRETURN.
+    let Defs = [X16, X17];
   }
 
   let isReturn = 1, isTerminator = 1, isBarrier = 1 in {
@@ -2210,8 +2210,8 @@ let Predicates = [HasPAuth] in {
                    [(set GPR64:$SignedVal,
                          (ptrauth_sign GPR64:$Val,
                                        (ptrauth_bundle (i64 imm:$Key),
-                                                       GPR64noip:$AddrDisc,
-                                                       (i64 imm:$Disc))))],
+                                                       (i64 imm:$Disc),
+                                                       GPR64noip:$AddrDisc)))],
                    "$SignedVal = $Val">, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
     let hasSideEffects = 0;
@@ -2278,14 +2278,15 @@ let Predicates = [HasPAuth] in {
     let Size = 8;
   }
 
-  // Size 16: 4 fixed + 8 variable, to compute discriminator.
+  // Size 20: up to 8 to compute discriminator and up to 12 to MOV, AUTD(A|B)
+  //          and branch.
   // The size returned by getInstSizeInBytes() is incremented according
   // to the variant of LR check.
   // As the check requires either x16 or x17 as a scratch register and
   // authenticated tail call instructions have two register operands,
   // make sure at least one register is usable as a scratch one - for that
   // purpose, use tcGPRnotx16x17 register class for one of the operands.
-  let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 16,
+  let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 20,
       Defs = [X16,X17], Uses = [SP] in {
     def AUTH_TCRETURN
       : Pseudo<(outs), (ins tcGPRnotx16x17:$dst, i32imm:$FPDiff, i64imm:$Key,

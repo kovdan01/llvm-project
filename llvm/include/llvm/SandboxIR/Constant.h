@@ -1395,10 +1395,13 @@ public:
   /// Check whether an authentication operation with key \p Key and (possibly
   /// blended) discriminator \p Discriminator is known to be compatible with
   /// this ptrauth signed pointer.
-  bool isKnownCompatibleWith(const Value *Key, const Value *Discriminator,
+  bool isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
                              const DataLayout &DL) const {
+    SmallVector<llvm::Value *> Operands;
+    for (auto *V : BundleOperands)
+      Operands.push_back(V->Val);
     return cast<llvm::ConstantPtrAuth>(Val)->isKnownCompatibleWith(
-        Key->Val, Discriminator->Val, DL);
+        Operands, DL);
   }
 
   /// Produce a new ptrauth expression signing the given value using

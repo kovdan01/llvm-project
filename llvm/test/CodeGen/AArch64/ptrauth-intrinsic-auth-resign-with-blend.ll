@@ -73,7 +73,7 @@ define i64 @test_auth_blend(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:  Lauth_success_0:
 ; TRAP-DARWIN-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1, i64 65535) ]
+  %tmp1 = call i64 @llvm.ptrauth.auth(i64 %arg) [ "ptrauth"(i64 2, i64 65535, i64 %arg1) ]
   ret i64 %tmp1
 }
 
@@ -133,7 +133,7 @@ define i64 @test_resign_blend(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1, i64 12345), "ptrauth"(i64 3, i64 %arg2, i64 56789) ]
+  %tmp2 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 56789, i64 %arg2) ]
   ret i64 %tmp2
 }
 
@@ -190,7 +190,7 @@ define i64 @test_resign_blend_and_const(i64 %arg, i64 %arg1) {
 ; TRAP-NEXT:    pacdb x16, x17
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1, i64 12345), "ptrauth"(i64 3, i64 56789) ]
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 56789, i64 0) ]
   ret i64 %tmp1
 }
 
@@ -244,7 +244,7 @@ define i64 @test_resign_blend_and_addr(i64 %arg, i64 %arg1, i64 %arg2) {
 ; TRAP-NEXT:    pacdb x16, x2
 ; TRAP-NEXT:    mov x0, x16
 ; TRAP-NEXT:    ret
-  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 %arg1, i64 12345), "ptrauth"(i64 3, i64 %arg2) ]
+  %tmp1 = call i64 @llvm.ptrauth.resign(i64 %arg) [ "ptrauth"(i64 2, i64 12345, i64 %arg1), "ptrauth"(i64 3, i64 0, i64 %arg2) ]
   ret i64 %tmp1
 }
 

@@ -1094,17 +1094,8 @@ public:
   /// Check whether an authentication operation with key \p Key and (possibly
   /// blended) discriminator \p Discriminator is known to be compatible with
   /// this ptrauth signed pointer.
-  LLVM_ABI bool isKnownCompatibleWith(const Value *Key,
-                                      const Value *Discriminator,
-                                      const DataLayout &DL) const;
-
-  bool isKnownCompatibleWith(const Value *Key,
-                             const Value *AddrDisc,
-                             const Value *IntDisc,
-                             const DataLayout &DL) const;
+  //  FIXME: LLVM_ABI
   bool isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
-                             const DataLayout &DL) const;
-  bool isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
                              const DataLayout &DL) const;
 
   /// Methods for support type inquiry through isa, cast, and dyn_cast:

@@ -29670,6 +29670,43 @@ bool AArch64TargetLowering::preferSelectsOverBooleanArithmetic(EVT VT) const {
   return !VT.isFixedLengthVector();
 }
 
+std::optional<std::string>
+AArch64TargetLowering::validatePtrAuthBundles(const CallBase &CB) const {
+  auto GetMsg = [&CB](StringRef Str) {
+    return (CB.getFunction()->getName() + ": " + Str).str();
+  };
+
+  for (unsigned I = 0, N = CB.getNumOperandBundles(); I < N; ++I) {
+    OperandBundleUse OB = CB.getOperandBundleAt(I);
+    if (OB.getTagID() != LLVMContext::OB_ptrauth)
+      continue;
+
+    unsigned NumOperands = OB.Inputs.size();
+    if (CB.getIntrinsicID() == Intrinsic::ptrauth_strip) {
+      if (NumOperands != 1)
+        return GetMsg("Single-element ptrauth bundle expected");
+    } else {
+      if (NumOperands != 3)
+        return GetMsg("Three-element ptrauth bundle expected");
+    }
+
+    // The first operand is always the key ID.
+    if (!isa<ConstantInt>(OB.Inputs[0]))
+      return GetMsg("Key must be constant in ptrauth bundle on AArch64");
+
+    // Done validating single-operand bundles.
+    if (NumOperands == 1)
+      continue;
+
+    auto *IntDisc = dyn_cast<ConstantInt>(OB.Inputs[1]);
+    if (!IntDisc || !isUInt<16>(IntDisc->getZExtValue()))
+      return GetMsg("Constant modifier must be 16-bit unsigned constant in "
+                    "ptrauth bundle on AArch64");
+  }
+
+  return std::nullopt;
+}
+
 MachineInstr *
 AArch64TargetLowering::EmitKCFICheck(MachineBasicBlock &MBB,
                                      MachineBasicBlock::instr_iterator &MBBI,
@@ -29697,73 +29734,6 @@ AArch64TargetLowering::EmitKCFICheck(MachineBasicBlock &MBB,
       .addReg(Target.getReg())
       .addImm(MBBI->getCFIType())
       .getInstr();
-}
-
-// On AArch64, a normalized "ptrauth" bundle has the form:
-// - "ptrauth"(i64 key) for a call to ptrauth_strip intrinsic
-// - "ptrauth"(i64 key, i64 addr_disc, i64 int_disc) otherwise
-//
-// Note that on AArch64, PAuth-related pseudo instructions currently represent
-// raw, pre-computed discriminator values as (addr_disc=value, int_disc=0).
-void AArch64TargetLowering::normalizePtrAuthBundle(
-    const CallBase &I, OperandBundleUse OB,
-    SmallVectorImpl<Value *> &Output) const {
-  LLVMContext &Ctx = I.getContext();
-  assert(OB.getTagID() == LLVMContext::OB_ptrauth);
-
-  // Validate target-specific assumptions at least once even in no-assertion
-  // builds, as the IR may be provided by the user.
-  auto Validate = [&I](bool Condition, StringRef Msg) {
-    if (Condition)
-      return;
-    StringRef FunctionName = I.getFunction()->getName();
-    reportFatalUsageError(FunctionName + ": " + Msg);
-  };
-
-  unsigned NumOperands = OB.Inputs.size();
-  Validate(1 <= NumOperands && NumOperands <= 3,
-           "ptrauth bundles must have from 1 to 3 operands on AArch64");
-
-  // The first operand is always the key ID.
-  Value *Key = OB.Inputs[0];
-  Validate(isa<ConstantInt>(Key),
-           "Key must be constant in ptrauth bundle on AArch64");
-
-  // ptrauth_strip requires a single-operand bundle.
-  if (I.getIntrinsicID() == Intrinsic::ptrauth_strip) {
-    Validate(NumOperands == 1,
-             "@llvm.ptrauth.strip accepts 1-element ptrauth bundle on AArch64");
-    Output.append({Key});
-    return;
-  }
-
-  // Otherwise we should normalize to a three-operand form.
-
-  Value *Zero = ConstantInt::get(Ctx, APInt::getZero(64));
-  auto IsValidIntDisc = [](Value *V) {
-    auto *IntDisc = dyn_cast<ConstantInt>(V);
-    return V && isUInt<16>(IntDisc->getZExtValue());
-  };
-
-  if (NumOperands == 1) {
-    // "ptrauth"(key) -> "ptrauth"(key, 0, 0)
-    Output.append({Key, Zero, Zero});
-  } else if (NumOperands == 2) {
-    // "ptrauth"(key, disc) -> "ptrauth"(key, 0, disc), if possible
-    // "ptrauth"(key, disc) -> "ptrauth"(key, disc, 0), otherwise
-    Value *Disc = OB.Inputs[1];
-    if (IsValidIntDisc(Disc))
-      Output.append({Key, /*addr_disc=*/Zero, /*int_disc=*/Disc});
-    else
-      Output.append({Key, /*addr_disc=*/Disc, /*int_disc=*/Zero});
-  } else {
-    // "ptrauth"(key, addr_disc, int_disc) - already normalized, just validate
-    Value *AddrDisc = OB.Inputs[1];
-    Value *IntDisc = OB.Inputs[2];
-    Validate(IsValidIntDisc(IntDisc),
-             "Constant modifier must be uint16 in ptrauth bundle on AArch64");
-    Output.append({Key, AddrDisc, IntDisc});
-  }
 }
 
 bool AArch64TargetLowering::enableAggressiveFMAFusion(EVT VT) const {

@@ -4603,12 +4603,12 @@ public:
   /// Return true if the target supports ptrauth operand bundles.
   virtual bool supportPtrAuthBundles() const { return false; }
 
-  /// Normalize operands of "ptrauth" bundle.
-  virtual void normalizePtrAuthBundle(const CallBase &I, OperandBundleUse OB,
-                                      SmallVectorImpl<Value *> &Output) const {
-    assert(OB.getTagID() == LLVMContext::OB_ptrauth);
-    Output.append(OB.Inputs.begin(), OB.Inputs.end());
-  }
+  /// Perform target-specific validation of "ptrauth" call operand bundles that
+  /// is not covered by Verifier but relied upon by the backend.
+  virtual std::optional<std::string>
+  validatePtrAuthBundles(const CallBase &CB) const {
+    return std::nullopt;
+  };
 
   /// Perform necessary initialization to handle a subset of CSRs explicitly
   /// via copies. This function is called at the beginning of instruction

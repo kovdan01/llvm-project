@@ -18,7 +18,7 @@
 ; CHECK-NEXT:  mov x16, x0
 ; CHECK-NEXT:  braaz x16
 define i32 @test_tailcall_ia_0(i32 ()* %arg0) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -27,7 +27,7 @@ define i32 @test_tailcall_ia_0(i32 ()* %arg0) #0 {
 ; CHECK-NEXT:  mov x16, x0
 ; CHECK-NEXT:  brabz x16
 define i32 @test_tailcall_ib_0(i32 ()* %arg0) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -37,7 +37,7 @@ define i32 @test_tailcall_ib_0(i32 ()* %arg0) #0 {
 ; CHECK-NEXT:  mov x17, #42
 ; CHECK-NEXT:  braa x16, x17
 define i32 @test_tailcall_ia_imm(i32 ()* %arg0) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -47,7 +47,7 @@ define i32 @test_tailcall_ia_imm(i32 ()* %arg0) #0 {
 ; CHECK-NEXT:  mov x17, #42
 ; CHECK-NEXT:  brab x16, x17
 define i32 @test_tailcall_ib_imm(i32 ()* %arg0) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 42) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 42, i64 0) ]
   ret i32 %tmp0
 }
 
@@ -62,7 +62,7 @@ define i32 @test_tailcall_ib_imm(i32 ()* %arg0) #0 {
 ; ELF-NEXT:    braa x16, x1
 define i32 @test_tailcall_ia_var(i32 ()* %arg0, i64* %arg1) #0 {
   %tmp0 = load i64, i64* %arg1
-  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 %tmp0) ]
+  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -77,7 +77,7 @@ define i32 @test_tailcall_ia_var(i32 ()* %arg0, i64* %arg1) #0 {
 ; ELF-NEXT:    brab x16, x1
 define i32 @test_tailcall_ib_var(i32 ()* %arg0, i64* %arg1) #0 {
   %tmp0 = load i64, i64* %arg1
-  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 %tmp0) ]
+  %tmp1 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %tmp0) ]
   ret i32 %tmp1
 }
 
@@ -86,7 +86,7 @@ define i32 @test_tailcall_ib_var(i32 ()* %arg0, i64* %arg1) #0 {
 ; CHECK-NEXT:  mov x16, x0
 ; CHECK-NEXT:  braa x16, x1
 define i32 @test_tailcall_ia_arg(i32 ()* %arg0, i64 %arg1) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 %arg1) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
@@ -95,7 +95,7 @@ define i32 @test_tailcall_ia_arg(i32 ()* %arg0, i64 %arg1) #0 {
 ; CHECK-NEXT:  mov x16, x0
 ; CHECK-NEXT:  brab x16, x1
 define i32 @test_tailcall_ib_arg(i32 ()* %arg0, i64 %arg1) #0 {
-  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 %arg1) ]
+  %tmp0 = tail call i32 %arg0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp0
 }
 
@@ -105,7 +105,7 @@ define i32 @test_tailcall_ib_arg(i32 ()* %arg0, i64 %arg1) #0 {
 ; CHECK-NEXT:  braa x16, x1
 define i32 @test_tailcall_ia_arg_ind(i32 ()** %arg0, i64 %arg1) #0 {
   %tmp0 = load i32 ()*, i32 ()** %arg0
-  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 0, i64 %arg1) ]
+  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 0, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 
@@ -115,7 +115,7 @@ define i32 @test_tailcall_ia_arg_ind(i32 ()** %arg0, i64 %arg1) #0 {
 ; CHECK-NEXT:  brab x16, x1
 define i32 @test_tailcall_ib_arg_ind(i32 ()** %arg0, i64 %arg1) #0 {
   %tmp0 = load i32 ()*, i32 ()** %arg0
-  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 1, i64 %arg1) ]
+  %tmp1 = tail call i32 %tmp0() [ "ptrauth"(i64 1, i64 0, i64 %arg1) ]
   ret i32 %tmp1
 }
 

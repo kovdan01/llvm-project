@@ -5293,10 +5293,15 @@ equivalent to
 
 .. code-block:: llvm
 
-    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 KEY, i64 ptrtoint (ptr ADDRDISC to i64), i64 DISC) ]
+    %tmp = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr CST to i64)) [ "ptrauth"(i64 KEY, i64 DISC, i64 ptrtoint (ptr ADDRDISC to i64)) ]
     %val = inttoptr i64 %tmp to ptr
 
 .. _constantexprs:
+
+That is, the first operand of '``ptrauth``' constant is the pointer to be
+signed (the only argument of '``@llvm.ptrauth.sign``') and all the remaining
+operands have the same interpretation as in ``"ptrauth"`` call operand bundle
+(with trivial type conversion).
 
 Constant Expressions
 --------------------

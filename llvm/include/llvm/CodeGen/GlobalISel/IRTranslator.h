@@ -600,6 +600,9 @@ private:
                                             Intrinsic::ID ID,
                                             MachineIRBuilder &MIRBuilder);
 
+  bool translatePtrAuthIntrinsic(const CallInst &CI, unsigned Opcode,
+                                 MachineIRBuilder &MIRBuilder);
+
   /// @}
 
   // Builder for machine instruction a la IRBuilder.

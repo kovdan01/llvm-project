@@ -6544,6 +6544,39 @@ void SelectionDAGBuilder::visitVectorExtractLastActive(const CallInst &I,
   setValue(&I, Result);
 }
 
+void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
+                                                unsigned Opcode) {
+  const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+  SDLoc SDL = getCurSDLoc();
+
+  if (auto Error = TLI.validatePtrAuthBundles(I)) {
+    errs() << "Ptrauth bundle violates target-specific constraints:\n";
+    I.print(errs());
+    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
+  }
+
+  auto CreatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = I.getOperandBundleAt(Index);
+    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+
+    SmallVector<SDValue> Ops;
+    for (const Use &Operand : Bundle.Inputs)
+      Ops.push_back(getValue(Operand));
+
+    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+  };
+
+  if (Opcode != ISD::PtrAuthResign) {
+    setValue(&I, DAG.getNode(Opcode, SDL, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0)));
+  } else {
+    setValue(&I, DAG.getNode(Opcode, SDL, MVT::i64,
+                             getValue(I.getArgOperand(0)),
+                             CreatePtrAuthBundle(0), CreatePtrAuthBundle(1)));
+  }
+}
+
 /// Lower the call to the specified intrinsic function.
 void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
                                              unsigned Intrinsic) {
@@ -6556,49 +6589,24 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
   if (auto *FPOp = dyn_cast<FPMathOperator>(&I))
     Flags.copyFMF(*FPOp);
 
-  auto CreatePtrAuthBundle = [&](unsigned Index) {
-    auto Bundle = I.getOperandBundleAt(Index);
-    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
-
-    SmallVector<Value *> Inputs;
-    TLI.normalizePtrAuthBundle(I, Bundle, Inputs);
-
-    SmallVector<SDValue> Ops;
-    for (Value *Operand : Inputs)
-      Ops.push_back(getValue(Operand));
-
-    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
-  };
 
   switch (Intrinsic) {
   default:
     // By default, turn this into a target intrinsic node.
     visitTargetIntrinsic(I, Intrinsic);
     return;
-  case Intrinsic::ptrauth_auth: {
-    setValue(&I, DAG.getNode(ISD::PtrAuthAuth, sdl, MVT::i64,
-                             getValue(I.getArgOperand(0)),
-                             CreatePtrAuthBundle(0)));
+  case Intrinsic::ptrauth_auth:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthAuth);
     return;
-  }
-  case Intrinsic::ptrauth_sign: {
-    setValue(&I, DAG.getNode(ISD::PtrAuthSign, sdl, MVT::i64,
-                             getValue(I.getArgOperand(0)),
-                             CreatePtrAuthBundle(0)));
+  case Intrinsic::ptrauth_sign:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthSign);
     return;
-  }
-  case Intrinsic::ptrauth_resign: {
-    setValue(&I, DAG.getNode(ISD::PtrAuthResign, sdl, MVT::i64,
-                             getValue(I.getArgOperand(0)),
-                             CreatePtrAuthBundle(0), CreatePtrAuthBundle(1)));
+  case Intrinsic::ptrauth_resign:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthResign);
     return;
-  }
-  case Intrinsic::ptrauth_strip: {
-    setValue(&I, DAG.getNode(ISD::PtrAuthStrip, sdl, MVT::i64,
-                             getValue(I.getArgOperand(0)),
-                             CreatePtrAuthBundle(0)));
+  case Intrinsic::ptrauth_strip:
+    visitPtrAuthIntrinsic(I, ISD::PtrAuthStrip);
     return;
-  }
   case Intrinsic::vscale: {
     EVT VT = TLI.getValueType(DAG.getDataLayout(), I.getType());
     setValue(&I, DAG.getVScale(sdl, VT, APInt(VT.getSizeInBits(), 1)));
@@ -9804,10 +9812,16 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   auto PAB = CB.getOperandBundle("ptrauth");
   const Value *CalleeV = CB.getCalledOperand();
 
-  assert(!isa<IntrinsicInst>(CB));
+  assert(!isa<IntrinsicInst>(CB) && "Should be handled by visitIntrinsicCall");
 
-  SmallVector<Value *> BundleOperands;
-  TLI.normalizePtrAuthBundle(CB, *PAB, BundleOperands);
+  if (auto Error = TLI.validatePtrAuthBundles(CB)) {
+    errs() << "Ptrauth bundle violates target-specific constraints:\n";
+    CB.print(errs());
+    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
+  }
+
+  SmallVector<Value *> BundleOperands(PAB->Inputs.begin(), PAB->Inputs.end());
+
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
   if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
@@ -9821,8 +9835,8 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
   // Otherwise, do an authenticated indirect call.
 
   TargetLowering::PtrAuthInfo PAI;
-  for (const Value *V : BundleOperands)
-    PAI.Operands.push_back(getValue(V));
+  for (const Value *Operand : BundleOperands)
+    PAI.Operands.push_back(getValue(Operand));
 
   LowerCallTo(CB, getValue(CalleeV), CB.isTailCall(), CB.isMustTailCall(),
               EHPadBB, &PAI);

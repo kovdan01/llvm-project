@@ -2133,81 +2133,40 @@ bool ConstantPtrAuth::hasSpecialAddressDiscriminator(uint64_t Value) const {
   return IntVal->getValue() == Value;
 }
 
-// For now, this method is to be called for three-operand bundles only!
-bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
-                                            const Value *AddrDiscriminator,
-                                            const Value *IntDisc,
+bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
                                             const DataLayout &DL) const {
-  // If the keys are different, there's no chance for this to be compatible.
-  // FIXME: Should we enforce i64 everywhere?
-  if (getKey()->getZExtValue() != cast<ConstantInt>(Key)->getZExtValue())
+  // FIXME: Generalize ptrauth constants to arbitrary schemas instead of
+  //        assuming AArch64-style blend.
+  if (BundleOperands.size() != 3)
+    return false;
+
+  ConstantInt *Key = dyn_cast<ConstantInt>(BundleOperands[0]);
+  Value *IntDisc = BundleOperands[1];
+  Value *AddrDisc = BundleOperands[2];
+
+  // FIXME: Use i64 consistently.
+  if (!Key || Key->getZExtValue() != getKey()->getZExtValue())
     return false;
 
   if (getDiscriminator() != IntDisc)
     return false;
 
-  // Key and IntDisc are compatible, let's check AddrDiscriminator.
-
-  // If neither this constant nor the requested schema has an address
-  // discriminator, we are done.
-  if (!hasAddressDiscriminator() && match(AddrDiscriminator, m_Zero()))
-    return true;
-
-  // Discriminators are i64, so the provided addr disc may be a ptrtoint.
-  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDiscriminator))
-    AddrDiscriminator = Cast->getPointerOperand();
-
-  // Beyond that, we're only interested in compatible pointers.
-  if (getAddrDiscriminator()->getType() != AddrDiscriminator->getType())
-    return false;
-
-  // These are often the same constant GEP, making them trivially equivalent.
-  if (getAddrDiscriminator() == AddrDiscriminator)
-    return true;
-
-  // Finally, they may be equivalent base+offset expressions.
-  APInt Off1(DL.getIndexTypeSizeInBits(getAddrDiscriminator()->getType()), 0);
-  auto *Base1 = getAddrDiscriminator()->stripAndAccumulateConstantOffsets(
-      DL, Off1, /*AllowNonInbounds=*/true);
-
-  APInt Off2(DL.getIndexTypeSizeInBits(AddrDiscriminator->getType()), 0);
-  auto *Base2 = AddrDiscriminator->stripAndAccumulateConstantOffsets(
-      DL, Off2, /*AllowNonInbounds=*/true);
-
-  return Base1 == Base2 && Off1 == Off2;
-}
-
-bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
-                                            const Value *Discriminator,
-                                            const DataLayout &DL) const {
-  // If the keys are different, there's no chance for this to be compatible.
-  // FIXME: Should we enforce i64 everywhere?
-  if (getKey()->getZExtValue() != cast<ConstantInt>(Key)->getZExtValue())
-    return false;
-
-  // We can have 3 kinds of discriminators:
-  // - simple, integer-only:    `i64 x, ptr null` vs. `i64 x`
-  // - address-only:            `i64 0, ptr p` vs. `ptr p`
-  // - blended address/integer: `i64 x, ptr p` vs. `@llvm.ptrauth.blend(p, x)`
-
-  // If this constant has a simple discriminator (integer, no address), easy:
-  // it's compatible iff the provided full discriminator is also a simple
-  // discriminator, identical to our integer discriminator.
-  if (!hasAddressDiscriminator())
-    return getDiscriminator() == Discriminator;
-
   // We can now focus on comparing the address discriminators.
 
+  if (isa<ConstantInt>(AddrDisc) && cast<ConstantInt>(AddrDisc)->isZero() &&
+      getAddrDiscriminator()->isNullValue())
+    return true;
+
   // Discriminators are i64, so the provided addr disc may be a ptrtoint.
-  if (auto *Cast = dyn_cast<PtrToIntOperator>(Discriminator))
-    Discriminator = Cast->getPointerOperand();
+  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDisc))
+    AddrDisc = Cast->getPointerOperand();
 
   // Beyond that, we're only interested in compatible pointers.
-  if (getAddrDiscriminator()->getType() != Discriminator->getType())
+  if (getAddrDiscriminator()->getType() != AddrDisc->getType())
     return false;
 
   // These are often the same constant GEP, making them trivially equivalent.
-  if (getAddrDiscriminator() == Discriminator)
+  if (getAddrDiscriminator() == AddrDisc)
     return true;
 
   // Finally, they may be equivalent base+offset expressions.
@@ -2215,27 +2174,11 @@ bool ConstantPtrAuth::isKnownCompatibleWith(const Value *Key,
   auto *Base1 = getAddrDiscriminator()->stripAndAccumulateConstantOffsets(
       DL, Off1, /*AllowNonInbounds=*/true);
 
-  APInt Off2(DL.getIndexTypeSizeInBits(Discriminator->getType()), 0);
-  auto *Base2 = Discriminator->stripAndAccumulateConstantOffsets(
+  APInt Off2(DL.getIndexTypeSizeInBits(AddrDisc->getType()), 0);
+  auto *Base2 = AddrDisc->stripAndAccumulateConstantOffsets(
       DL, Off2, /*AllowNonInbounds=*/true);
 
   return Base1 == Base2 && Off1 == Off2;
-}
-
-bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
-                                            const DataLayout &DL) const {
-  if (BundleOperands.size() == 3)
-    return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1],
-                                 BundleOperands[2], DL);
-  if (BundleOperands.size() == 2)
-    return isKnownCompatibleWith(BundleOperands[0], BundleOperands[1], DL);
-  return false;
-}
-
-bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Use> BundleOperands,
-                                            const DataLayout &DL) const {
-  SmallVector<Value *> Ops(BundleOperands.begin(), BundleOperands.end());
-  return isKnownCompatibleWith(Ops, DL);
 }
 
 //---- ConstantExpr::get() implementations.

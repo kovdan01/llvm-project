@@ -4714,17 +4714,47 @@ static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs)
   return NewCI;
 }
 
+// Create a new, generalized "ptrauth" bundle from an old, AArch64-specific one
+// by converting "ptrauth"(i32 const_key, i64 disc) to either
+// - "ptrauth"(i64 const_key, i64 int_disc, i64 0)  , if possible or to
+// - "ptrauth"(i64 const_key, i64 0, i64 addr_disc)   otherwise
+//
+// Caller of this function is responsible for distinguishing between old-style
+// AArch64 bundles (i32 key) and new-style non-AArch64 bundles that happen to
+// have two operands (which must be all i64 in the new-style bundles).
+//
+// Note that this function never expands calls to @llvm.ptrauth.blend, which
+// are handled by upgradePtrAuthBlend later.
+static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
+                                                    Value *DiscOrNull) {
+  LLVMContext &Ctx = Key->getContext();
+  Value *Zero = ConstantInt::get(Ctx, APInt::getZero(64));
+  SmallVector<Value *, 3> Inputs;
+
+  Inputs.push_back(ConstantInt::get(Ctx, Key->getValue().zext(64)));
+
+  auto *IntDisc = dyn_cast_or_null<ConstantInt>(DiscOrNull);
+  if (IntDisc && isUInt<16>(IntDisc->getZExtValue()))
+    Inputs.append({IntDisc, Zero});
+  else if (DiscOrNull)
+    Inputs.append({Zero, DiscOrNull});
+  else
+    Inputs.append({Zero, Zero});
+
+  return OperandBundleDef("ptrauth", Inputs);
+}
+
 // Transitions a ptrauth intrinsic call site to a half-upgraded state:
-// 1) call %0(a, b, c, d, e) -> call %0(a, 0, 0, 0, 0) [ "ptrauth"(b, c),
-//                                                       "ptrauth"(d, e) ]
-// 2) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(b, c) ]
+// 1) call %0(a, b, c, d, e) -> call %0(a, 0, 0, 0, 0) [ "ptrauth"(...),
+//                                                       "ptrauth"(...) ]
+// 2) call %0(a, b, c)       -> call %0(a, 0, 0) [ "ptrauth"(...) ]
 // 3) call %0(a, b)          -> call %0(a, 0)    [ "ptrauth"(b) ]
 // 4) any call site with operand bundles attached - kept intact
 //
 // Upgrading ptrauth intrinsics requires inspecting their discriminator
 // operand(s), which can be computed by a separate call to blend().
 //
-// Because @llvm.ptruath.blend intrinsic is removed by AutoUpgrader, the
+// Because @llvm.ptrauth.blend intrinsic is removed by AutoUpgrader, the
 // original computation of the discriminator may be removed before regular
 // processing of its users occurs. For that reason, as soon as the particular
 // call to @llvm.ptrauth.blend() is processed, all its users must be ready to
@@ -4740,12 +4770,6 @@ static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs)
 //
 // Note that the half-upgraded call formally uses the same called function
 // and the same function signature as the original one.
-//
-// FIXME Catch unsupported cases like this:
-//
-//       %blend = call i64 @llvm.ptrauth.blend(...)
-//       %callee = load ptr, ptr fn_ptr
-//       call void %callee(i64 %some_arg, i32 %other_arg, i64 %blend)
 static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   // Skip: intrinsic calls are never indirect.
   if (CI->isIndirectCall())
@@ -4754,22 +4778,21 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   if (CI->getNumOperandBundles())
     return CI;
 
+  LLVMContext &Ctx = CI->getContext();
+  Value *Zero32 = ConstantInt::get(Ctx, APInt::getZero(32));
+  Value *Zero64 = ConstantInt::get(Ctx, APInt::getZero(64));
   SmallVector<OperandBundleDef, 2> OBs;
 
-  auto TryUpgradingToConstantI64 = [](Value *V) -> Value * {
-    auto *Const = dyn_cast<ConstantInt>(V);
-    if (!Const || Const->getType()->isIntegerTy(64))
-      return V;
-    return ConstantInt::get(V->getContext(), Const->getValue().zext(64));
-  };
   auto UpgradeToBundle = [&](unsigned KeyIndex, unsigned DiscIndex) {
-    Value *Key = CI->getArgOperand(KeyIndex);
+    ConstantInt *Key = dyn_cast<ConstantInt>(CI->getArgOperand(KeyIndex));
     Value *Disc = CI->getArgOperand(DiscIndex);
-    Value *Inputs[] = {TryUpgradingToConstantI64(Key), Disc};
-    OBs.emplace_back("ptrauth", Inputs);
 
-    CI->setArgOperand(KeyIndex,  ConstantInt::get(Key->getType(),  0));
-    CI->setArgOperand(DiscIndex, ConstantInt::get(Disc->getType(), 0));
+    if (!Key)
+      reportFatalUsageError("Cannot upgrade: expected constant ptrauth key ID");
+    OBs.emplace_back(createUpgradedPtrAuthBundle(Key, Disc));
+
+    CI->setArgOperand(KeyIndex,  Zero32);
+    CI->setArgOperand(DiscIndex, Zero64);
   };
 
   switch (CI->arg_size()) {
@@ -4779,10 +4802,14 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
     return CI;
   case 2: {
     // strip(value, key) -> strip(value, 0) [ "ptrauth"(key) ]
-    Value *Key = CI->getArgOperand(1);
-    Value *Inputs[] = {TryUpgradingToConstantI64(Key)};
+    ConstantInt *Key = dyn_cast<ConstantInt>(CI->getArgOperand(1));
+    if (!Key)
+      reportFatalUsageError("Cannot upgrade: expected constant ptrauth key ID");
+
+    Value *Inputs = {ConstantInt::get(Ctx, Key->getValue().zext(64))};
     OBs.emplace_back("ptrauth", Inputs);
-    CI->setArgOperand(1, ConstantInt::get(Key->getType(), 0));
+
+    CI->setArgOperand(1, Zero32);
     break;
   }
   case 3:
@@ -4803,7 +4830,7 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   return setOperandBundles(CI, OBs);
 }
 
-// Fully process a call to @llvm.ptrauth.blend(), lazily updating its users
+// Fully process a call to @llvm.ptrauth.blend(), lazily upgrading its users
 // to the extent that they are able to absorb the information from BlendCall.
 static void upgradePtrAuthBlend(CallBase *BlendCall) {
   // Collect all call instructions to be upgraded before performing any
@@ -4813,11 +4840,16 @@ static void upgradePtrAuthBlend(CallBase *BlendCall) {
     if (auto *Call = dyn_cast<CallBase>(U))
       UpgradableUsers.insert(Call);
 
+  if (BlendCall->arg_size() != 2)
+    reportFatalUsageError("@llvm.ptrauth.blend must have two arguments");
   Value *AddrDisc = BlendCall->getArgOperand(0);
   Value *IntDisc = BlendCall->getArgOperand(1);
 
   for (CallBase *Call : UpgradableUsers) {
-    // Lazily migrate the user to "ptrauth" bundles first.
+    // If Call is an old-style @llvm.ptrauth.* intrinsic call, lazily migrate
+    // it to "ptrauth" bundles first.
+    // If Call is an authenticated indirect call, it is expected to have
+    // already been migrated to a three-operand form by this time.
     Call = upgradeToPtrAuthBundles(Call);
 
     SmallVector<OperandBundleDef> OBs;
@@ -4827,15 +4859,18 @@ static void upgradePtrAuthBlend(CallBase *BlendCall) {
     // This may affect multiple bundles in case of resign() intrinsic which
     // only changes the key.
     for (unsigned I = 0, N = OBs.size(); I < N; ++I) {
-      auto OB = Call->getOperandBundleAt(I);
-      // Skip non-ptrauth bundles.
-      if (OB.getTagID() != LLVMContext::OB_ptrauth)
-        continue;
-      // Skip bundles not in the form "ptrauth"(key, %this_blend_call).
-      if (OB.Inputs.size() != 2 || OB.Inputs[1] != BlendCall)
+      auto OB = OBs[I];
+      // Skip any bundles that are not of the form
+      // "ptrauth"(i64 key, i64 0, i64 %this_blend_call)
+      if (OB.getTag() != "ptrauth" || OB.input_size() != 3 ||
+          OB.inputs()[2] != BlendCall)
         continue;
 
-      Value * NewBundleOperands[] = {OB.Inputs[0], AddrDisc, IntDisc};
+      ConstantInt *TempIntDisc = dyn_cast<ConstantInt>(OB.inputs()[1]);
+      if (!TempIntDisc || !TempIntDisc->isZero())
+        continue;
+
+      Value *NewBundleOperands[] = {OB.inputs()[0], IntDisc, AddrDisc};
       OBs[I] = OperandBundleDef("ptrauth", NewBundleOperands);
     }
 
@@ -4845,7 +4880,8 @@ static void upgradePtrAuthBlend(CallBase *BlendCall) {
   if (!BlendCall->users().empty()) {
     errs() << "Cannot upgrade all uses of @llvm.ptrauth.blend in function:\n";
     BlendCall->getFunction()->print(errs());
-    reportFatalUsageError("Cannot upgrade some uses of @llvm.ptrauth.blend().");
+    reportFatalUsageError("Cannot upgrade some uses of "
+                          "@llvm.ptrauth.blend().");
   }
 }
 
@@ -6609,15 +6645,23 @@ void llvm::UpgradeOperandBundles(std::vector<OperandBundleDef> &Bundles) {
 
   for (unsigned I = 0, N = Bundles.size(); I < N; ++I) {
     OperandBundleDef &OB = Bundles[I];
+
+    // Upgrade an old-style AArch64 "ptrauth"(i32 const_key, i64 disc) bundle
+    // either to
+    // - "ptrauth"(i64 const_key, i64 int_disc, i64 0), or to
+    // - "ptrauth"(i64 const_key, i64 0, i64 addr_disc)
+    //
+    // Note that this can be trivially distinguished from non-AArch64 bundles
+    // that could have two operands, as new-style bundles should never have i32
+    // operands.
     if (OB.getTag() == "ptrauth" && OB.inputs().size() == 2) {
-      auto *Key = dyn_cast<ConstantInt>(OB.inputs()[0]);
+      ConstantInt *Key = dyn_cast<ConstantInt>(OB.inputs()[0]);
+      Value *Disc = OB.inputs()[1];
+
       if (!Key || !Key->getType()->isIntegerTy(32))
         continue;
 
-      SmallVector<Value *> Inputs(OB.inputs());
-      Inputs[0] = ConstantInt::get(Key->getContext(),
-                                   Key->getValue().zext(64));
-      Bundles[I] = OperandBundleDef("ptrauth", Inputs);
+      Bundles[I] = createUpgradedPtrAuthBundle(Key, Disc);
     }
   }
 }

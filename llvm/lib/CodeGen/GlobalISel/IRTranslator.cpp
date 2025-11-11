@@ -2187,6 +2187,42 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
   return true;
 }
 
+bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
+                                             unsigned Opcode,
+                                             MachineIRBuilder &MIRBuilder) {
+  if (auto Error = TLI->validatePtrAuthBundles(CI)) {
+    errs() << "Ptrauth bundle violates target-specific constraints:\n";
+    CI.print(errs());
+    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
+  }
+
+  auto TranslatePtrAuthBundle = [&](unsigned Index) {
+    auto Bundle = CI.getOperandBundleAt(Index);
+    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
+
+    Register Res = MRI->createGenericVirtualRegister(LLT::token());
+    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
+    Builder.addDef(Res);
+    for (const Use &Operand : Bundle.Inputs)
+      Builder.addUse(getOrCreateVReg(*Operand));
+
+    return Res;
+  };
+
+  Register Dst = getOrCreateVReg(CI);
+  Register Src = getOrCreateVReg(*CI.getArgOperand(0));
+  if (Opcode != TargetOpcode::G_PTRAUTH_RESIGN) {
+    Register Schema = TranslatePtrAuthBundle(0);
+    MIRBuilder.buildInstr(Opcode, {Dst}, {Src, Schema});
+  } else {
+    Register OldSchema = TranslatePtrAuthBundle(0);
+    Register NewSchema = TranslatePtrAuthBundle(1);
+    MIRBuilder.buildInstr(Opcode, {Dst}, {Src, OldSchema, NewSchema});
+  }
+
+  return true;
+}
+
 bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                            MachineIRBuilder &MIRBuilder) {
   if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
@@ -2203,58 +2239,21 @@ bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
   if (translateSimpleIntrinsic(CI, ID, MIRBuilder))
     return true;
 
-  auto TranslatePtrAuthBundle = [&](unsigned Index) {
-    auto Bundle = CI.getOperandBundleAt(Index);
-    assert(Bundle.getTagID() == LLVMContext::OB_ptrauth);
-
-    SmallVector<Value *> Operands;
-    TLI->normalizePtrAuthBundle(CI, Bundle, Operands);
-
-    Register Res = MRI->createGenericVirtualRegister(LLT::token());
-    auto Builder = MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_BUNDLE);
-    Builder.addDef(Res);
-    for (Value *Operand : Operands)
-      Builder.addUse(getOrCreateVReg(*Operand));
-
-    return Res;
-  };
-
   switch (ID) {
   default:
     break;
-  case Intrinsic::ptrauth_auth: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_AUTH, {Dst}, {V, Bundle});
-    return true;
-  }
-  case Intrinsic::ptrauth_sign: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_SIGN, {Dst}, {V, Bundle});
-    return true;
-  }
-  case Intrinsic::ptrauth_resign: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register OldBundle = TranslatePtrAuthBundle(0);
-    Register NewBundle = TranslatePtrAuthBundle(1);
-
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_RESIGN, {Dst}, {V, OldBundle, NewBundle});
-    return true;
-  }
-  case Intrinsic::ptrauth_strip: {
-    Register Dst = getOrCreateVReg(CI);
-    Register V = getOrCreateVReg(*CI.getArgOperand(0));
-    Register Bundle = TranslatePtrAuthBundle(0);
-
-    MIRBuilder.buildInstr(TargetOpcode::G_PTRAUTH_STRIP, {Dst}, {V, Bundle});
-    return true;
-  }
+  case Intrinsic::ptrauth_auth:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_AUTH,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_sign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_SIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_resign:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_RESIGN,
+                                     MIRBuilder);
+  case Intrinsic::ptrauth_strip:
+    return translatePtrAuthIntrinsic(CI, TargetOpcode::G_PTRAUTH_STRIP,
+                                     MIRBuilder);
   case Intrinsic::lifetime_start:
   case Intrinsic::lifetime_end: {
     // No stack colouring in O0, discard region information.
@@ -2799,10 +2798,16 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     // Functions should never be ptrauth-called directly.
     assert(!CB.getCalledFunction() && "invalid direct ptrauth call");
 
-    assert(!isa<IntrinsicInst>(CB));
+    assert(!isa<IntrinsicInst>(CB) &&
+           "Should be handled by translateKnownIntrinsic");
 
-    SmallVector<Value *> BundleOperands;
-    TLI->normalizePtrAuthBundle(CB, *Bundle, BundleOperands);
+    if (auto Error = TLI->validatePtrAuthBundles(CB)) {
+      errs() << "Ptrauth bundle violates target-specific constraints:\n";
+      CB.print(errs());
+      reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
+    }
+    SmallVector<Value *> BundleOperands(Bundle->Inputs.begin(),
+                                        Bundle->Inputs.end());
 
     // Look through ptrauth constants to try to eliminate the matching bundle
     // and turn this into a direct call with no ptrauth.

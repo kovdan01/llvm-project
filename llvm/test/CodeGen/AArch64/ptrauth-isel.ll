@@ -46,7 +46,7 @@ define i64 @small_imm_disc_optimized(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i64 %signed
 }
 
@@ -71,7 +71,7 @@ define i64 @small_imm_disc_non_optimized(i64 %addr) noinline optnone {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 0) ]
   ret i64 %signed
 }
 
@@ -98,7 +98,7 @@ define i64 @large_imm_disc(i64 %addr) {
   ; GISEL-NEXT:   $x0 = COPY [[PAC]]
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 12345678) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 0, i64 12345678) ]
   ret i64 %signed
 }
 
@@ -126,6 +126,6 @@ define i64 @blended_disc(i64 %addr) {
   ; GISEL-NEXT:   RET_ReallyLR implicit $x0
 entry:
   %addrdisc = load i64, ptr @discvar
-  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 %addrdisc, i64 42) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %addr) [ "ptrauth"(i64 2, i64 42, i64 %addrdisc) ]
   ret i64 %signed
 }

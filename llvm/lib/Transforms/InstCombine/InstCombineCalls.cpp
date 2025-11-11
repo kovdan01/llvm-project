@@ -1730,24 +1730,6 @@ foldIntrinsicUsingDistributiveLaws(IntrinsicInst *II,
   return NewBinop;
 }
 
-static bool areCompatiblePtrAuthBundles(OperandBundleUse LHS,
-                                        OperandBundleUse RHS) {
-  if (LHS.Inputs.size() != RHS.Inputs.size())
-    return false;
-  for (auto [A, B] : llvm::zip(LHS.Inputs, RHS.Inputs)) {
-    auto *ConstA = dyn_cast<ConstantInt>(A);
-    auto *ConstB = dyn_cast<ConstantInt>(B);
-    // This handles the same key ids being specified either as i32 or i64.
-    // FIXME: Should we simply enforce i64 everywhere?
-    if (ConstA && ConstB && ConstA->getZExtValue() == ConstB->getZExtValue())
-      continue;
-
-    if (A != B)
-      return false;
-  }
-  return true;
-}
-
 /// CallInst simplification. This mostly only handles folding of intrinsic
 /// instructions. For normal calls, it allows visitCallBase to do the heavy
 /// lifting.
@@ -3108,10 +3090,10 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     if (const auto *CI = dyn_cast<CallBase>(Ptr)) {
       BasePtr = CI->getArgOperand(0);
       if (CI->getIntrinsicID() == Intrinsic::ptrauth_sign) {
-        if (!areCompatiblePtrAuthBundles(ThisAutSchema, CI->getOperandBundleAt(0)))
+        if (ThisAutSchema.Inputs != CI->getOperandBundleAt(0).Inputs)
           break;
       } else if (CI->getIntrinsicID() == Intrinsic::ptrauth_resign) {
-        if (!areCompatiblePtrAuthBundles(ThisAutSchema, CI->getOperandBundleAt(1)))
+        if (ThisAutSchema.Inputs != CI->getOperandBundleAt(1).Inputs)
           break;
         NewAutSchema = CI->getOperandBundleAt(0);
       } else
@@ -3120,22 +3102,26 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       // ptrauth constants are equivalent to a call to @llvm.ptrauth.sign for
       // our purposes, so check for that too.
       const auto *CPA = dyn_cast<ConstantPtrAuth>(PtrToInt->getOperand(0));
-      if (!CPA || !CPA->isKnownCompatibleWith(ThisAutSchema.Inputs, DL))
+      SmallVector<Value *> Operands;
+      llvm::append_range(Operands, ThisAutSchema.Inputs);
+      if (!CPA || !CPA->isKnownCompatibleWith(Operands, DL))
         break;
 
       if (NeedSign) {
         auto ThisSignSchema = II->getOperandBundleAt(1);
         // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
-        if (ThisSignSchema.Inputs.size() == 2 &&
-            isa<ConstantInt>(ThisSignSchema.Inputs[1])) {
-          auto *SignKey = cast<ConstantInt>(ThisSignSchema.Inputs[0]);
-          auto *SignDisc = cast<ConstantInt>(ThisSignSchema.Inputs[1]);
-          auto *SignAddrDisc = ConstantPointerNull::get(Builder.getPtrTy());
-          auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), SignKey,
-                                              SignDisc, SignAddrDisc);
-          replaceInstUsesWith(
-              *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
-          return eraseInstFromFunction(*II);
+        if (ThisSignSchema.Inputs.size() == 3) {
+          auto *SignKey = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[0]);
+          auto *SignIntDisc = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[1]);
+          auto *SignAddrDisc = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[2]);
+          if (SignKey && SignIntDisc && SignAddrDisc && SignAddrDisc->isZero()) {
+            auto *Null = ConstantPointerNull::get(Builder.getPtrTy());
+            auto *NewCPA = ConstantPtrAuth::get(CPA->getPointer(), SignKey,
+                                                SignIntDisc, Null);
+            replaceInstUsesWith(
+                *II, ConstantExpr::getPointerCast(NewCPA, II->getType()));
+            return eraseInstFromFunction(*II);
+          }
         }
       }
 
@@ -3161,21 +3147,10 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     }
 
     SmallVector<OperandBundleDef, 2> OBs;
-
-    if (NewAutSchema) {
-      SmallVector<Value *> Ops;
-      for (auto &U : NewAutSchema->Inputs)
-        Ops.push_back(U);
-      OBs.emplace_back("ptrauth", Ops);
-    }
-
-    if (NeedSign) {
-      SmallVector<Value *> Ops;
-      for (auto &U : II->getOperandBundleAt(1).Inputs)
-        Ops.push_back(U);
-      OBs.emplace_back("ptrauth", Ops);
-    }
-
+    if (NewAutSchema)
+      OBs.emplace_back(*NewAutSchema);
+    if (NeedSign)
+      OBs.emplace_back(II->getOperandBundleAt(1));
 
     Function *NewFn =
         Intrinsic::getOrInsertDeclaration(II->getModule(), NewIntrin);
@@ -4324,14 +4299,10 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // call(ptrauth.resign(p)), ["ptrauth"()] ->  call p, ["ptrauth"()]
   // assuming the call bundle and the sign operands match.
   case Intrinsic::ptrauth_resign: {
-    if (!areCompatiblePtrAuthBundles(II->getOperandBundleAt(1),
-                                     *PtrAuthBundleOrNone))
+    if (II->getOperandBundleAt(1).Inputs != PtrAuthBundleOrNone->Inputs)
       return nullptr;
 
-    SmallVector<Value *> NewBundleOps;
-    for (auto &Op : II->getOperandBundleAt(0).Inputs)
-      NewBundleOps.push_back(Op);
-    NewBundles.emplace_back("ptrauth", NewBundleOps);
+    NewBundles.emplace_back(II->getOperandBundleAt(0));
     NewCallee = II->getOperand(0);
     break;
   }
@@ -4340,8 +4311,7 @@ Instruction *InstCombinerImpl::foldPtrAuthIntrinsicCallee(CallBase &Call) {
   // assuming the call bundle and the sign operands match.
   // Non-ptrauth indirect calls are undesirable, but so is ptrauth.sign.
   case Intrinsic::ptrauth_sign: {
-    if (!areCompatiblePtrAuthBundles(II->getOperandBundleAt(0),
-                                     *PtrAuthBundleOrNone))
+    if (II->getOperandBundleAt(0).Inputs != PtrAuthBundleOrNone->Inputs)
       return nullptr;
     NewCallee = II->getOperand(0);
     break;
@@ -4374,8 +4344,11 @@ Instruction *InstCombinerImpl::foldPtrAuthConstantCallee(CallBase &Call) {
   if (!PAB)
     return nullptr;
 
+  SmallVector<Value *> Operands;
+  llvm::append_range(Operands, PAB->Inputs);
+
   // If the bundle doesn't match, this is probably going to fail to auth.
-  if (!CPA->isKnownCompatibleWith(PAB->Inputs, DL))
+  if (!CPA->isKnownCompatibleWith(Operands, DL))
     return nullptr;
 
   // If the bundle matches the constant, proceed in making this a direct call.

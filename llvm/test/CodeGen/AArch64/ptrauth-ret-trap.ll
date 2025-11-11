@@ -75,7 +75,7 @@ define void @test_auth_tailcall_indirect(ptr %fptr) #0 {
 define void @test_auth_tailcall_indirect_in_x9(ptr sret(i64) %ret, [8 x i64] %in, ptr %fptr) #0 {
   %ptr = alloca i8, i32 16
   call i32 @test_tailcall()
-  tail call void %fptr(ptr sret(i64) %ret, [8 x i64] %in) [ "ptrauth"(i64 1, i64 0) ]
+  tail call void %fptr(ptr sret(i64) %ret, [8 x i64] %in) [ "ptrauth"(i64 1, i64 0, i64 0) ]
   ret void
 }
 
@@ -89,7 +89,7 @@ define void @test_auth_tailcall_indirect_in_x9(ptr sret(i64) %ret, [8 x i64] %in
 define void @test_auth_tailcall_indirect_bti(ptr sret(i64) %ret, [8 x i64] %in, ptr %fptr) #0 "branch-target-enforcement"="true" {
   %ptr = alloca i8, i32 16
   call i32 @test_tailcall()
-  tail call void %fptr(ptr sret(i64) %ret, [8 x i64] %in) [ "ptrauth"(i64 1, i64 0) ]
+  tail call void %fptr(ptr sret(i64) %ret, [8 x i64] %in) [ "ptrauth"(i64 1, i64 0, i64 0) ]
   ret void
 }
 
