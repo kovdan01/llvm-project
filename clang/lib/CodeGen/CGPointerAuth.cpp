@@ -23,25 +23,23 @@ using namespace CodeGen;
 
 /// Given a pointer-authentication schema, return a concrete "other"
 /// discriminator for it.
-llvm::ConstantInt *CodeGenModule::getPointerAuthOtherDiscriminator(
+unsigned CodeGenModule::getPointerAuthOtherDiscriminator(
     const PointerAuthSchema &Schema, GlobalDecl Decl, QualType Type) {
   switch (Schema.getOtherDiscrimination()) {
   case PointerAuthSchema::Discrimination::None:
-    return nullptr;
+    return 0;
 
   case PointerAuthSchema::Discrimination::Type:
     assert(!Type.isNull() && "type not provided for type-discriminated schema");
-    return llvm::ConstantInt::get(
-        IntPtrTy, getContext().getPointerAuthTypeDiscriminator(Type));
+    return getContext().getPointerAuthTypeDiscriminator(Type);
 
   case PointerAuthSchema::Discrimination::Decl:
     assert(Decl.getDecl() &&
            "declaration not provided for decl-discriminated schema");
-    return llvm::ConstantInt::get(IntPtrTy,
-                                  getPointerAuthDeclDiscriminator(Decl));
+    return getPointerAuthDeclDiscriminator(Decl);
 
   case PointerAuthSchema::Discrimination::Constant:
-    return llvm::ConstantInt::get(IntPtrTy, Schema.getConstantDiscrimination());
+    return Schema.getConstantDiscrimination();
   }
   llvm_unreachable("bad discrimination kind");
 }
@@ -79,15 +77,17 @@ CGPointerAuthInfo CodeGenModule::getFunctionPointerAuthInfo(QualType T) {
   assert(!Schema.isAddressDiscriminated() &&
          "function pointers cannot use address-specific discrimination");
 
-  llvm::Constant *Discriminator = nullptr;
   if (T->isFunctionPointerType() || T->isFunctionReferenceType())
     T = T->getPointeeType();
+
+  unsigned IntDiscriminator = 0;
   if (T->isFunctionType())
-    Discriminator = getPointerAuthOtherDiscriminator(Schema, GlobalDecl(), T);
+    IntDiscriminator = getPointerAuthOtherDiscriminator(Schema, GlobalDecl(),
+                                                        T);
 
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            /*IsaPointer=*/false, /*AuthenticatesNull=*/false,
-                           Discriminator);
+                           IntDiscriminator, /*AddrDiscriminator=*/nullptr);
 }
 
 /// Emit the concrete pointer authentication informaton for the
@@ -98,21 +98,21 @@ CGPointerAuthInfo CodeGenFunction::EmitPointerAuthInfo(
   if (!Schema)
     return CGPointerAuthInfo();
 
-  llvm::Value *Discriminator = nullptr;
-  llvm::Value *ExtraDiscriminator =
+  unsigned IntDiscriminator =
       CGM.getPointerAuthOtherDiscriminator(Schema, SchemaDecl, SchemaType);
+  llvm::Value *AddrDiscriminator = nullptr;
 
   if (Schema.isAddressDiscriminated()) {
     assert(StorageAddress &&
            "address not provided for address-discriminated schema");
 
-    Discriminator = Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
+    AddrDiscriminator = Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
   }
 
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            Schema.isIsaPointer(),
-                           Schema.authenticatesNullValues(), Discriminator,
-                           ExtraDiscriminator);
+                           Schema.authenticatesNullValues(), IntDiscriminator,
+                           AddrDiscriminator);
 }
 
 CGPointerAuthInfo
@@ -122,21 +122,19 @@ CodeGenFunction::EmitPointerAuthInfo(PointerAuthQualifier Qual,
   if (Qual.hasKeyNone())
     return CGPointerAuthInfo();
 
-  llvm::Value *Discriminator = nullptr;
-  llvm::Value *ExtraDiscriminator = nullptr;
-  if (unsigned Extra = Qual.getExtraDiscriminator())
-    ExtraDiscriminator = llvm::ConstantInt::get(IntPtrTy, Extra);
+  unsigned IntDiscriminator = Qual.getExtraDiscriminator();
+  llvm::Value *AddrDiscriminator = nullptr;
 
   if (Qual.isAddressDiscriminated()) {
     assert(StorageAddress.isValid() &&
            "address discrimination without address");
     llvm::Value *StoragePtr = StorageAddress.emitRawPointer(*this);
-    Discriminator = Builder.CreatePtrToInt(StoragePtr, IntPtrTy);
+    AddrDiscriminator = Builder.CreatePtrToInt(StoragePtr, IntPtrTy);
   }
 
   return CGPointerAuthInfo(Qual.getKey(), Qual.getAuthenticationMode(),
                            Qual.isIsaPointer(), Qual.authenticatesNullValues(),
-                           Discriminator, ExtraDiscriminator);
+                           IntDiscriminator, AddrDiscriminator);
 }
 
 /// Return the natural pointer authentication for values of the given
@@ -265,12 +263,6 @@ llvm::Value *CodeGenFunction::EmitPointerAuthUnqualify(
                                IsKnownNonNull);
 }
 
-static bool isZeroConstant(const llvm::Value *Value) {
-  if (const auto *CI = dyn_cast<llvm::ConstantInt>(Value))
-    return CI->isZero();
-  return false;
-}
-
 llvm::Value *
 CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
                                            const CGPointerAuthInfo &CurAuth,
@@ -320,29 +312,9 @@ llvm::Value *CodeGenFunction::emitPointerAuthResign(
   if (Value == Null)
     return Value;
 
-  auto GetPolicyTuple = [](const CGPointerAuthInfo &PAI) {
-    return std::make_tuple(PAI.getAuthenticationMode(), PAI.isIsaPointer(),
-                           PAI.authenticatesNullValues(), PAI.getKey());
-  };
-
   // If both schemas sign the same way, we're done.
-  if (CurAuthInfo.isSigned() && NewAuthInfo.isSigned() &&
-      GetPolicyTuple(CurAuthInfo) == GetPolicyTuple(NewAuthInfo)) {
-    auto IsSame = [](const llvm::Value *LHS, const llvm::Value *RHS) {
-      if (LHS == RHS)
-        return true;
-
-      bool IsZeroLHS = LHS == nullptr || isZeroConstant(LHS);
-      bool IsZeroRHS = RHS == nullptr || isZeroConstant(RHS);
-      return IsZeroLHS && IsZeroRHS;
-    };
-
-    if (IsSame(CurAuthInfo.getDiscriminator(),
-               NewAuthInfo.getDiscriminator()) &&
-        IsSame(CurAuthInfo.getExtraDiscriminator(),
-               NewAuthInfo.getExtraDiscriminator()))
-      return Value;
-  }
+  if (CurAuthInfo == NewAuthInfo)
+    return Value;
 
   llvm::BasicBlock *InitBB = Builder.GetInsertBlock();
   llvm::BasicBlock *ResignBB = nullptr, *ContBB = nullptr;
@@ -395,6 +367,14 @@ void CodeGenFunction::EmitPointerAuthCopy(PointerAuthQualifier Qual, QualType T,
   Builder.CreateStore(Value, DestAddress);
 }
 
+llvm::Constant *CodeGenModule::getConstantSignedPointer(
+    llvm::Constant *Pointer, CGPointerAuthInfo Info) {
+  auto *AddrDisc =
+      dyn_cast_or_null<llvm::Constant>(Info.getAddrDiscriminator());
+  auto *IntDisc = llvm::ConstantInt::get(Int64Ty, Info.getIntDiscriminator());
+  return getConstantSignedPointer(Pointer, Info.getKey(), AddrDisc, IntDisc);
+}
+
 llvm::Constant *
 CodeGenModule::getConstantSignedPointer(llvm::Constant *Pointer, unsigned Key,
                                         llvm::Constant *StorageAddress,
@@ -434,11 +414,12 @@ llvm::Constant *CodeGenModule::getConstantSignedPointer(
     llvm::Constant *StorageAddress, GlobalDecl SchemaDecl,
     QualType SchemaType) {
   assert(shouldSignPointer(Schema));
-  llvm::ConstantInt *OtherDiscriminator =
+  unsigned Disc =
       getPointerAuthOtherDiscriminator(Schema, SchemaDecl, SchemaType);
+  auto *IntDiscriminator = llvm::ConstantInt::get(Int64Ty, Disc);
 
   return getConstantSignedPointer(Pointer, Schema.getKey(), StorageAddress,
-                                  OtherDiscriminator);
+                                  IntDiscriminator);
 }
 
 llvm::Constant *
@@ -457,12 +438,8 @@ llvm::Constant *CodeGenModule::getFunctionPointer(llvm::Constant *Pointer,
          FunctionType->isFunctionReferenceType() ||
          FunctionType->isFunctionPointerType());
 
-  if (auto PointerAuth = getFunctionPointerAuthInfo(FunctionType)) {
-    assert(!PointerAuth.isBlended());
-    return getConstantSignedPointer(
-        Pointer, PointerAuth.getKey(), /*StorageAddress=*/nullptr,
-        cast_or_null<llvm::ConstantInt>(PointerAuth.getDiscriminator()));
-  }
+  if (auto PointerAuth = getFunctionPointerAuthInfo(FunctionType))
+    return getConstantSignedPointer(Pointer, PointerAuth);
 
   return Pointer;
 }
@@ -491,22 +468,18 @@ CGPointerAuthInfo CodeGenModule::getMemberFunctionPointerAuthInfo(QualType FT) {
   assert(!Schema.isAddressDiscriminated() &&
          "function pointers cannot use address-specific discrimination");
 
-  llvm::ConstantInt *ExtraDiscriminator =
+  unsigned IntDiscriminator =
       getPointerAuthOtherDiscriminator(Schema, GlobalDecl(), FT);
   return CGPointerAuthInfo(Schema.getKey(), Schema.getAuthenticationMode(),
                            /* IsIsaPointer */ false,
-                           /* AuthenticatesNullValues */ false, nullptr,
-                           ExtraDiscriminator);
+                           /* AuthenticatesNullValues */ false,
+                           IntDiscriminator, /*AddrDiscriminator=*/nullptr);
 }
 
 llvm::Constant *CodeGenModule::getMemberFunctionPointer(llvm::Constant *Pointer,
                                                         QualType FT) {
-  if (CGPointerAuthInfo PointerAuth = getMemberFunctionPointerAuthInfo(FT)) {
-    assert(!PointerAuth.isBlended());
-    return getConstantSignedPointer(
-        Pointer, PointerAuth.getKey(), nullptr,
-        cast_or_null<llvm::ConstantInt>(PointerAuth.getDiscriminator()));
-  }
+  if (CGPointerAuthInfo PointerAuth = getMemberFunctionPointerAuthInfo(FT))
+    return getConstantSignedPointer(Pointer, PointerAuth);
 
   if (const auto *MFT = dyn_cast<MemberPointerType>(FT.getTypePtr())) {
     if (MFT->hasPointeeToToCFIUncheckedCalleeFunctionType())
@@ -614,23 +587,20 @@ CodeGenModule::getVTablePointerAuthInfo(CodeGenFunction *CGF,
   if (!Authentication)
     return std::nullopt;
 
-  llvm::Value *Discriminator = nullptr;
-  llvm::Value *ExtraDiscriminator = nullptr;
-  if (auto Extra = Authentication->getExtraDiscriminator())
-    ExtraDiscriminator = llvm::ConstantInt::get(IntPtrTy, Extra);
-
+  unsigned IntDiscriminator = Authentication->getExtraDiscriminator();
+  llvm::Value *AddrDiscriminator = nullptr;
 
   if (Authentication->isAddressDiscriminated()) {
     assert(StorageAddress &&
            "address not provided for address-discriminated schema");
-    Discriminator = CGF->Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
+    AddrDiscriminator = CGF->Builder.CreatePtrToInt(StorageAddress, IntPtrTy);
   }
 
   return CGPointerAuthInfo(Authentication->getKey(),
                            PointerAuthenticationMode::SignAndAuth,
                            /* IsIsaPointer */ false,
-                           /* AuthenticatesNullValues */ false, Discriminator,
-                           ExtraDiscriminator);
+                           /* AuthenticatesNullValues */ false, IntDiscriminator,
+                           AddrDiscriminator);
 }
 
 llvm::Value *CodeGenFunction::authPointerToPointerCast(llvm::Value *ResultPtr,

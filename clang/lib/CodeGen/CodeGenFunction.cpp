@@ -3291,17 +3291,13 @@ void CodeGenFunction::EmitPointerAuthOperandBundle(
   if (!PointerAuth.isSigned())
     return;
 
-  SmallVector<llvm::Value *> Args;
-  Args.push_back(Builder.getInt64(PointerAuth.getKey()));
-  if (!PointerAuth.getDiscriminator() && !PointerAuth.getExtraDiscriminator()) {
-    Args.push_back(Builder.getInt64(0));
-  } else {
-    if (llvm::Value *V = PointerAuth.getDiscriminator())
-      Args.push_back(V);
-    if (llvm::Value *V = PointerAuth.getExtraDiscriminator())
-      Args.push_back(V);
-  }
+  llvm::Value *Key = Builder.getInt64(PointerAuth.getKey());
+  llvm::Value *IntDisc = Builder.getInt64(PointerAuth.getIntDiscriminator());
+  llvm::Value *AddrDisc = PointerAuth.getAddrDiscriminator();
+  if (!AddrDisc)
+    AddrDisc = Builder.getInt64(0);
 
+  llvm::Value *Args[] = {Key, IntDisc, AddrDisc};
   Bundles.emplace_back("ptrauth", Args);
 }
 

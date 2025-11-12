@@ -292,26 +292,26 @@ int main() {
 // And check the thunks
 // DARWIN: ptr @_ZTv0_n48_N1CD1Ev(ptr noundef %this)
 // ELF:    void @_ZTv0_n48_N1CD1Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1CD0Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]
 
 // DARWIN: ptr @_ZTv0_n48_N1DD1Ev(ptr noundef %this)
 // ELF:    void @_ZTv0_n48_N1DD1Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1DD0Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1FD0EvU11__vtptrauthILj0Lb0Lj62866E(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1FD0Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 12810) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 12810, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1GD0Ev(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 12810) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 12810, i64 0) ]
 
 // CHECK: void @_ZTv0_n48_N1GD0EvU11__vtptrauthILj0Lb0Lj62866E(ptr noundef %this)
-// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866) ]
+// CHECK: [[TEMP:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[TEMP:%.*]]) [ "ptrauth"(i64 2, i64 62866, i64 0) ]

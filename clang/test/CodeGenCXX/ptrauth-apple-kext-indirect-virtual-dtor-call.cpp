@@ -13,10 +13,10 @@ void DELETE(B1 *pb1) {
 }
 // CHECK-LABEL: define void @_ZN2B1D0Ev
 // CHECK: [[T1:%.*]] = load ptr, ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2)
-// CHECK-NEXT: call noundef ptr [[T1]](ptr noundef nonnull align 8 dereferenceable(8) [[T2:%.*]]) [ "ptrauth"(i64 0, i64 ptrtoint (ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2) to i64), i64 14635) ]
+// CHECK-NEXT: call noundef ptr [[T1]](ptr noundef nonnull align 8 dereferenceable(8) [[T2:%.*]]) [ "ptrauth"(i64 0, i64 14635, i64 ptrtoint (ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2) to i64)) ]
 // CHECK-LABEL: define void @_Z6DELETEP2B1
 // CHECK: [[T3:%.*]] = load ptr, ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2)
-// CHECK-NEXT:  call noundef ptr [[T3]](ptr noundef nonnull align 8 dereferenceable(8) [[T4:%.*]]) [ "ptrauth"(i64 0, i64 ptrtoint (ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2) to i64), i64 14635)
+// CHECK-NEXT:  call noundef ptr [[T3]](ptr noundef nonnull align 8 dereferenceable(8) [[T4:%.*]]) [ "ptrauth"(i64 0, i64 14635, i64 ptrtoint (ptr getelementptr inbounds (ptr, ptr @_ZTV2B1, i64 2) to i64))
 
 template<class T>
 struct Templ {

@@ -26,7 +26,7 @@ void test_assign_to_qualified() {
 
   // TYPE: [[RESIGN1]]:
   // TYPE-NEXT: [[FPTR2:%.*]] = ptrtoint ptr [[FPTR]] to i64
-  // TYPE-NEXT: [[FPTR4:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR2]]) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 0, i64 2712) ]
+  // TYPE-NEXT: [[FPTR4:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR2]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
   // TYPE-NEXT: [[FPTR5:%.*]] = inttoptr i64 [[FPTR4]] to ptr
   // TYPE-NEXT: br label %[[JOIN1]]
 
@@ -37,9 +37,9 @@ void test_assign_to_qualified() {
 
   // CHECK: [[RESIGN2]]:
   // TYPE-NEXT: [[FPTR7:%.*]] = ptrtoint ptr [[FPTR6]] to i64
-  // TYPE-NEXT: [[FPTR8:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR7]]) [ "ptrauth"(i64 0, i64 2712), "ptrauth"(i64 0, i64 42) ]
+  // TYPE-NEXT: [[FPTR8:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR7]]) [ "ptrauth"(i64 0, i64 2712, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
   // ZERO-NEXT: [[FPTR7:%.*]] = ptrtoint ptr [[FPTR]] to i64
-  // ZERO-NEXT: [[FPTR8:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR7]]) [ "ptrauth"(i64 0, i64 0), "ptrauth"(i64 0, i64 42) ]
+  // ZERO-NEXT: [[FPTR8:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR7]]) [ "ptrauth"(i64 0, i64 0, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
   // CHECK-NEXT: [[FPTR9:%.*]] = inttoptr i64 [[FPTR8]] to ptr
   // CHECK-NEXT: br label %[[JOIN2]]
 
@@ -61,7 +61,7 @@ void test_assign_from_qualified() {
 
   // TYPE: [[RESIGN1]]:
   // TYPE-NEXT: [[FPTR1:%.*]] = ptrtoint ptr [[FPTR]] to i64
-  // TYPE-NEXT: [[FPTR2:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR1]]) [ "ptrauth"(i64 0, i64 42), "ptrauth"(i64 0, i64 2712) ]
+  // TYPE-NEXT: [[FPTR2:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR1]]) [ "ptrauth"(i64 0, i64 42, i64 0), "ptrauth"(i64 0, i64 2712, i64 0) ]
   // TYPE-NEXT: [[FPTR3:%.*]] = inttoptr i64 [[FPTR2]] to ptr
   // TYPE-NEXT: br label %[[JOIN1]]
 
@@ -72,9 +72,9 @@ void test_assign_from_qualified() {
 
   // CHECK: [[RESIGN2]]:
   // TYPE-NEXT: [[FPTR6:%.*]] = ptrtoint ptr [[FPTR4]] to i64
-  // TYPE-NEXT: [[FPTR7:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR6]]) [ "ptrauth"(i64 0, i64 2712), "ptrauth"(i64 0, i64 18983) ]
+  // TYPE-NEXT: [[FPTR7:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR6]]) [ "ptrauth"(i64 0, i64 2712, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
   // ZERO-NEXT: [[FPTR6:%.*]] = ptrtoint ptr [[FPTR]] to i64
-  // ZERO-NEXT: [[FPTR7:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR6]]) [ "ptrauth"(i64 0, i64 42), "ptrauth"(i64 0, i64 0) ]
+  // ZERO-NEXT: [[FPTR7:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[FPTR6]]) [ "ptrauth"(i64 0, i64 42, i64 0), "ptrauth"(i64 0, i64 0, i64 0) ]
   // CHECK-NEXT: [[FPTR8:%.*]] = inttoptr i64 [[FPTR7]] to ptr
   // CHECK-NEXT: br label %[[JOIN2]]
 
@@ -88,8 +88,8 @@ void test_assign_from_qualified() {
 void test_const_ptr_function_call(void) {
   f_const_ptr(1);
 
-  // TYPE: call void ptrauth (ptr @f, i32 0, i64 2712)(i32 noundef 1) [ "ptrauth"(i64 0, i64 2712) ]
-  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 1) [ "ptrauth"(i64 0, i64 0) ]
+  // TYPE: call void ptrauth (ptr @f, i32 0, i64 2712)(i32 noundef 1) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
+  // ZERO: call void ptrauth (ptr @f, i32 0)(i32 noundef 1) [ "ptrauth"(i64 0, i64 0, i64 0) ]
 }
 
 #ifdef __cplusplus
@@ -105,7 +105,7 @@ void (* const __ptrauth(0, 1, 43) &f_ref)(int) = f_const_ptr2;
 
 // CHECK-CXX: [[RESIGN_NONNULL]]:
 // CHECK-CXX: %[[V1:.*]] = ptrtoint ptr %[[CALL]] to i64
-// CHECK-CXX: %[[V2:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V1]]) [ "ptrauth"(i64 0, i64 2712), "ptrauth"(i64 0, i64 42) ]
+// CHECK-CXX: %[[V2:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V1]]) [ "ptrauth"(i64 0, i64 2712, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
 // CHECK-CXX: %[[V3:.*]] = inttoptr i64 %[[V2]] to ptr
 // CHECK-CXX: br label %[[RESIGN_CONT]]
 
@@ -121,7 +121,7 @@ void (* const __ptrauth(0, 1, 43) &f_ref)(int) = f_const_ptr2;
 
 // CHECK-CXX: [[RESIGN_NONNULL]]:
 // CHECK-CXX: %[[V3:.*]] = ptrtoint ptr %[[V0]] to i64
-// CHECK-CXX: %[[V4:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V3]]) [ "ptrauth"(i64 0, i64 42), "ptrauth"(i64 0, i64 ptrtoint (ptr @_ZGR5f_ref_ to i64), i64 43) ]
+// CHECK-CXX: %[[V4:.*]] = call i64 @llvm.ptrauth.resign(i64 %[[V3]]) [ "ptrauth"(i64 0, i64 42, i64 0), "ptrauth"(i64 0, i64 43, i64 ptrtoint (ptr @_ZGR5f_ref_ to i64)) ]
 // CHECK-CXX: %[[V5:.*]] = inttoptr i64 %[[V4]] to ptr
 // CHECK-CXX: br label %[[RESIGN_CONT]]
 
@@ -137,7 +137,7 @@ void test_const_ptr_ref_function_call(void) {
   // CHECK-CXX: %[[V0:.*]] = load ptr, ptr @f_ref, align 8
   // CHECK-CXX: %[[V1:.*]] = load ptr, ptr %[[V0]], align 8
   // CHECK-CXX: %[[V2:.*]] = ptrtoint ptr %[[V0]] to i64
-  // CHECK-CXX: call void %[[V1]](i32 noundef 1) [ "ptrauth"(i64 0, i64 %[[V2]], i64 43) ]
+  // CHECK-CXX: call void %[[V1]](i32 noundef 1) [ "ptrauth"(i64 0, i64 43, i64 %[[V2]]) ]
 }
 }
 #endif

@@ -84,7 +84,7 @@ extern "C" void test_vtable(std::type_info* t) {
 // NODISC: [[T:%.*]] = load ptr, ptr [[T_ADDR]], align 8
 // NODISC: [[VPTR:%.*]] = load ptr, ptr [[T]], align 8
 // NODISC: [[CAST_VPTR:%.*]] = ptrtoint ptr [[VPTR]] to i64
-// NODISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VPTR]]) [ "ptrauth"(i64 2, i64 0) ]
+// NODISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[CAST_VPTR]]) [ "ptrauth"(i64 2, i64 0, i64 0) ]
 
 // DISC: define{{.*}} void @test_vtable(ptr noundef %t)
 // DISC: [[T_ADDR:%.*]] = alloca ptr, align 8
@@ -93,7 +93,7 @@ extern "C" void test_vtable(std::type_info* t) {
 // DISC: [[VPTR:%.*]] = load ptr, ptr [[T]], align 8
 // DISC: [[ADDR:%.*]] = ptrtoint ptr [[T]] to i64
 // DISC: [[VPTRI:%.*]] = ptrtoint ptr [[VPTR]] to i64
-// DISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[VPTRI]]) [ "ptrauth"(i64 2, i64 [[ADDR]], i64 [[STDTYPEINFO_DISC]]) ]
+// DISC: [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[VPTRI]]) [ "ptrauth"(i64 2, i64 [[STDTYPEINFO_DISC]], i64 [[ADDR]]) ]
 
 extern "C" const void *ensure_typeinfo() {
   return new TestStruct;

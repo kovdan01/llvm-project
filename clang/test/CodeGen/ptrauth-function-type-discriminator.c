@@ -68,7 +68,7 @@ void (*fptr4)(void) = __builtin_ptrauth_sign_constant(&external_function, 2, __b
 // CHECK-LABEL: define{{.*}} void @test_call()
 void test_call() {
   // CHECK:      [[T0:%.*]] = load ptr, ptr @fnptr,
-  // CHECK-NEXT: call void [[T0]]() [ "ptrauth"(i64 0, i64 18983) ]
+  // CHECK-NEXT: call void [[T0]]() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
   fnptr();
 }
 
@@ -109,7 +109,7 @@ void test_knr() {
   // CHECKC: [[P:%.*]] = alloca ptr
   // CHECKC: store ptr ptrauth (ptr @knr, i32 0, i64 18983), ptr [[P]]
   // CHECKC: [[LOAD:%.*]] = load ptr, ptr [[P]]
-  // CHECKC: call void [[LOAD]](i32 noundef 0) [ "ptrauth"(i64 0, i64 18983) ]
+  // CHECKC: call void [[LOAD]](i32 noundef 0) [ "ptrauth"(i64 0, i64 18983, i64 0) ]
 }
 
 // CHECKC-LABEL: define{{.*}} void @test_redeclaration
@@ -123,8 +123,8 @@ void test_redeclaration() {
 
   // CHECKC: store ptr ptrauth (ptr @redecl, i32 0, i64 18983), ptr %ptr
   // CHECKC: store ptr ptrauth (ptr @redecl, i32 0, i64 2712), ptr %ptr2
-  // CHECKC: call void {{.*}}() [ "ptrauth"(i64 0, i64 18983) ]
-  // CHECKC: call void {{.*}}(i32 noundef 0) [ "ptrauth"(i64 0, i64 2712) ]
+  // CHECKC: call void {{.*}}() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
+  // CHECKC: call void {{.*}}(i32 noundef 0) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
 }
 
 void knr2(param)
@@ -137,7 +137,7 @@ void test_redecl_knr() {
   p();
 
   // CHECKC: store ptr ptrauth (ptr @knr2, i32 0, i64 18983)
-  // CHECKC: call void {{.*}}() [ "ptrauth"(i64 0, i64 18983) ]
+  // CHECKC: call void {{.*}}() [ "ptrauth"(i64 0, i64 18983, i64 0) ]
 
   void knr2(int);
 
@@ -145,7 +145,7 @@ void test_redecl_knr() {
   p2(0);
 
   // CHECKC: store ptr ptrauth (ptr @knr2, i32 0, i64 2712)
-  // CHECKC: call void {{.*}}(i32 noundef 0) [ "ptrauth"(i64 0, i64 2712) ]
+  // CHECKC: call void {{.*}}(i32 noundef 0) [ "ptrauth"(i64 0, i64 2712, i64 0) ]
 }
 
 #endif

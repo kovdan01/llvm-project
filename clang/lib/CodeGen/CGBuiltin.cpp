@@ -5755,7 +5755,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_ptrauth_sign_unauthenticated:
   case Builtin::BI__builtin_ptrauth_strip: {
     SmallVector<llvm::Value *, 2> Args;
-    SmallVector<llvm::OperandBundleDef> OBs;
+    SmallVector<llvm::OperandBundleDef, 2> OBs;
 
     auto ConvertToInt64 = [&](llvm::Value *V) {
       if (V->getType()->isPointerTy())
@@ -5763,17 +5763,29 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       return Builder.CreateZExt(V, IntPtrTy);
     };
 
-    auto AddPtrAuthBundle = [&](const Expr *Key, const Expr *Discr) {
-      SmallVector<llvm::Value *, 3> Operands;
-      Operands.push_back(ConvertToInt64(EmitScalarExpr(Key)));
-      const CallExpr *CE = dyn_cast<CallExpr>(Discr);
-      if (CE && CE->getBuiltinCallee() == Builtin::BI__builtin_ptrauth_blend_discriminator) {
-        Operands.push_back(ConvertToInt64(EmitScalarExpr(CE->getArg(0))));
-        Operands.push_back(ConvertToInt64(EmitScalarExpr(CE->getArg(1))));
+    auto AddPtrAuthBundle = [&](const Expr *KeyExpr, const Expr *DiscrExpr) {
+      llvm::Value *Key = ConvertToInt64(EmitScalarExpr(KeyExpr));
+      llvm::Value *IntDiscr = Builder.getInt64(0);
+      llvm::Value *AddrDiscr = Builder.getInt64(0);
+
+      const CallExpr *MaybeBlend = dyn_cast<CallExpr>(DiscrExpr);
+      if (MaybeBlend && MaybeBlend->getBuiltinCallee() ==
+                        Builtin::BI__builtin_ptrauth_blend_discriminator) {
+        // Assign modifiers according to blend arguments.
+        IntDiscr = ConvertToInt64(EmitScalarExpr(MaybeBlend->getArg(1)));
+        AddrDiscr = ConvertToInt64(EmitScalarExpr(MaybeBlend->getArg(0)));
       } else {
-        Operands.push_back(ConvertToInt64(EmitScalarExpr(Discr)));
+        // Check if discriminator is a small integer constant and fallback to
+        // passing an arbitrary raw value otherwise.
+        llvm::Value *Discr = ConvertToInt64(EmitScalarExpr(DiscrExpr));
+        llvm::ConstantInt *DiscrConst = dyn_cast<llvm::ConstantInt>(Discr);
+        if (DiscrConst && isUInt<16>(DiscrConst->getZExtValue()))
+          IntDiscr = Discr;
+        else
+          AddrDiscr = Discr;
       }
-      OBs.emplace_back("ptrauth", Operands);
+      llvm::Value *Inputs[] = {Key, IntDiscr, AddrDiscr};
+      OBs.emplace_back("ptrauth", Inputs);
     };
 
     // Cast the value to intptr_t, saving its original type.

@@ -2867,7 +2867,8 @@ llvm::Value *CodeGenFunction::GetVTablePtr(Address This,
       }
     } else {
       VTable = cast<llvm::Instruction>(EmitPointerAuthAuth(
-          CGPointerAuthInfo(0, PointerAuthenticationMode::Strip, false, false),
+          CGPointerAuthInfo(0, PointerAuthenticationMode::Strip, false, false,
+                            0, nullptr),
           VTable));
     }
   }

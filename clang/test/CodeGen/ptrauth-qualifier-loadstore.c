@@ -26,11 +26,11 @@ extern void use_upf(func_t *ptr);
 // CHECK-LABEL: define {{.*}}void @test_store_data_i_constant()
 void test_store_data_i_constant() {
 // CHECK:         [[V:%.*]] = alloca ptr,
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   int * IQ iqpi = &external_int;
-// CHECK-NEXT:    [[T0:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T0:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T0]] to ptr
 // CHECK-NEXT:    store ptr [[SIGNED]], ptr [[V]],
 // CHECK-NEXT:    ret void
@@ -44,7 +44,7 @@ void test_store_data_iu() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -54,7 +54,7 @@ void test_store_data_iu() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -69,7 +69,7 @@ void test_store_data_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -79,7 +79,7 @@ void test_store_data_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -89,7 +89,7 @@ void test_store_data_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[RESULT:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -97,7 +97,7 @@ void test_store_data_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[RESULT]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[RESULT]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[RESULT:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -123,7 +123,7 @@ void test_store_data_ii_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 100, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -133,7 +133,7 @@ void test_store_data_ii_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 100, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -148,7 +148,7 @@ void test_store_data_ii_zero() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 0) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 0, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -158,7 +158,7 @@ void test_store_data_ii_zero() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 0), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 0, i64 0), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -173,7 +173,7 @@ void test_load_data_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -183,7 +183,7 @@ void test_load_data_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -193,7 +193,7 @@ void test_load_data_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -207,12 +207,12 @@ void test_load_data_i() {
 void test_store_data_a_constant() {
 // CHECK:         [[V:%.*]] = alloca ptr,
 // CHECK-NEXT:    [[T0:%.*]] = ptrtoint ptr [[V]] to i64
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 [[T0]], i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50, i64 [[T0]]) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   int * AQ aqpi = &external_int;
 // CHECK-NEXT:    [[T0:%.*]] = ptrtoint ptr [[V]] to i64
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 [[T0]], i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.sign(i64 ptrtoint (ptr @external_int to i64)) [ "ptrauth"(i64 1, i64 50, i64 [[T0]]) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   aqpi = &external_int;
@@ -226,7 +226,7 @@ void test_store_data_au() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -237,7 +237,7 @@ void test_store_data_au() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -253,7 +253,7 @@ void test_store_data_ai() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -264,7 +264,7 @@ void test_store_data_ai() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -280,7 +280,7 @@ void test_store_data_aa_same() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -291,7 +291,7 @@ void test_store_data_aa_same() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -307,7 +307,7 @@ void test_store_data_aa_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 100, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -318,7 +318,7 @@ void test_store_data_aa_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 100, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -334,7 +334,7 @@ void test_store_data_aa_zero() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50), "ptrauth"(i64 1, i64 [[NEWDISC]]) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)), "ptrauth"(i64 1, i64 0, i64 [[NEWDISC]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -345,7 +345,7 @@ void test_store_data_aa_zero() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 [[OLDDISC]]), "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 0, i64 [[OLDDISC]]), "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -360,7 +360,7 @@ void test_load_data_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -370,7 +370,7 @@ void test_load_data_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -380,7 +380,7 @@ void test_load_data_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpi to i64), i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpi to i64)) ]
 // CHECK-NEXT:    [[AUTHED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[AUTHED]], {{.*}} ]
@@ -393,11 +393,11 @@ void test_load_data_a() {
 // CHECK-LABEL: define {{.*}}void @test_store_function_i_constant()
 void test_store_function_i_constant() {
 // CHECK:         [[V:%.*]] = alloca ptr,
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   func_t * IQ iqpf = &external_func;
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   iqpf = &external_func;
@@ -410,7 +410,7 @@ void test_store_function_iu() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -420,7 +420,7 @@ void test_store_function_iu() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -435,7 +435,7 @@ void test_store_function_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -445,7 +445,7 @@ void test_store_function_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -455,7 +455,7 @@ void test_store_function_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 50, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[RESULT:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -463,7 +463,7 @@ void test_store_function_ia() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[RESULT]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[RESULT]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -489,7 +489,7 @@ void test_store_function_ii_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 100, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -499,7 +499,7 @@ void test_store_function_ii_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 100, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -514,7 +514,7 @@ void test_load_function_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -524,7 +524,7 @@ void test_load_function_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -534,7 +534,7 @@ void test_load_function_i() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -548,12 +548,12 @@ void test_load_function_i() {
 void test_store_function_a_constant() {
 // CHECK:         [[V:%.*]] = alloca ptr,
 // CHECK-NEXT:    [[T0:%.*]] = ptrtoint ptr [[V]] to i64
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 [[T0]], i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T0]]) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   func_t * AQ aqpf = &external_func;
 // CHECK-NEXT:    [[T0:%.*]] = ptrtoint ptr [[V]] to i64
-// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 [[T0]], i64 50) ]
+// CHECK-NEXT:    [[SIGN:%.*]] = call i64 @llvm.ptrauth.resign(i64 ptrtoint (ptr ptrauth (ptr @external_func, i32 0, i64 18983) to i64)) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T0]]) ]
 // CHECK-NEXT:    [[T0:%.*]] = inttoptr i64 [[SIGN]] to ptr
 // CHECK-NEXT:    store ptr [[T0]], ptr [[V]],
   aqpf = &external_func;
@@ -567,7 +567,7 @@ void test_store_function_au() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -578,7 +578,7 @@ void test_store_function_au() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 0, i64 18983, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -594,7 +594,7 @@ void test_store_function_ai() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -605,7 +605,7 @@ void test_store_function_ai() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 0), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -621,7 +621,7 @@ void test_store_function_aa_same() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -632,7 +632,7 @@ void test_store_function_aa_same() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 50) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 50, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -648,7 +648,7 @@ void test_store_function_aa_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 100, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -659,7 +659,7 @@ void test_store_function_aa_different() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 1, i64 [[T01]], i64 100) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 1, i64 100, i64 [[T01]]) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -674,7 +674,7 @@ void test_load_function_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -684,7 +684,7 @@ void test_load_function_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
@@ -694,7 +694,7 @@ void test_load_function_a() {
 // CHECK-NEXT:    [[T0:%.*]] = icmp ne ptr [[LOAD]], null
 // CHECK-NEXT:    br i1 [[T0]],
 // CHECK:         [[T0:%.*]] = ptrtoint ptr [[LOAD]] to i64
-// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 ptrtoint (ptr @global_aqpf to i64), i64 50), "ptrauth"(i64 0, i64 18983) ]
+// CHECK-NEXT:    [[T1:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[T0]]) [ "ptrauth"(i64 1, i64 50, i64 ptrtoint (ptr @global_aqpf to i64)), "ptrauth"(i64 0, i64 18983, i64 0) ]
 // CHECK-NEXT:    [[SIGNED:%.*]] = inttoptr i64 [[T1]] to ptr
 // CHECK-NEXT:    br label
 // CHECK:         [[T0:%.*]] = phi ptr [ null, {{.*}} ], [ [[SIGNED]], {{.*}} ]
