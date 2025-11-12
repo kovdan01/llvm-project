@@ -6549,11 +6549,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
   const TargetLowering &TLI = DAG.getTargetLoweringInfo();
   SDLoc SDL = getCurSDLoc();
 
-  if (auto Error = TLI.validatePtrAuthBundles(I)) {
-    errs() << "Ptrauth bundle violates target-specific constraints:\n";
-    I.print(errs());
-    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
-  }
+  TLI.reportFatalErrorOnInvalidPtrAuthBundles(I);
 
   auto CreatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = I.getOperandBundleAt(Index);
@@ -6563,7 +6559,7 @@ void SelectionDAGBuilder::visitPtrAuthIntrinsic(const CallInst &I,
     for (const Use &Operand : Bundle.Inputs)
       Ops.push_back(getValue(Operand));
 
-    return DAG.getNode(ISD::PtrAuthBundle, getCurSDLoc(), MVT::Other, Ops);
+    return DAG.getNode(ISD::PtrAuthBundle, SDL, MVT::Other, Ops);
   };
 
   if (Opcode != ISD::PtrAuthResign) {
@@ -6588,7 +6584,6 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
   SDNodeFlags Flags;
   if (auto *FPOp = dyn_cast<FPMathOperator>(&I))
     Flags.copyFMF(*FPOp);
-
 
   switch (Intrinsic) {
   default:
@@ -9814,11 +9809,7 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
 
   assert(!isa<IntrinsicInst>(CB) && "Should be handled by visitIntrinsicCall");
 
-  if (auto Error = TLI.validatePtrAuthBundles(CB)) {
-    errs() << "Ptrauth bundle violates target-specific constraints:\n";
-    CB.print(errs());
-    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
-  }
+  TLI.reportFatalErrorOnInvalidPtrAuthBundles(CB);
 
   SmallVector<Value *> BundleOperands(PAB->Inputs.begin(), PAB->Inputs.end());
 

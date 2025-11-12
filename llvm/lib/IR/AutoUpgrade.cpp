@@ -1583,8 +1583,6 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
     }
     if (Name.consume_front("ptrauth.")) {
       // @llvm.ptrauth.sign.generic does not require upgrade.
-      // FIXME Has to match intrinsics by name prefix, otherwise intrinsics
-      //       auto-declaration is not handled correctly.
       if (Name == "sign.generic")
         break;
 
@@ -1599,6 +1597,8 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
       if (F->getFunctionType()->getNumParams() == 1)
         break;
 
+      // FIXME Has to match intrinsics by name prefix, otherwise intrinsics
+      //       auto-declaration is not handled correctly.
       Intrinsic::ID ID;
       ID = StringSwitch<Intrinsic::ID>(Name)
               .StartsWith("auth", Intrinsic::ptrauth_auth)
@@ -4703,8 +4703,7 @@ static void upgradeDbgIntrinsicToDbgRecord(StringRef Name, CallBase *CI) {
 static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs) {
   IRBuilder<> Builder(CI);
   Value *Callee = CI->getCalledOperand();
-  SmallVector<Value *> Args;
-  llvm::append_range(Args, CI->args());
+  SmallVector<Value *> Args(CI->arg_begin(), CI->arg_end());
   CallBase *NewCI = Builder.CreateCall(CI->getFunctionType(), Callee,
                                        Args, OBs);
   NewCI->takeName(CI);
@@ -4721,25 +4720,23 @@ static CallBase *setOperandBundles(CallBase *CI, ArrayRef<OperandBundleDef> OBs)
 //
 // Caller of this function is responsible for distinguishing between old-style
 // AArch64 bundles (i32 key) and new-style non-AArch64 bundles that happen to
-// have two operands (which must be all i64 in the new-style bundles).
+// have two operands (which must all have i64 type in the new-style bundles).
 //
 // Note that this function never expands calls to @llvm.ptrauth.blend, which
 // are handled by upgradePtrAuthBlend later.
 static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
-                                                    Value *DiscOrNull) {
+                                                    Value *Disc) {
   LLVMContext &Ctx = Key->getContext();
   Value *Zero = ConstantInt::get(Ctx, APInt::getZero(64));
   SmallVector<Value *, 3> Inputs;
 
   Inputs.push_back(ConstantInt::get(Ctx, Key->getValue().zext(64)));
 
-  auto *IntDisc = dyn_cast_or_null<ConstantInt>(DiscOrNull);
+  auto *IntDisc = dyn_cast<ConstantInt>(Disc);
   if (IntDisc && isUInt<16>(IntDisc->getZExtValue()))
     Inputs.append({IntDisc, Zero});
-  else if (DiscOrNull)
-    Inputs.append({Zero, DiscOrNull});
   else
-    Inputs.append({Zero, Zero});
+    Inputs.append({Zero, Disc});
 
   return OperandBundleDef("ptrauth", Inputs);
 }
@@ -4768,8 +4765,10 @@ static OperandBundleDef createUpgradedPtrAuthBundle(ConstantInt *Key,
 // case of "ptrauth" bundles (indirect authenticated calls) as well as any
 // @llvm.ptrauth.* intrinsics which were lazily processed already.
 //
-// Note that the half-upgraded call formally uses the same called function
-// and the same function signature as the original one.
+// Note: the half-upgraded call formally uses the same called function
+//       and the same function signature as the original one.
+// Note: authenticated indirect calls with old-style bundles are handled by
+//       UpgradeOperandBundles function.
 static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
   // Skip: intrinsic calls are never indirect.
   if (CI->isIndirectCall())
@@ -4813,14 +4812,14 @@ static CallBase *upgradeToPtrAuthBundles(CallBase *CI) {
     break;
   }
   case 3:
-    // auth(value, key, disc) -> auth(value, 0, 0) [ "ptrauth"(key, disc) ]
-    // sign(value, key, disc) -> sign(value, 0, 0) [ "ptrauth"(key, disc) ]
+    // auth(value, key, disc) -> auth(value, 0, 0) [ "ptrauth"(...) ]
+    // sign(value, key, disc) -> sign(value, 0, 0) [ "ptrauth"(...) ]
     UpgradeToBundle(1, 2);
     break;
   case 5:
     // resign(value, old_key, old_disc, new_key, new_disc) ->
-    //     resign(value, 0, 0, 0, 0) [ "ptrauth"(old_key, old_disc),
-    //                                 "ptrauth"(new_key, new_disc) ]
+    //     resign(value, 0, 0, 0, 0) [ "ptrauth"(<old_schema>),
+    //                                 "ptrauth"(<new_schema>) ]
     UpgradeToBundle(1, 2);
     UpgradeToBundle(3, 4);
     break;
@@ -4849,7 +4848,7 @@ static void upgradePtrAuthBlend(CallBase *BlendCall) {
     // If Call is an old-style @llvm.ptrauth.* intrinsic call, lazily migrate
     // it to "ptrauth" bundles first.
     // If Call is an authenticated indirect call, it is expected to have
-    // already been migrated to a three-operand form by this time.
+    // already been migrated to a three-operand form by UpgradeOperandBundles.
     Call = upgradeToPtrAuthBundles(Call);
 
     SmallVector<OperandBundleDef> OBs;

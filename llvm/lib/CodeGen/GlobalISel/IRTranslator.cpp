@@ -2190,11 +2190,7 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
 bool IRTranslator::translatePtrAuthIntrinsic(const CallInst &CI,
                                              unsigned Opcode,
                                              MachineIRBuilder &MIRBuilder) {
-  if (auto Error = TLI->validatePtrAuthBundles(CI)) {
-    errs() << "Ptrauth bundle violates target-specific constraints:\n";
-    CI.print(errs());
-    reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
-  }
+  TLI->reportFatalErrorOnInvalidPtrAuthBundles(CI);
 
   auto TranslatePtrAuthBundle = [&](unsigned Index) {
     auto Bundle = CI.getOperandBundleAt(Index);
@@ -2801,11 +2797,8 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     assert(!isa<IntrinsicInst>(CB) &&
            "Should be handled by translateKnownIntrinsic");
 
-    if (auto Error = TLI->validatePtrAuthBundles(CB)) {
-      errs() << "Ptrauth bundle violates target-specific constraints:\n";
-      CB.print(errs());
-      reportFatalUsageError(("Invalid ptrauth bundle: " + *Error).c_str());
-    }
+    TLI->reportFatalErrorOnInvalidPtrAuthBundles(CB);
+
     SmallVector<Value *> BundleOperands(Bundle->Inputs.begin(),
                                         Bundle->Inputs.end());
 

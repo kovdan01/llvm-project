@@ -2207,12 +2207,7 @@ let Predicates = [HasPAuth] in {
   // if an attacker is able to substitute AddrDisc.
   def PAC : Pseudo<(outs GPR64:$SignedVal),
                    (ins GPR64:$Val, i64imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
-                   [(set GPR64:$SignedVal,
-                         (ptrauth_sign GPR64:$Val,
-                                       (ptrauth_bundle (i64 imm:$Key),
-                                                       (i64 imm:$Disc),
-                                                       GPR64noip:$AddrDisc)))],
-                   "$SignedVal = $Val">, Sched<[WriteI, ReadI]> {
+                   [], "$SignedVal = $Val">, Sched<[WriteI, ReadI]> {
     let isCodeGenOnly = 1;
     let hasSideEffects = 0;
     let mayStore = 0;
@@ -2221,6 +2216,15 @@ let Predicates = [HasPAuth] in {
     let Defs = [X16, X17];
     let usesCustomInserter = 1;
   }
+
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_bundle (i64 imm:$Key),
+                                                      (i64 imm:$Disc),
+                                                      (i64 0))),
+            (PAC GPR64:$Val, imm:$Key, imm:$Disc, zero_reg)>;
+  def : Pat<(ptrauth_sign GPR64:$Val, (ptrauth_bundle (i64 imm:$Key),
+                                                      (i64 imm:$Disc),
+                                                      GPR64noip:$AddrDisc)),
+            (PAC GPR64:$Val, imm:$Key, imm:$Disc, GPR64noip:$AddrDisc)>;
 
   // AUT and re-PAC a value, using different keys/data.
   // This directly manipulates x16/x17, which are the only registers that

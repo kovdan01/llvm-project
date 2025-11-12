@@ -97,8 +97,8 @@ bool AArch64GISelUtils::tryEmitBZero(MachineInstr &MI,
 }
 
 std::tuple<uint64_t, uint64_t, Register>
-AArch64GISelUtils::extractPtrauthBlendDiscriminators(SmallVector<Register> Operands,
-                                                     MachineRegisterInfo &MRI) {
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(
+    SmallVector<Register> Operands, MachineRegisterInfo &MRI) {
   assert(Operands.size() == 3);
 
   uint64_t KeyVal = getIConstantVRegVal(Operands[0], MRI)->getZExtValue();
@@ -111,6 +111,18 @@ AArch64GISelUtils::extractPtrauthBlendDiscriminators(SmallVector<Register> Opera
     AddrDisc = AArch64::NoRegister;
 
   return { KeyVal, ConstDiscVal, AddrDisc };
+}
+
+std::tuple<uint64_t, uint64_t, Register>
+AArch64GISelUtils::extractPtrauthBlendDiscriminators(Register BundleToken,
+                                                     MachineRegisterInfo &MRI) {
+  assert(MRI.getType(BundleToken).isToken());
+  const MachineInstr *Bundle = MRI.getVRegDef(BundleToken);
+  assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
+  SmallVector<Register> Ops;
+  for (auto &Op : Bundle->uses())
+    Ops.push_back(Op.getReg());
+  return extractPtrauthBlendDiscriminators(Ops, MRI);
 }
 
 void AArch64GISelUtils::changeFCMPPredToAArch64CC(

@@ -2141,32 +2141,33 @@ bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
     return false;
 
   ConstantInt *Key = dyn_cast<ConstantInt>(BundleOperands[0]);
-  Value *IntDisc = BundleOperands[1];
-  Value *AddrDisc = BundleOperands[2];
+  Value *IntDiscriminator = BundleOperands[1];
+  Value *AddrDiscriminator = BundleOperands[2];
 
   // FIXME: Use i64 consistently.
   if (!Key || Key->getZExtValue() != getKey()->getZExtValue())
     return false;
 
-  if (getDiscriminator() != IntDisc)
+  if (getDiscriminator() != IntDiscriminator)
     return false;
 
   // We can now focus on comparing the address discriminators.
 
-  if (isa<ConstantInt>(AddrDisc) && cast<ConstantInt>(AddrDisc)->isZero() &&
+  if (isa<ConstantInt>(AddrDiscriminator) &&
+      cast<ConstantInt>(AddrDiscriminator)->isZero() &&
       getAddrDiscriminator()->isNullValue())
     return true;
 
   // Discriminators are i64, so the provided addr disc may be a ptrtoint.
-  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDisc))
-    AddrDisc = Cast->getPointerOperand();
+  if (auto *Cast = dyn_cast<PtrToIntOperator>(AddrDiscriminator))
+    AddrDiscriminator = Cast->getPointerOperand();
 
   // Beyond that, we're only interested in compatible pointers.
-  if (getAddrDiscriminator()->getType() != AddrDisc->getType())
+  if (getAddrDiscriminator()->getType() != AddrDiscriminator->getType())
     return false;
 
   // These are often the same constant GEP, making them trivially equivalent.
-  if (getAddrDiscriminator() == AddrDisc)
+  if (getAddrDiscriminator() == AddrDiscriminator)
     return true;
 
   // Finally, they may be equivalent base+offset expressions.
@@ -2174,8 +2175,8 @@ bool ConstantPtrAuth::isKnownCompatibleWith(ArrayRef<Value *> BundleOperands,
   auto *Base1 = getAddrDiscriminator()->stripAndAccumulateConstantOffsets(
       DL, Off1, /*AllowNonInbounds=*/true);
 
-  APInt Off2(DL.getIndexTypeSizeInBits(AddrDisc->getType()), 0);
-  auto *Base2 = AddrDisc->stripAndAccumulateConstantOffsets(
+  APInt Off2(DL.getIndexTypeSizeInBits(AddrDiscriminator->getType()), 0);
+  auto *Base2 = AddrDiscriminator->stripAndAccumulateConstantOffsets(
       DL, Off2, /*AllowNonInbounds=*/true);
 
   return Base1 == Base2 && Off1 == Off2;

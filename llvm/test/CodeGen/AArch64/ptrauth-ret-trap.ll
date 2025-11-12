@@ -61,7 +61,7 @@ define void @test_tailcall_indirect_in_x9(ptr sret(i64) %ret, [8 x i64] %in, ptr
 ; CHECK:         braa      x0, x16
 define void @test_auth_tailcall_indirect(ptr %fptr) #0 {
   call i32 @test_tailcall()
-  tail call void %fptr() [ "ptrauth"(i64 0, i64 42) ]
+  tail call void %fptr() [ "ptrauth"(i64 0, i64 42, i64 0) ]
   ret void
 }
 

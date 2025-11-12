@@ -80,7 +80,7 @@ define void @test_ptrauth_bundle(i64 %arg.64, ptr %arg.ptr, ptr %ok) {
   call i64 @llvm.ptrauth.strip(i64 0) [ "ptrauth"(i64 42, i64 120) ]
   call i64 @llvm.ptrauth.strip(i64 0) [ "ptrauth"(i64 %arg.64) ]
 
-; CHECK: Unexpected ptrauth bundle on intrinsic call
+; CHECK: Unexpected ptrauth bundle
 ; CHECK-NEXT: call i64 @llvm.ptrauth.sign.generic(i64 0, i64 42) [ "ptrauth"(i64 42, i64 120) ]
   call i64 @llvm.ptrauth.sign.generic(i64 0, i64 42) [ "ptrauth"(i64 42, i64 120) ]
 

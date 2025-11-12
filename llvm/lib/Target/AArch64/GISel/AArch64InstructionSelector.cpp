@@ -2592,23 +2592,14 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
   LLT Ty =
       I.getOperand(0).isReg() ? MRI.getType(I.getOperand(0).getReg()) : LLT{};
 
-  auto ParsePtrAuthBundle = [&MRI](Register Schema) {
-    assert(MRI.getType(Schema).isToken());
-    const MachineInstr *Bundle = MRI.getVRegDef(Schema);
-    assert(Bundle->getOpcode() == TargetOpcode::G_PTRAUTH_BUNDLE);
-    SmallVector<Register> Ops;
-    for (auto &Op : Bundle->uses())
-      Ops.push_back(Op.getReg());
-    return extractPtrauthBlendDiscriminators(Ops, MRI);
-  };
-
   switch (Opcode) {
   case TargetOpcode::G_PTRAUTH_AUTH: {
     Register DstReg = I.getOperand(0).getReg();
     Register ValReg = I.getOperand(1).getReg();
     Register Schema = I.getOperand(2).getReg();
 
-    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] = ParsePtrAuthBundle(Schema);
+    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] =
+        extractPtrauthBlendDiscriminators(Schema, MRI);
 
     if (STI.isX16X17Safer()) {
       MIB.buildCopy({AArch64::X16}, {ValReg});
@@ -2642,8 +2633,10 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
     Register AUTSchema = I.getOperand(2).getReg();
     Register PACSchema = I.getOperand(3).getReg();
 
-    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] = ParsePtrAuthBundle(AUTSchema);
-    auto [PACKey, PACConstDiscC, PACAddrDisc] = ParsePtrAuthBundle(PACSchema);
+    auto [AUTKey, AUTConstDiscC, AUTAddrDisc] =
+        extractPtrauthBlendDiscriminators(AUTSchema, MRI);
+    auto [PACKey, PACConstDiscC, PACAddrDisc] =
+        extractPtrauthBlendDiscriminators(PACSchema, MRI);
 
     MIB.buildCopy({AArch64::X16}, {ValReg});
     MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});

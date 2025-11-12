@@ -1280,7 +1280,6 @@ void DevirtModule::applySingleImplDevirt(VTableSlotInfo &SlotInfo,
         CB.setMetadata(LLVMContext::MD_callees, nullptr);
         if (CB.getCalledOperand() &&
             CB.getOperandBundle(LLVMContext::OB_ptrauth)) {
-          assert(!isa<IntrinsicInst>(CB));
           auto *NewCS = CallBase::removeOperandBundle(
               &CB, LLVMContext::OB_ptrauth, CB.getIterator());
           CB.replaceAllUsesWith(NewCS);

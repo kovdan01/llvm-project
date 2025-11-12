@@ -2820,28 +2820,31 @@ def int_vector_partial_reduce_fadd : DefaultAttrsIntrinsic<[LLVMMatchType<0>],
 //===----------------- Pointer Authentication Intrinsics ------------------===//
 //
 
-// Sign an unauthenticated pointer using the specified key and discriminator,
-// passed in that order.
-// Returns the first argument, with some known bits replaced with a signature.
+// Sign an unauthenticated pointer using the specified signing schema.
+// Requires exactly one "ptrauth" call operand bundle specifying the schema.
+// Returns the first argument, with embedded signature.
 def int_ptrauth_sign :
   DefaultAttrsIntrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
-// Authenticate a signed pointer, using the specified key and discriminator.
-// Returns the first argument, with the signature bits removed.
+// Authenticate a signed pointer, using the specified signing schema.
+// Requires exactly one "ptrauth" call operand bundle specifying the schema.
+// Returns the first argument, with the signature removed.
 // The signature must be valid.
 def int_ptrauth_auth : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Authenticate a signed pointer and resign it.
-// The second (key) and third (discriminator) arguments specify the signing
-// schema used for authenticating.
-// The fourth and fifth arguments specify the schema used for signing.
+// Requires exactly two "ptrauth" call operand bundles specifying the signing
+// schemas.
+// The first operand bundle specifies the schema used for authenticating.
+// The second operand bundle specifies the schema used for signing.
 // The signature must be valid.
 // This is a combined form of @llvm.ptrauth.sign and @llvm.ptrauth.auth, with
 // an additional integrity guarantee on the intermediate value.
 def int_ptrauth_resign : Intrinsic<[llvm_i64_ty], [llvm_i64_ty], [IntrNoMem]>;
 
 // Strip the embedded signature out of a signed pointer.
-// The second argument specifies the key.
+// Requires exactly one "ptrauth" call operand bundle carrying a
+// target-specific information required to remove the signature.
 // This behaves like @llvm.ptrauth.auth, but doesn't require the signature to
 // be valid.
 def int_ptrauth_strip :

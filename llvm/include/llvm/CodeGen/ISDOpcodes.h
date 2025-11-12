@@ -99,7 +99,13 @@ enum NodeType {
   /// a constant global address signed using address-diversification, in code.
   PtrAuthGlobalAddress,
 
+  /// A temporary node representing the operands of "ptrauth" bundle in the
+  /// original LLVM IR.
+  /// It has target-dependent number of i64 operands and produces a token value
+  /// passed as input operand to one of PtrAuth(Auth|Sign|Resign|Strip) nodes.
   PtrAuthBundle,
+
+  /// Various PtrAuth operations.
   PtrAuthAuth,
   PtrAuthSign,
   PtrAuthResign,

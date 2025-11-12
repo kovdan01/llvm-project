@@ -3110,6 +3110,8 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       if (NeedSign) {
         auto ThisSignSchema = II->getOperandBundleAt(1);
         // resign(ptrauth(p,ks,ds),ks,ds,kr,dr) -> ptrauth(p,kr,dr)
+        // FIXME Generalize ptrauth constant and drop AArch64-specific
+        //       assumptions.
         if (ThisSignSchema.Inputs.size() == 3) {
           auto *SignKey = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[0]);
           auto *SignIntDisc = dyn_cast<ConstantInt>(ThisSignSchema.Inputs[1]);
