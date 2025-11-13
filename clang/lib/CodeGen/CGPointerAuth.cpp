@@ -284,8 +284,8 @@ CodeGenFunction::emitPointerAuthResignCall(llvm::Value *Value,
   EmitPointerAuthOperandBundle(CurAuth, OBs);
   EmitPointerAuthOperandBundle(NewAuth, OBs);
 
-  // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(i64 %curKey, i64 %curDiscriminator),
-  //                                               "ptrauth"(i64 %newKey, i64 %newDiscriminator)]
+  // call i64 @llvm.ptrauth.resign(i64 %pointer) [ "ptrauth"(<cur_schema>),
+  //                                               "ptrauth"(<new_schema>) ]
   auto *Intrinsic = CGM.getIntrinsic(llvm::Intrinsic::ptrauth_resign);
   Value = EmitRuntimeCall(Intrinsic, {Value}, OBs);
 

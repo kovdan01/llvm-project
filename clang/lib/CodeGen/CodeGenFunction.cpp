@@ -3310,13 +3310,12 @@ static llvm::Value *EmitPointerAuthCommon(CodeGenFunction &CGF,
 
   SmallVector<llvm::OperandBundleDef, 1> OBs;
   CGF.EmitPointerAuthOperandBundle(PointerAuth, OBs);
-  assert(OBs.size() == 1);
 
   // Convert the pointer to intptr_t before signing it.
   auto OrigType = Pointer->getType();
   Pointer = CGF.Builder.CreatePtrToInt(Pointer, CGF.IntPtrTy);
 
-  // call i64 @llvm.ptrauth.sign.i64(i64 %pointer, i32 %key, i64 %discriminator)
+  // call i64 @llvm.ptrauth.<op>(i64 %pointer) [ "ptrauth"(<schema>)]
   auto Intrinsic = CGF.CGM.getIntrinsic(IntrinsicID);
   Pointer = CGF.EmitRuntimeCall(Intrinsic, {Pointer}, OBs);
 
