@@ -12,6 +12,17 @@ define i64 @test_ptrauth_nop(ptr %p) {
   ret i64 %authed
 }
 
+define i64 @test_ptrauth_nop_long_bundle_ops(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_long_bundle_ops(
+; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
+; CHECK-NEXT:    ret i64 [[TMP0]]
+;
+  %tmp0 = ptrtoint ptr %p to i64
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0) ]
+  ret i64 %authed
+}
+
 declare void @foo()
 declare void @bar()
 
@@ -58,6 +69,19 @@ define i64 @test_ptrauth_nop_mismatch_keys(ptr %p) {
   ret i64 %authed
 }
 
+define i64 @test_ptrauth_nop_long_bundle_ops_mismatch(ptr %p) {
+; CHECK-LABEL: @test_ptrauth_nop_long_bundle_ops_mismatch(
+; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.sign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 [[TMP0]]) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 123) ]
+; CHECK-NEXT:    ret i64 [[AUTHED]]
+;
+  %tmp0 = ptrtoint ptr %p to i64
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 123) ]
+  ret i64 %authed
+}
+
 define i64 @test_ptrauth_sign_resign(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_sign_resign(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
@@ -65,8 +89,8 @@ define i64 @test_ptrauth_sign_resign(ptr %p) {
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0) ]
-  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
+  %signed = call i64 @llvm.ptrauth.sign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 1, i64 1234, i64 0, i64 42, i64 %tmp0), "ptrauth"(i64 0, i64 42, i64 0) ]
   ret i64 %authed
 }
 
@@ -77,8 +101,8 @@ define i64 @test_ptrauth_resign_resign(ptr %p) {
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
-  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0), "ptrauth"(i64 1, i64 3141, i64 0) ]
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 42, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.resign(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0, i64 42, i64 %tmp0), "ptrauth"(i64 1, i64 3141, i64 0) ]
   ret i64 %authed
 }
 
@@ -89,21 +113,21 @@ define i64 @test_ptrauth_resign_auth(ptr %p) {
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 42, i64 0) ]
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0) ]
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 42, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0, i64 42, i64 %tmp0) ]
   ret i64 %authed
 }
 
 define i64 @test_ptrauth_resign_auth_mismatch(ptr %p) {
 ; CHECK-LABEL: @test_ptrauth_resign_auth_mismatch(
 ; CHECK-NEXT:    [[TMP0:%.*]] = ptrtoint ptr [[P:%.*]] to i64
-; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 10, i64 0) ]
-; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 0, i64 42, i64 0) ]
+; CHECK-NEXT:    [[SIGNED:%.*]] = call i64 @llvm.ptrauth.resign(i64 [[TMP0]]) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 10, i64 0, i64 42, i64 [[TMP0]]) ]
+; CHECK-NEXT:    [[AUTHED:%.*]] = call i64 @llvm.ptrauth.auth(i64 [[SIGNED]]) [ "ptrauth"(i64 0, i64 42, i64 0, i64 123, i64 [[TMP0]]) ]
 ; CHECK-NEXT:    ret i64 [[AUTHED]]
 ;
   %tmp0 = ptrtoint ptr %p to i64
-  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 10, i64 0) ]
-  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0) ]
+  %signed = call i64 @llvm.ptrauth.resign(i64 %tmp0) [ "ptrauth"(i64 1, i64 1234, i64 0), "ptrauth"(i64 0, i64 10, i64 0, i64 42, i64 %tmp0) ]
+  %authed = call i64 @llvm.ptrauth.auth(i64 %signed) [ "ptrauth"(i64 0, i64 42, i64 0, i64 123, i64 %tmp0) ]
   ret i64 %authed
 }
 
