@@ -1891,7 +1891,7 @@ public:
       //                                         ptrauth_key_return_address,
       //                                         getSP());
 
-      value = (uint64_t)__builtin_ptrauth_auth_data((void *)_registers.__pc,
+      value = (uint64_t)__builtin_ptrauth_auth((void *)_registers.__pc,
                                                           ptrauth_key_return_address,
                                                           &_registers.__pc);
     }
