@@ -327,6 +327,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         register unsigned long long x17 __asm("x17") = returnAddress;
         register unsigned long long x16 __asm("x16") = cfa;
 
+        _LIBUNWIND_LOG("RA_SIGN_STATE = %llu, %llu\n", registers.getRegister(UNW_AARCH64_RA_SIGN_STATE), newRegisters.getRegister(UNW_AARCH64_RA_SIGN_STATE));
+
         // We use the hint versions of the authentication instructions below to
         // ensure they're assembled by the compiler even for targets with no
         // FEAT_PAuth/FEAT_PAuth_LR support.
@@ -345,10 +347,13 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
                 : "r"(x16), "r"(x15)); // autia1716
           }
         } else {
-          if (cieInfo.addressesSignedWithBKey)
+          if (cieInfo.addressesSignedWithBKey) {
             asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-          else
+          } else {
             asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+            // x16 = (unsigned long long)(&newRegisters) + 256; // TODO
+            // asm("pacia1716" : "+r"(x17) : "r"(x16));
+          }
         }
         returnAddress = x17;
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
