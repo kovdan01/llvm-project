@@ -1945,6 +1945,7 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
+    // MYTODO: with pac-ret, sign PC if RA sign state is true
     uint64_t __ra_sign_state = 0; // RA sign state register
   };
 
@@ -2040,8 +2041,8 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
     return getIP();
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
-  if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return _registers.__ra_sign_state;
+  // if (regNum == UNW_AARCH64_RA_SIGN_STATE)
+  //   return _registers.__ra_sign_state;
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
@@ -2058,8 +2059,8 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     setIP(value);
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
-  else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    _registers.__ra_sign_state = value;
+  // else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
+  //   _registers.__ra_sign_state = value;
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)
