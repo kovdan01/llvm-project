@@ -1947,6 +1947,7 @@ private:
     uint64_t __pc = 0;            // Program counter
     // // MYTODO: with pac-ret, sign PC if RA sign state is true
     // uint64_t __ra_sign_state = 0; // RA sign state register
+    uint64_t padding;
   };
 
   struct Misc {
