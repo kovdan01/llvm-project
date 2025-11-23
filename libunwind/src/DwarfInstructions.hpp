@@ -351,6 +351,9 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
             asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
         }
         returnAddress = x17;
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        returnAddress = ptrauth_sign_unauthenticated((void *)returnAddress, ptrauth_key_return_address, newRegisters.getSP());
+#endif
 #endif
       }
 #endif
