@@ -352,7 +352,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         }
         returnAddress = x17;
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        returnAddress = ptrauth_sign_unauthenticated((void *)returnAddress, ptrauth_key_return_address, newRegisters.getSP());
+        returnAddress = (typename R::reg_t)ptrauth_sign_unauthenticated((void *)returnAddress, ptrauth_key_return_address, newRegisters.getSP());
 #endif
 #endif
       }
