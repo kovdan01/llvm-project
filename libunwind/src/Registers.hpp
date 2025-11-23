@@ -2042,8 +2042,8 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
     return getIP();
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
-  // if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-  //   return _registers.__ra_sign_state;
+  if (regNum == UNW_AARCH64_RA_SIGN_STATE)
+    return _registers.__ra_sign_state;
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
