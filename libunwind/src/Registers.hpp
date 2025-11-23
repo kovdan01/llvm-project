@@ -1879,28 +1879,49 @@ public:
   void      setSP(uint64_t value) { _registers.__sp = value; }
   uint64_t  getIP() const {
     uint64_t value = _registers.__pc;
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-    // Note the value of the PC was signed to its address in the register state
-    // but everyone else expects it to be sign by the SP, so convert on return.
-    value = (uint64_t)ptrauth_auth_and_resign((void *)_registers.__pc,
-                                              ptrauth_key_return_address,
-                                              &_registers.__pc,
-                                              ptrauth_key_return_address,
-                                              getSP());
-#endif
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+    if (_registers.__ra_sign_state & 0x01) {
+      // Note the value of the PC was signed to its address in the register state
+      // but everyone else expects it to be sign by the SP, so convert on return.
+
+      // TODO: resign instead of auth
+      // value = (uint64_t)__builtin_ptrauth_auth_and_resign((void *)_registers.__pc,
+      //                                         ptrauth_key_return_address,
+      //                                         &_registers.__pc,
+      //                                         ptrauth_key_return_address,
+      //                                         getSP());
+
+      value = (uint64_t)__builtin_ptrauth_auth_data((void *)_registers.__pc,
+                                                          ptrauth_key_return_address,
+                                                          &_registers.__pc);
+    }
+//#endif
     return value;
   }
   void      setIP(uint64_t value) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-    // Note the value which was set should have been signed with the SP.
-    // We then resign with the slot we are being stored in to so that both SP
-    // and LR can't be spoofed at the same time.
-    value = (uint64_t)ptrauth_auth_and_resign((void *)value,
-                                              ptrauth_key_return_address,
-                                              getSP(),
-                                              ptrauth_key_return_address,
-                                              &_registers.__pc);
-#endif
+    // TODO: in stepWithDwarf, we do not need this
+// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//     // Note the value which was set should have been signed with the SP.
+//     // We then resign with the slot we are being stored in to so that both SP
+//     // and LR can't be spoofed at the same time.
+//     value = (uint64_t)ptrauth_auth_and_resign((void *)value,
+//                                               ptrauth_key_return_address,
+//                                               getSP(),
+//                                               ptrauth_key_return_address,
+//                                               &_registers.__pc);
+// #endif
+    _registers.__pc = value;
+  }
+
+  void      setIP_SIGN(uint64_t value) {
+    if (_registers.__ra_sign_state & 0x01) {
+      // Note the value which was set should have been signed with the SP.
+      // We then resign with the slot we are being stored in to so that both SP
+      // and LR can't be spoofed at the same time.
+      value = (uint64_t)__builtin_ptrauth_sign_unauthenticated((void *)value,
+                                                ptrauth_key_return_address,
+                                                &_registers.__pc);
+    }
     _registers.__pc = value;
   }
   uint64_t getFP() const { return _registers.__fp; }
@@ -2001,7 +2022,7 @@ Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
-  setIP(other.getIP());
+  setIP_SIGN(other.getIP());
   return *this;
 }
 
@@ -2060,8 +2081,8 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     setIP(value);
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
-  // else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-  //   _registers.__ra_sign_state = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
+    _registers.__ra_sign_state = value;
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)
