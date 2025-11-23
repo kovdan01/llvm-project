@@ -1945,8 +1945,8 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
-    // MYTODO: with pac-ret, sign PC if RA sign state is true
-    uint64_t __ra_sign_state = 0; // RA sign state register
+    // // MYTODO: with pac-ret, sign PC if RA sign state is true
+    // uint64_t __ra_sign_state = 0; // RA sign state register
   };
 
   struct Misc {
