@@ -1897,7 +1897,7 @@ public:
       //                                         getSP());
 
       register unsigned long long x17 __asm("x17") = _registers.__pc;
-      register unsigned long long x16 __asm("x16") = &_registers.__pc;
+      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
       asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
       value = x17;
       // value = (uint64_t)__builtin_ptrauth_auth((void *)_registers.__pc,
@@ -1929,7 +1929,7 @@ public:
       // and LR can't be spoofed at the same time.
 
       register unsigned long long x17 __asm("x17") = value;
-      register unsigned long long x16 __asm("x16") = &_registers.__pc;
+      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
       asm("pacia1716" : "+r"(x17) : "r"(x16));
       value = x17;
       // value = (uint64_t)__builtin_ptrauth_sign_unauthenticated((void *)value,
