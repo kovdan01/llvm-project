@@ -25,11 +25,6 @@
 #define HAVE_SYS_AUXV_H
 #endif
 
-// TODO: delete
-#if defined(_LIBUNWIND_TARGET_AARCH64)
-#include <ptrauth.h>
-#endif
-
 namespace libunwind {
 
 // For emulating 128-bit registers

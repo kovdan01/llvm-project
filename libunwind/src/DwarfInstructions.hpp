@@ -332,7 +332,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 
         pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
-        _LIBUNWIND_LOG("RA_SIGN_STATE = %llu, %llu\n", registers.getRegister(UNW_AARCH64_RA_SIGN_STATE), newRegisters.getRegister(UNW_AARCH64_RA_SIGN_STATE));
+        //_LIBUNWIND_LOG("RA_SIGN_STATE = %llu, %llu\n", registers.getRegister(UNW_AARCH64_RA_SIGN_STATE), newRegisters.getRegister(UNW_AARCH64_RA_SIGN_STATE));
 
         // We use the hint versions of the authentication instructions below to
         // ensure they're assembled by the compiler even for targets with no
