@@ -75,12 +75,12 @@ private:
     __builtin_unreachable();
   }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
-  static pint_t getRASignState(A &addressSpace, R registers, pint_t cfa,
-                               PrologInfo &prolog);
-  static bool isReturnAddressSigned(A &addressSpace, R registers, pint_t cfa,
-                                    PrologInfo &prolog);
-  static bool isReturnAddressSignedWithPC(A &addressSpace, R registers,
-                                          pint_t cfa, PrologInfo &prolog);
+  static pint_t getRASignState(A &addressSpace, const R &registers, pint_t cfa,
+                               const PrologInfo &prolog);
+  static bool isReturnAddressSigned(A &addressSpace, const R &registers, pint_t cfa,
+                                    const PrologInfo &prolog);
+  static bool isReturnAddressSignedWithPC(A &addressSpace, const R &registers,
+                                          pint_t cfa, const PrologInfo &prolog);
 #endif
 };
 
@@ -179,8 +179,8 @@ v128 DwarfInstructions<A, R>::getSavedVectorRegister(
 #if defined(_LIBUNWIND_TARGET_AARCH64)
 template <typename A, typename R>
 A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
-                                             R registers, pint_t cfa,
-                                             PrologInfo &prolog) {
+                                             const R &registers, pint_t cfa,
+                                             const PrologInfo &prolog) {
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
     return static_cast<pint_t>(regloc.value);
@@ -190,8 +190,8 @@ A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
 
 template <typename A, typename R>
 bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
-                                                    R registers, pint_t cfa,
-                                                    PrologInfo &prolog) {
+                                                    const R &registers, pint_t cfa,
+                                                    const PrologInfo &prolog) {
   pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
 
   // Only bit[0] is meaningful.
@@ -200,9 +200,9 @@ bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
 
 template <typename A, typename R>
 bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
-                                                          R registers,
+                                                          const R &registers,
                                                           pint_t cfa,
-                                                          PrologInfo &prolog) {
+                                                          const PrologInfo &prolog) {
   pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
 
   // Only bit[1] is meaningful.
