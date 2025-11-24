@@ -1896,9 +1896,13 @@ public:
       //                                         ptrauth_key_return_address,
       //                                         getSP());
 
-      value = (uint64_t)__builtin_ptrauth_auth((void *)_registers.__pc,
-                                                          ptrauth_key_return_address,
-                                                          &_registers.__pc);
+      register unsigned long long x17 __asm("x17") = _registers.__pc;
+      register unsigned long long x16 __asm("x16") = &_registers.__pc;
+      asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+      value = x17;
+      // value = (uint64_t)__builtin_ptrauth_auth((void *)_registers.__pc,
+      //                                                     ptrauth_key_return_address,
+      //                                                     &_registers.__pc);
     }
 //#endif
     return value;
@@ -1923,9 +1927,14 @@ public:
       // Note the value which was set should have been signed with the SP.
       // We then resign with the slot we are being stored in to so that both SP
       // and LR can't be spoofed at the same time.
-      value = (uint64_t)__builtin_ptrauth_sign_unauthenticated((void *)value,
-                                                ptrauth_key_return_address,
-                                                &_registers.__pc);
+
+      register unsigned long long x17 __asm("x17") = value;
+      register unsigned long long x16 __asm("x16") = &_registers.__pc;
+      asm("pacia1716" : "+r"(x17) : "r"(x16));
+      value = x17;
+      // value = (uint64_t)__builtin_ptrauth_sign_unauthenticated((void *)value,
+      //                                           ptrauth_key_return_address,
+      //                                           &_registers.__pc);
     }
     _registers.__pc = value;
   }
