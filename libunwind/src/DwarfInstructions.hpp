@@ -178,7 +178,7 @@ v128 DwarfInstructions<A, R>::getSavedVectorRegister(
 }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
 template <typename A, typename R>
-A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
+typename A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
                                              const R &registers, pint_t cfa,
                                              const PrologInfo &prolog) {
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
