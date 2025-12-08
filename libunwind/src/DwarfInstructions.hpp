@@ -366,6 +366,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
             asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
           } else {
             asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+            if (x17 & 0xffff000000000000ull != 0)
+              _LIBUNWIND_ABORT("stepWithDwarf PTRAUTH FAILURE");
             x16 = newRegisters.getSP();
             //x16 = (unsigned long long)(&newRegisters) + 256; // TODO
             asm("pacia1716" : "+r"(x17) : "r"(x16));
