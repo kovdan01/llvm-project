@@ -1891,10 +1891,15 @@ public:
     register unsigned long long x17 __asm("x17") = value;
     register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
     asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: auth 0x%" PRIxPTR
+                               " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                               (void *)value, x16, x17);
     if (x17 & 0xffff000000000000ull != 0)
       _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
     x16 = getSP();
     asm("pacia1716" : "+r"(x17) : "r"(x16));
+    _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: sign with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                               x16, x17);
     value = x17;
 #endif
     return value;
@@ -1913,10 +1918,15 @@ public:
     register unsigned long long x17 __asm("x17") = value;
     register unsigned long long x16 __asm("x16") = getSP();
     asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    _LIBUNWIND_TRACE_UNWINDING("AAAA setIP: auth 0x%" PRIxPTR
+                               " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                               (void *)value, x16, x17);
     if (x17 & 0xffff000000000000ull != 0)
       _LIBUNWIND_ABORT("setIP PTRAUTH FAILURE");
     x16 = (unsigned long long)&_registers.__pc;
     asm("pacia1716" : "+r"(x17) : "r"(x16));
+    _LIBUNWIND_TRACE_UNWINDING("AAAA setIP: sign with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                               x16, x17);
     value = x17;
 #endif
     _registers.__pc = value;
