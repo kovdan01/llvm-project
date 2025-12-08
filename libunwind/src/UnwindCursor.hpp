@@ -1064,13 +1064,13 @@ private:
                                const UnwindInfoSections &sects,
                                uint32_t fdeSectionOffsetHint = 0);
   int stepWithDwarfFDE(bool stage2) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
     typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
     typename R::link_reg_t pc;
     _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
-#else
-    typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
-#endif
+// #else
+//     typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
+// #endif
     return DwarfInstructions<A, R>::stepWithDwarf(
         _addressSpace, pc, (pint_t)_info.unwind_info, _registers,
         _isSignalFrame, stage2);
@@ -2734,11 +2734,11 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #endif
 
   typename R::link_reg_t pc;
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
-#else
-  pc = rawPC;
-#endif
+// #else
+//   pc = rawPC;
+// #endif
 
   // Exit early if at the top of the stack.
   if (pc == 0) {
@@ -3304,13 +3304,13 @@ void UnwindCursor<A, R>::getInfo(unw_proc_info_t *info) {
 template <typename A, typename R>
 bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
                                          unw_word_t *offset) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
   typename R::link_reg_t pc;
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
-#else
-  typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
-#endif
+// #else
+//   typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
+// #endif
   return _addressSpace.findFunctionName(pc, buf, bufLen, offset);
 }
 
