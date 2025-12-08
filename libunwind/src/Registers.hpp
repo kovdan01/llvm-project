@@ -2004,7 +2004,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
          sizeof(_vectorHalfRegisters));
   _misc_registers.__vg = 0;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   // We have to do some pointer authentication fixups after this copy,
   // and as part of that we need to load the source pc without
   // authenticating so that we maintain the signature for the resigning
