@@ -683,23 +683,24 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldp    x28,x29, [x0, #0x0E0]
 
 #if defined(__ARM_FP) && __ARM_FP != 0
-  ldp    d0, d1,  [x0, #0x110]
-  ldp    d2, d3,  [x0, #0x120]
-  ldp    d4, d5,  [x0, #0x130]
-  ldp    d6, d7,  [x0, #0x140]
-  ldp    d8, d9,  [x0, #0x150]
-  ldp    d10,d11, [x0, #0x160]
-  ldp    d12,d13, [x0, #0x170]
-  ldp    d14,d15, [x0, #0x180]
-  ldp    d16,d17, [x0, #0x190]
-  ldp    d18,d19, [x0, #0x1A0]
-  ldp    d20,d21, [x0, #0x1B0]
-  ldp    d22,d23, [x0, #0x1C0]
-  ldp    d24,d25, [x0, #0x1D0]
-  ldp    d26,d27, [x0, #0x1E0]
-  ldp    d28,d29, [x0, #0x1F0]
-  ldr    d30,     [x0, #0x200]
-  ldr    d31,     [x0, #0x208]
+  ldp    d0, d1,  [x0, #0x120]
+  ldp    d2, d3,  [x0, #0x130]
+  ldp    d4, d5,  [x0, #0x140]
+  ldp    d6, d7,  [x0, #0x150]
+  ldp    d8, d9,  [x0, #0x160]
+  ldp    d10,d11, [x0, #0x170]
+  ldp    d12,d13, [x0, #0x180]
+  ldp    d14,d15, [x0, #0x190]
+  ldp    d16,d17, [x0, #0x1A0]
+  ldp    d18,d19, [x0, #0x1B0]
+  ldp    d20,d21, [x0, #0x1C0]
+  ldp    d22,d23, [x0, #0x1D0]
+  ldp    d24,d25, [x0, #0x1E0]
+  ldp    d26,d27, [x0, #0x1F0]
+  ldr    d28,     [x0, #0x200]
+  ldr    d29,     [x0, #0x208]
+  ldr    d30,     [x0, #0x210]
+  ldr    d31,     [x0, #0x218]
 #endif
   // Finally, restore sp. This must be done after the last read from the
   // context struct, because it is allocated on the stack, and an exception
@@ -709,15 +710,29 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldr    x16,     [x0, #0x0F8]  // load sp into scratch
   ldr    lr,      [x0, #0x100]  // restore pc into lr
 
-#if __has_feature(ptrauth_calls)
-  // The LR is signed with its address inside the register state.  Time
-  // to resign to be a regular ROP protected signed pointer
-  add    x1, x0, #0x100
-  autib  lr, x1
-  pacib  lr, x16  // signed the scratch register for sp
-#endif
+// TODO proper signing scheme
 
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  ldr    x17,     [x0, #0x108]  // x17 = __ra_sign.__state
+  cmp    x17, xzr
+  b.eq   .Lpauthend1
+  add    x16, x0, #0x100
+  ldr    x17,     [x0, #0x118]  // x17 = __ra_sign.__use_b_key
+  cmp    x17, xzr
+  b.eq   .Lpauthakey1
+  mov    x17, lr
+  hint   0xe // autib1716
+  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
+  hint   0xa // pacib1716
+  mov    lr, x17
+  b      .Lpauthend1
+.Lpauthakey1:
+  mov    x17, lr
+  hint   0xc // autia1716
+  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
+  hint   0x8 // pacia1716
+  mov    lr, x17
+.Lpauthend1:
+
   mov    sp,x16                 // restore sp
 #if defined(__ARM_FEATURE_GCS_DEFAULT)
   // If GCS is enabled we need to push the address we're returning to onto the
@@ -730,11 +745,23 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 Lnogcs:
 #endif
 
-#if __has_feature(ptrauth_calls)
-  retab
-#else
+  // TODO proper signing scheme
+  ldr    x17,     [x0, #0x108]  // x17 = __ra_sign.__state
+  cmp    x17, xzr
+  b.eq   .Lpauthend2
+  ldr    x17,     [x0, #0x118]  // x17 = __ra_sign.__use_b_key
+  cmp    x17, xzr
+  b.eq   .Lpauthakey2
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  hint   0x1f                   // autibsp
   ret    x30                    // jump to pc
-#endif
+.Lpauthakey2:
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  hint   0x1d                   // autiasp
+  ret    x30                    // jump to pc
+.Lpauthend2:
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  ret    x30                    // jump to pc
 
 #elif defined(__arm__) && !defined(__APPLE__)
 
