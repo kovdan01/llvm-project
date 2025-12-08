@@ -626,6 +626,15 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     result = (unw_word_t)ptrauth_auth_data((void *)result,
                                            ptrauth_key_return_address, sp);
   }
+#elif defined(__ARM_FEATURE_PAC_DEFAULT)
+  {
+    unw_word_t sp;
+    __unw_get_reg(cursor, UNW_REG_SP, &sp);
+    register unsigned long long x17 __asm("x17") = result;
+    register unsigned long long x16 __asm("x16") = sp;
+    asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    result = x17;
+  }
 #endif
 
   _LIBUNWIND_TRACE_API("_Unwind_GetIP(context=%p) => 0x%" PRIxPTR,
