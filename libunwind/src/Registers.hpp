@@ -1919,6 +1919,18 @@ public:
   }
 #endif
 
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+  // TODO: proper signing scheme
+  void
+  loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
+                                  link_reg_t *referenceAuthedLinkRegister) {
+    register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
+    register unsigned long long x16 __asm("x16") = _registers.__sp;
+    asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    *referenceAuthedLinkRegister = x17;
+  }
+#endif
+
 private:
   uint64_t lazyGetVG() const;
 

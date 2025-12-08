@@ -2734,7 +2734,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #endif
 
   typename R::link_reg_t pc;
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
 #else
   pc = rawPC;
