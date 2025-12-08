@@ -1064,7 +1064,7 @@ private:
                                const UnwindInfoSections &sects,
                                uint32_t fdeSectionOffsetHint = 0);
   int stepWithDwarfFDE(bool stage2) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64)
     typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
     typename R::link_reg_t pc;
     _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
@@ -2734,7 +2734,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #endif
 
   typename R::link_reg_t pc;
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64)
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
 #else
   pc = rawPC;
@@ -3304,7 +3304,7 @@ void UnwindCursor<A, R>::getInfo(unw_proc_info_t *info) {
 template <typename A, typename R>
 bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
                                          unw_word_t *offset) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64)
   typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
   typename R::link_reg_t pc;
   _registers.loadAndAuthenticateLinkRegister(rawPC, &pc);
