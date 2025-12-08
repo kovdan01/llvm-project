@@ -193,6 +193,10 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
       // any such platforms and Clang doesn't export a macro for them.
       if (info.gp)
         co->setReg(UNW_REG_SP, sp + info.gp);
+#if defined(_LIBUNWIND_TARGET_AARCH64) && !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+      // TODO
+      co->setReg(UNW_AARCH64_RA_SIGN_STATE, 0);
+#endif
       co->setReg(UNW_REG_IP, value);
       co->setInfoBasedOnIPRegister(false);
     } else {

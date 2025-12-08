@@ -1895,7 +1895,7 @@ public:
       _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: auth 0x%" PRIxPTR
                                  " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
                                  (void *)value, x16, x17);
-      if (x17 & 0xffff000000000000ull != 0)
+      if ((x17 & 0xffff000000000000ull) != 0)
         _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
       x16 = getSP();
       asm("pacia1716" : "+r"(x17) : "r"(x16));
@@ -1924,7 +1924,7 @@ public:
       _LIBUNWIND_TRACE_UNWINDING("AAAA setIP: auth 0x%" PRIxPTR
                                  " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
                                  (void *)value, x16, x17);
-      if (x17 & 0xffff000000000000ull != 0)
+      if ((x17 & 0xffff000000000000ull) != 0)
         _LIBUNWIND_ABORT("setIP PTRAUTH FAILURE");
       x16 = (unsigned long long)&_registers.__pc;
       asm("pacia1716" : "+r"(x17) : "r"(x16));
@@ -1981,7 +1981,7 @@ public:
       register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
       register unsigned long long x16 __asm("x16") = _registers.__sp;
       asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-      if (x17 & 0xffff000000000000ull != 0)
+      if ((x17 & 0xffff000000000000ull) != 0)
         _LIBUNWIND_ABORT("loadAndAuthenticateLinkRegister PTRAUTH FAILURE");
       *referenceAuthedLinkRegister = x17;
     } else {
