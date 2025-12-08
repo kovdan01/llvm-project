@@ -1879,58 +1879,28 @@ public:
   void      setSP(uint64_t value) { _registers.__sp = value; }
   uint64_t  getIP() const {
     uint64_t value = _registers.__pc;
-//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-    if (_registers.__ra_sign_state & 0x01) {
-      // Note the value of the PC was signed to its address in the register state
-      // but everyone else expects it to be sign by the SP, so convert on return.
-
-      // TODO: resign instead of auth
-      // value = (uint64_t)__builtin_ptrauth_auth_and_resign((void *)_registers.__pc,
-      //                                         ptrauth_key_return_address,
-      //                                         &_registers.__pc,
-      //                                         ptrauth_key_return_address,
-      //                                         getSP());
-
-      register unsigned long long x17 __asm("x17") = _registers.__pc;
-      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
-      asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-      value = x17;
-      // value = (uint64_t)__builtin_ptrauth_auth((void *)_registers.__pc,
-      //                                                     ptrauth_key_return_address,
-      //                                                     &_registers.__pc);
-    }
-//#endif
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+    // Note the value of the PC was signed to its address in the register state
+    // but everyone else expects it to be sign by the SP, so convert on return.
+    value = (uint64_t)ptrauth_auth_and_resign((void *)_registers.__pc,
+                                              ptrauth_key_return_address,
+                                              &_registers.__pc,
+                                              ptrauth_key_return_address,
+                                              getSP());
+#endif
     return value;
   }
   void      setIP(uint64_t value) {
-    // TODO: in stepWithDwarf, we do not need this
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//     // Note the value which was set should have been signed with the SP.
-//     // We then resign with the slot we are being stored in to so that both SP
-//     // and LR can't be spoofed at the same time.
-//     value = (uint64_t)ptrauth_auth_and_resign((void *)value,
-//                                               ptrauth_key_return_address,
-//                                               getSP(),
-//                                               ptrauth_key_return_address,
-//                                               &_registers.__pc);
-// #endif
-    _registers.__pc = value;
-  }
-
-  void      setIP_SIGN(uint64_t value) {
-    if (_registers.__ra_sign_state & 0x01) {
-      // Note the value which was set should have been signed with the SP.
-      // We then resign with the slot we are being stored in to so that both SP
-      // and LR can't be spoofed at the same time.
-
-      register unsigned long long x17 __asm("x17") = value;
-      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
-      asm("pacia1716" : "+r"(x17) : "r"(x16));
-      value = x17;
-      // value = (uint64_t)__builtin_ptrauth_sign_unauthenticated((void *)value,
-      //                                           ptrauth_key_return_address,
-      //                                           &_registers.__pc);
-    }
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+    // Note the value which was set should have been signed with the SP.
+    // We then resign with the slot we are being stored in to so that both SP
+    // and LR can't be spoofed at the same time.
+    value = (uint64_t)ptrauth_auth_and_resign((void *)value,
+                                              ptrauth_key_return_address,
+                                              getSP(),
+                                              ptrauth_key_return_address,
+                                              &_registers.__pc);
+#endif
     _registers.__pc = value;
   }
   uint64_t getFP() const { return _registers.__fp; }
@@ -1975,9 +1945,7 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
-    // MYTODO: with pac-ret, sign PC if RA sign state is true
     uint64_t __ra_sign_state = 0; // RA sign state register
-    //uint64_t padding;
   };
 
   struct Misc {
@@ -2031,7 +1999,7 @@ Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
-  setIP_SIGN(other.getIP());
+  setIP(other.getIP());
   return *this;
 }
 

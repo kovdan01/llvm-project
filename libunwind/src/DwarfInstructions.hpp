@@ -75,12 +75,10 @@ private:
     __builtin_unreachable();
   }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
-  static pint_t getRASignState(A &addressSpace, const R &registers, pint_t cfa,
-                               const PrologInfo &prolog);
-  static bool isReturnAddressSigned(A &addressSpace, const R &registers, pint_t cfa,
-                                    const PrologInfo &prolog);
-  static bool isReturnAddressSignedWithPC(A &addressSpace, const R &registers,
-                                          pint_t cfa, const PrologInfo &prolog);
+  static bool isReturnAddressSigned(A &addressSpace, R registers, pint_t cfa,
+                                    PrologInfo &prolog);
+  static bool isReturnAddressSignedWithPC(A &addressSpace, R registers,
+                                          pint_t cfa, PrologInfo &prolog);
 #endif
 };
 
@@ -178,21 +176,15 @@ v128 DwarfInstructions<A, R>::getSavedVectorRegister(
 }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
 template <typename A, typename R>
-typename A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
-                                             const R &registers, pint_t cfa,
-                                             const PrologInfo &prolog) {
+bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
+                                                    R registers, pint_t cfa,
+                                                    PrologInfo &prolog) {
+  pint_t raSignState;
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
-    return static_cast<pint_t>(regloc.value);
+    raSignState = static_cast<pint_t>(regloc.value);
   else
-    return getSavedRegister(addressSpace, registers, cfa, regloc);
-}
-
-template <typename A, typename R>
-bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
-                                                    const R &registers, pint_t cfa,
-                                                    const PrologInfo &prolog) {
-  pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
+    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
 
   // Only bit[0] is meaningful.
   return raSignState & 0x01;
@@ -200,10 +192,15 @@ bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
 
 template <typename A, typename R>
 bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
-                                                          const R &registers,
+                                                          R registers,
                                                           pint_t cfa,
-                                                          const PrologInfo &prolog) {
-  pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
+                                                          PrologInfo &prolog) {
+  pint_t raSignState;
+  auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
+  if (regloc.location == CFI_Parser<A>::kRegisterUnused)
+    raSignState = static_cast<pint_t>(regloc.value);
+  else
+    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
 
   // Only bit[1] is meaningful.
   return raSignState & 0x02;
@@ -305,9 +302,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 
       isSignalFrame = cieInfo.isSignalFrame;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64)
-      //&&                                      \
-    //!defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
+    !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
       // There are two ways of return address signing: pac-ret (enabled via
       // -mbranch-protection=pac-ret) and ptrauth-returns (enabled as part of
       // Apple's arm64e or experimental pauthtest ABI on Linux). The code
@@ -330,10 +326,6 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         register unsigned long long x17 __asm("x17") = returnAddress;
         register unsigned long long x16 __asm("x16") = cfa;
 
-        pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
-        //_LIBUNWIND_LOG("RA_SIGN_STATE = %llu, %llu\n", registers.getRegister(UNW_AARCH64_RA_SIGN_STATE), newRegisters.getRegister(UNW_AARCH64_RA_SIGN_STATE));
-
         // We use the hint versions of the authentication instructions below to
         // ensure they're assembled by the compiler even for targets with no
         // FEAT_PAuth/FEAT_PAuth_LR support.
@@ -352,18 +344,12 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
                 : "r"(x16), "r"(x15)); // autia1716
           }
         } else {
-          if (cieInfo.addressesSignedWithBKey) {
+          if (cieInfo.addressesSignedWithBKey)
             asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-          } else {
+          else
             asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-            x16 = (unsigned long long)(&newRegisters) + 256; // TODO
-            asm("pacia1716" : "+r"(x17) : "r"(x16));
-          }
         }
         returnAddress = x17;
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//         returnAddress = (typename R::reg_t)ptrauth_sign_unauthenticated((void *)returnAddress, ptrauth_key_return_address, newRegisters.getSP());
-// #endif
 #endif
       }
 #endif
