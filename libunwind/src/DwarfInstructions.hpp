@@ -366,7 +366,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
             asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
           } else {
             asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-            x16 = (unsigned long long)(&newRegisters) + 256; // TODO
+            x16 = newRegisters.getSP();
+            //x16 = (unsigned long long)(&newRegisters) + 256; // TODO
             asm("pacia1716" : "+r"(x17) : "r"(x16));
           }
         }

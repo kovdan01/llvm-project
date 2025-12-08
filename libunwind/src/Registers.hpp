@@ -1887,6 +1887,13 @@ public:
                                               &_registers.__pc,
                                               ptrauth_key_return_address,
                                               getSP());
+#elif defined(__ARM_FEATURE_PAC_DEFAULT)
+    register unsigned long long x17 __asm("x17") = value;
+    register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
+    asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    x16 = getSP();
+    asm("pacia1716" : "+r"(x17) : "r"(x16));
+    value = x17;
 #endif
     return value;
   }
@@ -1900,6 +1907,13 @@ public:
                                               getSP(),
                                               ptrauth_key_return_address,
                                               &_registers.__pc);
+#elif defined(__ARM_FEATURE_PAC_DEFAULT)
+    register unsigned long long x17 __asm("x17") = value;
+    register unsigned long long x16 __asm("x16") = getSP();
+    asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+    x16 = (unsigned long long)&_registers.__pc;
+    asm("pacia1716" : "+r"(x17) : "r"(x16));
+    value = x17;
 #endif
     _registers.__pc = value;
   }
