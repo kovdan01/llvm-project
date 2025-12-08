@@ -715,6 +715,15 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   add    x1, x0, #0x100
   autib  lr, x1
   pacib  lr, x16  // signed the scratch register for sp
+#else
+// TODO proper signing scheme
+  ldr    x17,     [x0, #0x108]
+  cmp    x17, xzr
+  b.eq   .Lpauthend1
+  add    x1, x0, #0x100
+  autia  lr, x1
+  pacia  lr, x16  // signed the scratch register for sp
+.Lpauthend1:
 #endif
 
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
@@ -733,6 +742,11 @@ Lnogcs:
 #if __has_feature(ptrauth_calls)
   retab
 #else
+  // TODO proper signing scheme
+  cmp    x17, xzr
+  b.eq   .Lpauthend2
+  retaa
+.Lpauthend2:
   ret    x30                    // jump to pc
 #endif
 

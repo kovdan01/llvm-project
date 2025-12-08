@@ -1887,6 +1887,22 @@ public:
                                               &_registers.__pc,
                                               ptrauth_key_return_address,
                                               getSP());
+#else//if defined(__ARM_FEATURE_PAC_DEFAULT)
+    if (_registers.__ra_sign_state != 0) { // TODO proper sign scheme
+      register unsigned long long x17 __asm("x17") = value;
+      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
+      asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+      _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: auth 0x%" PRIxPTR
+                                 " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                                 (void *)value, x16, x17);
+      if ((x17 & 0xffff000000000000ull) != 0)
+        _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
+      x16 = getSP();
+      asm("pacia1716" : "+r"(x17) : "r"(x16));
+      _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: sign with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                                 x16, x17);
+      value = x17;
+    }
 #endif
     return value;
   }
@@ -1900,24 +1916,79 @@ public:
                                               getSP(),
                                               ptrauth_key_return_address,
                                               &_registers.__pc);
+#else//if defined(__ARM_FEATURE_PAC_DEFAULT)
+    if (_registers.__ra_sign_state != 0) { // TODO proper sign scheme
+      register unsigned long long x17 __asm("x17") = value;
+      register unsigned long long x16 __asm("x16") = getSP();
+      asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+      _LIBUNWIND_TRACE_UNWINDING("AAAA setIP: auth 0x%" PRIxPTR
+                                 " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                                 (void *)value, x16, x17);
+      if ((x17 & 0xffff000000000000ull) != 0)
+        _LIBUNWIND_ABORT("setIP PTRAUTH FAILURE");
+      x16 = (unsigned long long)&_registers.__pc;
+      asm("pacia1716" : "+r"(x17) : "r"(x16));
+      _LIBUNWIND_TRACE_UNWINDING("AAAA setIP: sign with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
+                                 x16, x17);
+      value = x17;
+    }
 #endif
     _registers.__pc = value;
   }
   uint64_t getFP() const { return _registers.__fp; }
   void setFP(uint64_t value) { _registers.__fp = value; }
 
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//   void
+//   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
+//                                   link_reg_t *referenceAuthedLinkRegister) {
+//     // If we are in an arm64/arm64e frame, then the PC should have been signed
+//     // with the SP
+//     *referenceAuthedLinkRegister =
+//       (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
+//                                   ptrauth_key_return_address,
+//                                   _registers.__sp);
+//   }
+// #endif
+
+// #if defined(__ARM_FEATURE_PAC_DEFAULT)
+//   // TODO: proper signing scheme
+//   void
+//   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
+//                                   link_reg_t *referenceAuthedLinkRegister) {
+//     register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
+//     register unsigned long long x16 __asm("x16") = _registers.__sp;
+//     asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+//     if (x17 & 0xffff000000000000ull != 0)
+//       _LIBUNWIND_ABORT("loadAndAuthenticateLinkRegister PTRAUTH FAILURE");
+//     *referenceAuthedLinkRegister = x17;
+//   }
+// #endif
+
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+
     // If we are in an arm64/arm64e frame, then the PC should have been signed
     // with the SP
     *referenceAuthedLinkRegister =
-      (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
-                                  ptrauth_key_return_address,
-                                  _registers.__sp);
-  }
+        (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
+                                    ptrauth_key_return_address,
+                                    _registers.__sp);
+#else
+    if (_registers.__ra_sign_state != 0) { // TODO: proper sign state
+      register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
+      register unsigned long long x16 __asm("x16") = _registers.__sp;
+      asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+      if ((x17 & 0xffff000000000000ull) != 0)
+        _LIBUNWIND_ABORT("loadAndAuthenticateLinkRegister PTRAUTH FAILURE");
+      *referenceAuthedLinkRegister = x17;
+    } else {
+      *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+    }
 #endif
+  }
 
 private:
   uint64_t lazyGetVG() const;
@@ -1978,7 +2049,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
          sizeof(_vectorHalfRegisters));
   _misc_registers.__vg = 0;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   // We have to do some pointer authentication fixups after this copy,
   // and as part of that we need to load the source pc without
   // authenticating so that we maintain the signature for the resigning
@@ -1987,7 +2058,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
   setIP(pcRegister);
-#endif
+//#endif
 }
 
 inline Registers_arm64::Registers_arm64(const Registers_arm64 &other) {
