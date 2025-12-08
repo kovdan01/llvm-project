@@ -1887,6 +1887,28 @@ public:
                                               &_registers.__pc,
                                               ptrauth_key_return_address,
                                               getSP());
+#else
+    if (isReturnAddressSigned()) { // TODO proper sign scheme
+      register unsigned long long x17 __asm("x17") = value;
+      register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
+      register unsigned long long x14 __asm("x14") = getSP();
+      if (isReturnAddressSignedWithPC()) {
+        assert(false); // TODO
+      } else {
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        } else {
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        }
+      }
+      value = x17;
+    }
 #endif
     return value;
   }
@@ -1900,24 +1922,82 @@ public:
                                               getSP(),
                                               ptrauth_key_return_address,
                                               &_registers.__pc);
+#else
+    if (isReturnAddressSigned()) { // TODO proper sign scheme
+      register unsigned long long x17 __asm("x17") = value;
+      register unsigned long long x16 __asm("x16") = getSP();
+      register unsigned long long x14 __asm("x14") = (unsigned long long)&_registers.__pc;
+
+      if (isReturnAddressSignedWithPC()) {
+        assert(false); // TODO
+      } else {
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        } else {
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        }
+      }
+      value = x17;
+    }
 #endif
     _registers.__pc = value;
   }
   uint64_t getFP() const { return _registers.__fp; }
   void setFP(uint64_t value) { _registers.__fp = value; }
 
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+
     // If we are in an arm64/arm64e frame, then the PC should have been signed
     // with the SP
     *referenceAuthedLinkRegister =
-      (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
-                                  ptrauth_key_return_address,
-                                  _registers.__sp);
-  }
+        (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
+                                    ptrauth_key_return_address,
+                                    _registers.__sp);
+#else
+    if (isReturnAddressSigned()) { // TODO: proper sign state
+      register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
+      register unsigned long long x16 __asm("x16") = _registers.__sp;
+
+
+
+      if (isReturnAddressSignedWithPC()) {
+        assert(false); // TODO
+      } else {
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
+        } else {
+          asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+        }
+      }
+      if ((x17 & 0xffff000000000000ull) != 0)
+        _LIBUNWIND_ABORT("loadAndAuthenticateLinkRegister PTRAUTH FAILURE");
+      *referenceAuthedLinkRegister = x17;
+    } else {
+      *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+    }
 #endif
+  }
+
+  bool isReturnAddressSigned() const {
+    return _registers.__ra_sign.__state & 1;
+  }
+
+  bool isReturnAddressSignedWithPC() const {
+    return _registers.__ra_sign.__state & 2;
+  }
+
+  bool isReturnAddressSignedWithBKey() const {
+    return _registers.__ra_sign.__use_b_key;
+  }
 
 private:
   uint64_t lazyGetVG() const;
@@ -1945,7 +2025,12 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
-    uint64_t __ra_sign_state = 0; // RA sign state register
+    struct RASign {
+      uint64_t __state = 0;           // RA sign state register
+      uint64_t __second_modifier = 0; // Additional modifier used for RA
+                                      // signing with FEAT_PAuth_LR
+      uint64_t __use_b_key = 0;       // 0 for IA key, 1 for IB key
+    } __ra_sign;
   };
 
   struct Misc {
@@ -1971,14 +2056,14 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   static_assert((check_fit<Registers_arm64, unw_context_t>::does_fit),
                 "arm64 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  static_assert(sizeof(GPRs) == 0x110,
-                "expected VFP registers to be at offset 272");
+  static_assert(sizeof(GPRs) == 0x120,
+                "expected VFP registers to be at offset 288");
   memcpy(_vectorHalfRegisters,
          static_cast<const uint8_t *>(registers) + sizeof(GPRs),
          sizeof(_vectorHalfRegisters));
   _misc_registers.__vg = 0;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   // We have to do some pointer authentication fixups after this copy,
   // and as part of that we need to load the source pc without
   // authenticating so that we maintain the signature for the resigning
@@ -1987,7 +2072,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
   setIP(pcRegister);
-#endif
+//#endif
 }
 
 inline Registers_arm64::Registers_arm64(const Registers_arm64 &other) {
@@ -2013,6 +2098,10 @@ inline bool Registers_arm64::validRegister(int regNum) const {
   if (regNum > 95)
     return false;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
+    return true;
+  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    return true;
+  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
     return true;
   if (regNum == UNW_AARCH64_VG)
     return true;
@@ -2041,7 +2130,11 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return _registers.__ra_sign_state;
+    return _registers.__ra_sign.__state;
+  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    return _registers.__ra_sign.__second_modifier;
+  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+    return _registers.__ra_sign.__use_b_key;
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
@@ -2059,7 +2152,11 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
   else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    _registers.__ra_sign_state = value;
+    _registers.__ra_sign.__state = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    _registers.__ra_sign.__second_modifier = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+    _registers.__ra_sign.__use_b_key = value;
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)
