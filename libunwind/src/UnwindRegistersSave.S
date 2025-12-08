@@ -780,6 +780,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
 #if __has_feature(ptrauth_calls)
   pacibsp
+#else
+// TODO: proper choice between different signing schemes
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+  // cfi_startproc
+  paciasp
+  // cfi_negate_ra_state
+#endif
 #endif
 
   stp    x0, x1,  [x0, #0x000]
@@ -801,6 +808,14 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
   str    x30,     [x0, #0x100]    // store return address as pc
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+// TODO: proper choice between different signing schemes
+  mov    x16, #1
+  str    x16,     [x0, #0x108]
+  ldr    x16,     [x0, #0x080]
+#else
+  str    xzr,     [x0, #0x108]
+#endif
   // skip cpsr
 #if defined(__ARM_FP) && __ARM_FP != 0
   stp    d0, d1,  [x0, #0x110]
@@ -826,7 +841,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #if __has_feature(ptrauth_calls)
   retab
 #else
+// TODO: proper choice between different signing schemes
+#if defined(__ARM_FEATURE_PAC_DEFAULT)
+  retaa
+  // cfi_endproc
+#else
   ret
+#endif
 #endif
 
 //
