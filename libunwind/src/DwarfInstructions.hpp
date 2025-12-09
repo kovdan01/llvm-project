@@ -336,44 +336,44 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        register unsigned long long x17 __asm("x17") = returnAddress;
-        register unsigned long long x16 __asm("x16") = cfa;
+        // register unsigned long long x17 __asm("x17") = returnAddress;
+        // register unsigned long long x16 __asm("x16") = cfa;
 
         pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
 
-        // We use the hint versions of the authentication instructions below to
-        // ensure they're assembled by the compiler even for targets with no
-        // FEAT_PAuth/FEAT_PAuth_LR support.
-        if (isReturnAddressSignedWithPC(addressSpace, registers, cfa, prolog)) {
-          // TODO
-          register unsigned long long x15 __asm("x15") =
-              prolog.ptrAuthDiversifier;
-          if (cieInfo.addressesSignedWithBKey) {
-            asm("hint 0x27\n\t" // pacm
-                "hint 0xe"
-                : "+r"(x17)
-                : "r"(x16), "r"(x15)); // autib1716
-          } else {
-            asm("hint 0x27\n\t" // pacm
-                "hint 0xc"
-                : "+r"(x17)
-                : "r"(x16), "r"(x15)); // autia1716
-          }
-        } else {
-          if (cieInfo.addressesSignedWithBKey) {
-            // TODO
-            asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-          } else {
-            asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-            if ((x17 & 0xffff000000000000ull) != 0)
-              _LIBUNWIND_ABORT("stepWithDwarf PTRAUTH FAILURE");
-            x16 = newRegisters.getSP();
-            //x16 = (unsigned long long)(&newRegisters) + 256; // TODO
-            asm("pacia1716" : "+r"(x17) : "r"(x16));
-          }
-        }
-        returnAddress = x17;
+        // // We use the hint versions of the authentication instructions below to
+        // // ensure they're assembled by the compiler even for targets with no
+        // // FEAT_PAuth/FEAT_PAuth_LR support.
+        // if (isReturnAddressSignedWithPC(addressSpace, registers, cfa, prolog)) {
+        //   // TODO
+        //   register unsigned long long x15 __asm("x15") =
+        //       prolog.ptrAuthDiversifier;
+        //   if (cieInfo.addressesSignedWithBKey) {
+        //     asm("hint 0x27\n\t" // pacm
+        //         "hint 0xe"
+        //         : "+r"(x17)
+        //         : "r"(x16), "r"(x15)); // autib1716
+        //   } else {
+        //     asm("hint 0x27\n\t" // pacm
+        //         "hint 0xc"
+        //         : "+r"(x17)
+        //         : "r"(x16), "r"(x15)); // autia1716
+        //   }
+        // } else {
+        //   if (cieInfo.addressesSignedWithBKey) {
+        //     // TODO
+        //     asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
+        //   } else {
+        //     asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+        //     if ((x17 & 0xffff000000000000ull) != 0)
+        //       _LIBUNWIND_ABORT("stepWithDwarf PTRAUTH FAILURE");
+        //     x16 = newRegisters.getSP();
+        //     //x16 = (unsigned long long)(&newRegisters) + 256; // TODO
+        //     asm("pacia1716" : "+r"(x17) : "r"(x16));
+        //   }
+        // }
+        // returnAddress = x17;
 #endif
       }
 #endif
