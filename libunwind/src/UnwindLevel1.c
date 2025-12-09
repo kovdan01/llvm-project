@@ -627,16 +627,25 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
                                            ptrauth_key_return_address, sp);
   }
 #elif defined(_LIBUNWIND_TARGET_AARCH64)
-// #else//if defined(__ARM_FEATURE_PAC_DEFAULT)
   {
     unw_word_t sign_state;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &sign_state);
-    if (sign_state != 0) { // TODO: proper signing scheme
+    if (sign_state & 1) { // TODO: proper signing scheme
       unw_word_t sp;
       __unw_get_reg(cursor, UNW_REG_SP, &sp);
       register unsigned long long x17 __asm("x17") = result;
       register unsigned long long x16 __asm("x16") = sp;
-      __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+
+      if (sign_state & 2) {
+        assert(false); // TODO
+      } else {
+        if (sign_state & (1ull << 63)) {
+          __asm__("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
+        } else {
+          __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+        }
+      }
+
       if ((x17 & 0xffff000000000000ull) != 0)
         _LIBUNWIND_ABORT("_Unwind_GetIP PTRAUTH FAILURE");
       result = x17;
