@@ -1891,35 +1891,23 @@ public:
     if (isReturnAddressSigned()) { // TODO proper sign scheme
       register unsigned long long x17 __asm("x17") = value;
       register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
+      register unsigned long long x14 __asm("x14") = getSP();
       if (isReturnAddressSignedWithPC()) {
         assert(false); // TODO
       } else {
         if (isReturnAddressSignedWithBKey()) {
-          asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: autib1716 0x%" PRIxPTR
-                                     " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     (void *)value, x16, x17);
-          if ((x17 & 0xffff000000000000ull) != 0)
-            _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
-          x16 = getSP();
-          asm("hint 0xa" : "+r"(x17) : "r"(x16)); // pacib1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: pacib1716 with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     x16, x17);
-          value = x17;
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
         } else {
-          asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: autia1716 0x%" PRIxPTR
-                                     " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     (void *)value, x16, x17);
-          if ((x17 & 0xffff000000000000ull) != 0)
-            _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
-          x16 = getSP();
-          asm("hint 0x8" : "+r"(x17) : "r"(x16)); // pacia1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: pacia1716 with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     x16, x17);
-          value = x17;
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
         }
       }
+      value = x17;
     }
 #endif
     return value;
@@ -1938,40 +1926,24 @@ public:
     if (isReturnAddressSigned()) { // TODO proper sign scheme
       register unsigned long long x17 __asm("x17") = value;
       register unsigned long long x16 __asm("x16") = getSP();
-
-
+      register unsigned long long x14 __asm("x14") = (unsigned long long)&_registers.__pc;
 
       if (isReturnAddressSignedWithPC()) {
         assert(false); // TODO
       } else {
         if (isReturnAddressSignedWithBKey()) {
-          asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: autib1716 0x%" PRIxPTR
-                                     " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     (void *)value, x16, x17);
-          if ((x17 & 0xffff000000000000ull) != 0)
-            _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
-          x16 = (unsigned long long)&_registers.__pc;
-          asm("hint 0xa" : "+r"(x17) : "r"(x16)); // pacib1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: pacib1716 with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     x16, x17);
-          value = x17;
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
         } else {
-          asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: autia1716 0x%" PRIxPTR
-                                     " with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     (void *)value, x16, x17);
-          if ((x17 & 0xffff000000000000ull) != 0)
-            _LIBUNWIND_ABORT("getIP PTRAUTH FAILURE");
-          x16 = (unsigned long long)&_registers.__pc;
-          asm("hint 0x8" : "+r"(x17) : "r"(x16)); // pacia1716
-          _LIBUNWIND_TRACE_UNWINDING("AAAA getIP: pacia1716 with discr 0x%" PRIxPTR ", result 0x%" PRIxPTR,
-                                     x16, x17);
-          value = x17;
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
         }
       }
-
-
+      value = x17;
     }
 #endif
     _registers.__pc = value;
