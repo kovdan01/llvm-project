@@ -628,8 +628,9 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
   }
 #elif defined(_LIBUNWIND_TARGET_AARCH64)
   {
-    unw_word_t sign_state;
+    unw_word_t sign_state, use_b_key;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &sign_state);
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &use_b_key);
     if (sign_state & 1) { // TODO: proper signing scheme
       unw_word_t sp;
       __unw_get_reg(cursor, UNW_REG_SP, &sp);
@@ -639,7 +640,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
       if (sign_state & 2) {
         assert(false); // TODO
       } else {
-        if (sign_state & (1ull << 63)) {
+        if (use_b_key) {
           __asm__("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
         } else {
           __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716

@@ -641,6 +641,8 @@ enum {
 
   // reserved block
   UNW_AARCH64_RA_SIGN_STATE = 34,
+  UNW_AARCH64_RA_SIGN_SECOND_MODIFIER = 35,
+  UNW_AARCH64_RA_SIGN_USE_B_KEY = 36,
 
   // FP/vector registers
   UNW_AARCH64_V0 = 64,

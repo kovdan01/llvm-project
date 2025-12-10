@@ -337,12 +337,11 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         return UNW_ECROSSRASIGNING;
 #else
         pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
-        if (cieInfo.addressesSignedWithBKey) {
-          raSignState |= 1ull << 63;
-        } else {
-          raSignState &= ~0ull - (1ull << 63);
-        }
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
+        if (newRegisters.isReturnAddressSignedWithPC()) {
+          newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER, prolog.ptrAuthDiversifier);
+        }
+        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_USE_B_KEY, cieInfo.addressesSignedWithBKey ? 1 : 0);
 #endif
       }
 #endif

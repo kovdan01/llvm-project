@@ -196,6 +196,8 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
 #if defined(_LIBUNWIND_TARGET_AARCH64) && !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
       // TODO
       co->setReg(UNW_AARCH64_RA_SIGN_STATE, 0);
+      co->setReg(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER, 0);
+      co->setReg(UNW_AARCH64_RA_SIGN_USE_B_KEY, 0);
 #endif
       co->setReg(UNW_REG_IP, value);
       co->setInfoBasedOnIPRegister(false);

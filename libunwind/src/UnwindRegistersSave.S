@@ -782,10 +782,10 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   pacibsp
 #else
 // TODO: proper choice between different signing schemes
-#if defined(__ARM_FEATURE_PAC_DEFAULT)
-  // cfi_startproc
-  paciasp
-  // cfi_negate_ra_state
+#if __ARM_FEATURE_PAC_DEFAULT == 1
+  hint   0x19                     // paciasp
+#elif __ARM_FEATURE_PAC_DEFAULT == 2
+  hint   0x1b                     // pacibsp
 #endif
 #endif
 
@@ -808,33 +808,42 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
   str    x30,     [x0, #0x100]    // store return address as pc
-#if defined(__ARM_FEATURE_PAC_DEFAULT)
-// TODO: proper choice between different signing schemes
+#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
   mov    x16, #1
-  str    x16,     [x0, #0x108]
+  str    x16,     [x0, #0x108]    // __state = 1
   ldr    x16,     [x0, #0x080]
+  str    xzr,     [x0, #0x110]    // __second_modifier = 0
+  str    xzr,     [x0, #0x118]    // __use_b_key = 0
+#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
+  mov    x16, #1
+  str    x16,     [x0, #0x108]    // __state = 1
+  str    xzr,     [x0, #0x110]    // __second_modifier = 0
+  str    x16,     [x0, #0x118]    // __use_b_key = 1
+  ldr    x16,     [x0, #0x080]
+// TODO: PC
 #else
   str    xzr,     [x0, #0x108]
 #endif
   // skip cpsr
 #if defined(__ARM_FP) && __ARM_FP != 0
-  stp    d0, d1,  [x0, #0x110]
-  stp    d2, d3,  [x0, #0x120]
-  stp    d4, d5,  [x0, #0x130]
-  stp    d6, d7,  [x0, #0x140]
-  stp    d8, d9,  [x0, #0x150]
-  stp    d10,d11, [x0, #0x160]
-  stp    d12,d13, [x0, #0x170]
-  stp    d14,d15, [x0, #0x180]
-  stp    d16,d17, [x0, #0x190]
-  stp    d18,d19, [x0, #0x1A0]
-  stp    d20,d21, [x0, #0x1B0]
-  stp    d22,d23, [x0, #0x1C0]
-  stp    d24,d25, [x0, #0x1D0]
-  stp    d26,d27, [x0, #0x1E0]
-  stp    d28,d29, [x0, #0x1F0]
-  str    d30,     [x0, #0x200]
-  str    d31,     [x0, #0x208]
+  stp    d0, d1,  [x0, #0x120]
+  stp    d2, d3,  [x0, #0x130]
+  stp    d4, d5,  [x0, #0x140]
+  stp    d6, d7,  [x0, #0x150]
+  stp    d8, d9,  [x0, #0x160]
+  stp    d10,d11, [x0, #0x170]
+  stp    d12,d13, [x0, #0x180]
+  stp    d14,d15, [x0, #0x190]
+  stp    d16,d17, [x0, #0x1A0]
+  stp    d18,d19, [x0, #0x1B0]
+  stp    d20,d21, [x0, #0x1C0]
+  stp    d22,d23, [x0, #0x1D0]
+  stp    d24,d25, [x0, #0x1E0]
+  stp    d26,d27, [x0, #0x1F0]
+  str    d28,     [x0, #0x200]
+  str    d29,     [x0, #0x208]
+  str    d30,     [x0, #0x210]
+  str    d31,     [x0, #0x218]
 #endif
   mov    x0, #0                   // return UNW_ESUCCESS
 
@@ -842,12 +851,12 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   retab
 #else
 // TODO: proper choice between different signing schemes
-#if defined(__ARM_FEATURE_PAC_DEFAULT)
-  retaa
-  // cfi_endproc
-#else
-  ret
+#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
+  hint   0x1d                     // autiasp
+#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
+  hint   0x1f                     // autibsp
 #endif
+  ret
 #endif
 
 //

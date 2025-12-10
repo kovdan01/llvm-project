@@ -1988,15 +1988,15 @@ public:
   }
 
   bool isReturnAddressSigned() const {
-    return _registers.__ra_sign_state & 1;
+    return _registers.__ra_sign.__state & 1;
   }
 
   bool isReturnAddressSignedWithPC() const {
-    return _registers.__ra_sign_state & 2;
+    return _registers.__ra_sign.__state & 2;
   }
 
   bool isReturnAddressSignedWithBKey() const {
-    return _registers.__ra_sign_state & (1ull << 63);
+    return _registers.__ra_sign.__use_b_key;
   }
 
 private:
@@ -2025,7 +2025,12 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
-    uint64_t __ra_sign_state = 0; // RA sign state register
+    struct RASign {
+      uint64_t __state = 0;           // RA sign state register
+      uint64_t __second_modifier = 0; // Additional modifier used for RA
+                                      // signing with FEAT_PAuth_LR
+      uint64_t __use_b_key = 0;       // 0 for IA key, 1 for IB key
+    } __ra_sign;
   };
 
   struct Misc {
@@ -2051,8 +2056,8 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   static_assert((check_fit<Registers_arm64, unw_context_t>::does_fit),
                 "arm64 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  static_assert(sizeof(GPRs) == 0x110,
-                "expected VFP registers to be at offset 272");
+  static_assert(sizeof(GPRs) == 0x120,
+                "expected VFP registers to be at offset 288");
   memcpy(_vectorHalfRegisters,
          static_cast<const uint8_t *>(registers) + sizeof(GPRs),
          sizeof(_vectorHalfRegisters));
@@ -2094,6 +2099,10 @@ inline bool Registers_arm64::validRegister(int regNum) const {
     return false;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
     return true;
+  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    return true;
+  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+    return true;
   if (regNum == UNW_AARCH64_VG)
     return true;
   if ((regNum > 32) && (regNum < 64))
@@ -2121,7 +2130,11 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return _registers.__ra_sign_state;
+    return _registers.__ra_sign.__state;
+  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    return _registers.__ra_sign.__second_modifier;
+  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+    return _registers.__ra_sign.__use_b_key;
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
@@ -2139,7 +2152,11 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
   else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    _registers.__ra_sign_state = value;
+    _registers.__ra_sign.__state = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+    _registers.__ra_sign.__second_modifier = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+    _registers.__ra_sign.__use_b_key = value;
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)
