@@ -1884,7 +1884,9 @@ public:
     if (!isReturnAddressSigned())
       return value;
 
-    abortIfCrossRASigning();
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+    abortCrossRASigning();
+#else
     // Note the value of the PC was signed to its address in the register state
     // but everyone else expects it to be sign by the SP, so convert on return.
     register uint64_t x17 __asm("x17") = value;
@@ -1929,7 +1931,9 @@ public:
       return;
     }
 
-    abortIfCrossRASigning();
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+    abortCrossRASigning();
+#else
     // Note the value which was set should have been signed with the SP.
     // We then resign with the slot we are being stored in to so that both SP
     // and LR can't be spoofed at the same time.
@@ -1987,7 +1991,9 @@ public:
       return;
     }
 
-    abortIfCrossRASigning();
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+    abortCrossRASigning();
+#else
     register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
     register unsigned long long x16 __asm("x16") = getSP();
     if (isReturnAddressSignedWithPC()) {
@@ -2026,10 +2032,8 @@ public:
   }
 
 private:
-#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  void abortIfCrossRASigning() const {}
-#else
-  void abortIfCrossRASigning() const {
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+  void abortCrossRASigning() const {
     // We should never go here since non-null RA signed state is either set
     // by architecture-specific __unw_getcontext or by stepWithDwarf which
     // already contains a corresponding check and should have already
