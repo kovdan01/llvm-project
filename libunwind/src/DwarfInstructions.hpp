@@ -295,14 +295,14 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
       // return address needs to be authenticated before the return address is
       // restored. autia1716 is used instead of autia as autia1716 assembles
       // to a NOP on pre-v8.3a architectures.
+      pint_t raSignState = getRASignState(addressSpace, registers,
+                                          cfa, prolog);
       if ((R::getArch() == REGISTERS_ARM64) &&
-          isReturnAddressSigned(addressSpace, registers, cfa, prolog) &&
+          (raSignState & 1) &&
           returnAddress != 0) {
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        pint_t raSignState = getRASignState(addressSpace, registers,
-                                            cfa, prolog);
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
         if (newRegisters.isReturnAddressSignedWithPC()) {
           newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,

@@ -1886,7 +1886,8 @@ public:
       _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
 #else
       register uint64_t x17 __asm("x17") = value;
-      register uint64_t x16 __asm("x16") = static_cast<uint64_t>(&_registers.__pc);
+      register uint64_t x16 __asm("x16") =
+          reinterpret_cast<uint64_t>(&_registers.__pc);
       register uint64_t x14 __asm("x14") = getSP();
       if (isReturnAddressSignedWithPC()) {
         register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
@@ -1931,9 +1932,11 @@ public:
 #else
       register uint64_t x17 __asm("x17") = value;
       register uint64_t x16 __asm("x16") = getSP();
-      register uint64_t x14 __asm("x14") = static_cast<uint64_t>(&_registers.__pc);
+      register uint64_t x14 __asm("x14") =
+          reinterpret_cast<uint64_t>(&_registers.__pc);
       if (isReturnAddressSignedWithPC()) {
-        register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+        register uint64_t x15 __asm("x15") =
+            _registers.__ra_sign.__second_modifier;
         if (isReturnAddressSignedWithBKey()) {
           asm("hint 0x27\n\t"     // pacm
               "hint 0xe\n\t"      // autib1716
