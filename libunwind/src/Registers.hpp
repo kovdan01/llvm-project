@@ -1877,146 +1877,137 @@ public:
 
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
-
   uint64_t  getIP() const {
     uint64_t value = _registers.__pc;
-
-    if (!isReturnAddressSigned())
-      return value;
-
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
-#else
     // Note the value of the PC was signed to its address in the register state
     // but everyone else expects it to be sign by the SP, so convert on return.
-    register uint64_t x17 __asm("x17") = value;
-    register uint64_t x16 __asm("x16") =
-        reinterpret_cast<uint64_t>(&_registers.__pc);
-    register uint64_t x14 __asm("x14") = getSP();
-    if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
-            "mov x16, x14\n\t"
-            "hint 0x27\n\t"     // pacm
-            "hint 0xa"          // pacib1716
-            : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
-      } else {
-        asm("hint 0xc\n\t"      // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x27\n\t"     // pacm
-            "hint 0x8"          // pacia1716
-            : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
-      }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
-            : "+r"(x17) : "r"(x16), "r"(x14));
-      } else {
-        asm("hint 0xc\n\t"      // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
-            : "+r"(x17) : "r"(x16), "r"(x14));
-      }
-    }
-    return x17;
-#endif
-  }
-
-  void      setIP(uint64_t value) {
-    if (!isReturnAddressSigned()) {
-      _registers.__pc = value;
-      return;
-    }
-
+    if (isReturnAddressSigned()) { // TODO proper sign scheme
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
+      _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
 #else
+      register uint64_t x17 __asm("x17") = value;
+      register uint64_t x16 __asm("x16") =
+          reinterpret_cast<uint64_t>(&_registers.__pc);
+      register uint64_t x14 __asm("x14") = getSP();
+      if (isReturnAddressSignedWithPC()) {
+        register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0x27\n\t"     // pacm
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+        } else {
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x27\n\t"     // pacm
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+        }
+      } else {
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        } else {
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        }
+      }
+      value = x17;
+#endif
+    }
+    return value;
+  }
+  void      setIP(uint64_t value) {
     // Note the value which was set should have been signed with the SP.
     // We then resign with the slot we are being stored in to so that both SP
     // and LR can't be spoofed at the same time.
-    register uint64_t x17 __asm("x17") = value;
-    register uint64_t x16 __asm("x16") = getSP();
-    register uint64_t x14 __asm("x14") =
-        reinterpret_cast<uint64_t>(&_registers.__pc);
-    if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") =
-          _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xe\n\t"      // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
-            : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+    if (isReturnAddressSigned()) { // TODO proper sign scheme
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+      _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
+#else
+      register uint64_t x17 __asm("x17") = value;
+      register uint64_t x16 __asm("x16") = getSP();
+      register uint64_t x14 __asm("x14") =
+          reinterpret_cast<uint64_t>(&_registers.__pc);
+      if (isReturnAddressSignedWithPC()) {
+        register uint64_t x15 __asm("x15") =
+            _registers.__ra_sign.__second_modifier;
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0x27\n\t"     // pacm
+              "hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+        } else {
+          asm("hint 0x27\n\t"     // pacm
+              "hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+        }
       } else {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xc\n\t"      // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
-            : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe\n\t"      // autib1716
+              "mov x16, x14\n\t"
+              "hint 0xa"          // pacib1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        } else {
+          asm("hint 0xc\n\t"      // autia1716
+              "mov x16, x14\n\t"
+              "hint 0x8"          // pacia1716
+              : "+r"(x17) : "r"(x16), "r"(x14));
+        }
       }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
-            : "+r"(x17) : "r"(x16), "r"(x14));
-      } else {
-        asm("hint 0xc\n\t"      // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
-            : "+r"(x17) : "r"(x16), "r"(x14));
-      }
-    }
-    _registers.__pc = x17;
+      value = x17;
 #endif
+    }
+    _registers.__pc = value;
   }
 
   uint64_t getFP() const { return _registers.__fp; }
   void setFP(uint64_t value) { _registers.__fp = value; }
 
-  // NOTE: For full-fledged PAuth ABIs like Apple's arm64e and Linux's
-  // pauthtest link_reg_t is __ptrauth-qualified. So, LR is re-signed with
-  // link_reg_t signing scheme after it is authenticated with this function.
-  // When just pac-ret is used, link_reg_t is not __ptrauth-qualified and LR
-  // remains unsigned after authentication.
-  // TODO: avoid exposing unsigned LR in absence of full-fledged PAuth ABI.
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
-    if (!isReturnAddressSigned()) {
-      *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
-      return;
-    }
-
+    // If we are in an arm64/arm64e frame, then the PC should have been signed
+    // with the SP
+    if (isReturnAddressSigned()) { // TODO: proper sign state
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
+      _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
 #else
-    register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
-    register unsigned long long x16 __asm("x16") = getSP();
-    if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") =
-          _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xe\n\t"      // autib1716
-            : "+r"(x17) : "r"(x16), "r"(x15));
+      register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
+      register unsigned long long x16 __asm("x16") = getSP();
+      if (isReturnAddressSignedWithPC()) {
+        register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0x27\n\t"     // pacm
+              "hint 0xe\n\t"      // autib1716
+              : "+r"(x17) : "r"(x16), "r"(x15));
+        } else {
+          asm("hint 0x27\n\t"     // pacm
+              "hint 0xc\n\t"      // autia1716
+              : "+r"(x17) : "r"(x16), "r"(x15));
+        }
       } else {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xc\n\t"      // autia1716
-            : "+r"(x17) : "r"(x16), "r"(x15));
+        if (isReturnAddressSignedWithBKey()) {
+          asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
+        } else {
+          asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+        }
       }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-      } else {
-        asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-      }
-    }
-    *referenceAuthedLinkRegister = x17;
+      if ((x17 & 0xffff000000000000ull) != 0)
+        _LIBUNWIND_ABORT("loadAndAuthenticateLinkRegister PTRAUTH FAILURE");
+      *referenceAuthedLinkRegister = x17;
 #endif
+    } else {
+      *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+    }
   }
 
   bool isReturnAddressSigned() const {
@@ -2032,16 +2023,6 @@ public:
   }
 
 private:
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  void abortCrossRASigning() const {
-    // We should never go here since non-null RA signed state is either set
-    // by architecture-specific __unw_getcontext or by stepWithDwarf which
-    // already contains a corresponding check and should have already
-    // emitted the UNW_ECROSSRASIGNING error.
-    _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
-  }
-#endif
-
   uint64_t lazyGetVG() const;
 
   void zaDisable() const {
@@ -2105,6 +2086,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
          sizeof(_vectorHalfRegisters));
   _misc_registers.__vg = 0;
 
+//#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING) || defined(__ARM_FEATURE_PAC_DEFAULT)
   // We have to do some pointer authentication fixups after this copy,
   // and as part of that we need to load the source pc without
   // authenticating so that we maintain the signature for the resigning
@@ -2113,6 +2095,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
   setIP(pcRegister);
+//#endif
 }
 
 inline Registers_arm64::Registers_arm64(const Registers_arm64 &other) {
