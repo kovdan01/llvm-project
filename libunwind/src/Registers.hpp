@@ -1879,15 +1879,8 @@ public:
   void      setSP(uint64_t value) { _registers.__sp = value; }
   uint64_t  getIP() const {
     uint64_t value = _registers.__pc;
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     // Note the value of the PC was signed to its address in the register state
     // but everyone else expects it to be sign by the SP, so convert on return.
-    value = (uint64_t)ptrauth_auth_and_resign((void *)_registers.__pc,
-                                              ptrauth_key_return_address,
-                                              &_registers.__pc,
-                                              ptrauth_key_return_address,
-                                              getSP());
-#else
     if (isReturnAddressSigned()) { // TODO proper sign scheme
       register unsigned long long x17 __asm("x17") = value;
       register unsigned long long x16 __asm("x16") = (unsigned long long)&_registers.__pc;
@@ -1909,20 +1902,12 @@ public:
       }
       value = x17;
     }
-#endif
     return value;
   }
   void      setIP(uint64_t value) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     // Note the value which was set should have been signed with the SP.
     // We then resign with the slot we are being stored in to so that both SP
     // and LR can't be spoofed at the same time.
-    value = (uint64_t)ptrauth_auth_and_resign((void *)value,
-                                              ptrauth_key_return_address,
-                                              getSP(),
-                                              ptrauth_key_return_address,
-                                              &_registers.__pc);
-#else
     if (isReturnAddressSigned()) { // TODO proper sign scheme
       register unsigned long long x17 __asm("x17") = value;
       register unsigned long long x16 __asm("x16") = getSP();
@@ -1945,7 +1930,6 @@ public:
       }
       value = x17;
     }
-#endif
     _registers.__pc = value;
   }
   uint64_t getFP() const { return _registers.__fp; }
@@ -1954,15 +1938,8 @@ public:
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-
     // If we are in an arm64/arm64e frame, then the PC should have been signed
     // with the SP
-    *referenceAuthedLinkRegister =
-        (uint64_t)ptrauth_auth_data((void *)inplaceAuthedLinkRegister,
-                                    ptrauth_key_return_address,
-                                    _registers.__sp);
-#else
     if (isReturnAddressSigned()) { // TODO: proper sign state
       register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
       register unsigned long long x16 __asm("x16") = _registers.__sp;
@@ -1984,7 +1961,6 @@ public:
     } else {
       *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
     }
-#endif
   }
 
   bool isReturnAddressSigned() const {
