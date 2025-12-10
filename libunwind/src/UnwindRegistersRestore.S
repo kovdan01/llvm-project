@@ -703,157 +703,118 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldr    d30,     [x0, #0x210]
   ldr    d31,     [x0, #0x218]
 #endif
-//  // Finally, restore sp. This must be done after the last read from the
-//  // context struct, because it is allocated on the stack, and an exception
-//  // could clobber the de-allocated portion of the stack after sp has been
-//  // restored.
 
-// TODO: later
-//  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
+  // The lr value stored in __pc might be signed with IA/IB key (as described
+  // by __ra_sign.__use_b_key field) and &__pc address as a modifier.
+  // If the lr value is signed, re-sign that with the corresponding key
+  // and initial signing scheme using __sp as a modifier and potentially
+  // involving a second modifier (as described by (__ra_sign.__state & 2)).
 
-  ldr    lr,      [x0, #0x100]  // restore pc into lr
-  ldr    x14,     [x0, #0x0F8]  // sp
-  ldr    x15,     [x0, #0x110]  // second modifier
-  add    x16, x0, #0x100
-  ldr    x17,     [x0, #0x100]  // restore pc into x17
+  ldr    x14,     [x0, #0x0F8]  // x14 = __sp
+  ldr    x15,     [x0, #0x110]  // x15 = __ra_sign.__second_modifier
+  add    x16, x0, #0x100        // x16 = &__pc
+  ldr    x17,     [x0, #0x100]  // x17 = __pc
 
-// TODO: RESIGN
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
+  cbz    x1, .Lno_pauth1
 
-
-  ldr    x1,      [x0, #0x108]  // ra sign state
-  cbz    x1, .Lnopauth
-// yes pauth
-
+  // lr is signed
   and    x1, x1, #2
-  cbz    x1, .Lnosignwithpc
-// sign with pc
+  cbnz   x1, .Lsign_with_pc1
 
-  ldr    x1,      [x0, #0x118]  // use b key
-  cbz    x1, .Luseakeyandpc
+  // lr is signed without pc as a second modifier
+  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  cbnz   x1, .Lsign_with_b_key1
 
-// b key and pc
-  autib1716
-  mov    x16, x14
-  pacm
-  pacib1716
-  b .Lnopauth
-
-// a key and pc
-.Luseakeyandpc:
+  // lr is signed with A key and without pc as a second modifier
   autia1716
-  mov    x16, x14
+  mov    x16, x14               // x16 = __sp
+  pacia1716
+  b .Lno_pauth1
+
+.Lsign_with_b_key1:
+  // lr is signed with B key and without pc as a second modifier
+  autib1716
+  mov    x16, x14               // x16 = __sp
+  pacib1716
+  b .Lno_pauth1
+
+.Lsign_with_pc1:
+  // lr is signed with pc as a second modifier
+  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  cbnz   x1, .Lsign_with_pc_b_key1
+
+  // lr is signed with A key and pc as a second modifier
+  autia1716
+  mov    x16, x14               // x16 = __sp
   pacm
   pacia1716
-  b .Lnopauth
+  b .Lno_pauth1
 
-
-
-
-// sign without pc
-.Lnosignwithpc:
-  ldr    x1,      [x0, #0x118]  // use b key
-  cbz    x1, .Luseakeynopc
-
-// b key and no pc
+.Lsign_with_pc_b_key1:
+  // lr is signed with B key and pc as a second modifier
   autib1716
-  mov    x16, x14
+  mov    x16, x14               // x16 = __sp
+  pacm
   pacib1716
-  b .Lnopauth
+  b .Lno_pauth1
 
+.Lno_pauth1:
+  mov    lr, x17                // assign final lr value
+  ldp    x14,x15, [x0, #0x070]  // restore x14,x15
+  ldr    x16,     [x0, #0x110]  // second modifier for auti{a|b}sp with PACM
 
-
-
-
-// a key and no pc
-.Luseakeynopc:
-  autia1716
-  mov    x16, x14
-  pacia1716
-  b .Lnopauth
-
-
-
-
-.Lnopauth:
-  mov    lr, x17
-  ldp    x14,x15, [x0, #0x070]
-  ldr    x16,     [x0, #0x110]  // second modifier
   // Finally, restore sp. This must be done after the last read from the
   // context struct, because it is allocated on the stack, and an exception
   // could clobber the de-allocated portion of the stack after sp has been
   // restored.
-
   ldr    x17,     [x0, #0x0F8]  // load sp into scratch
 
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
+  cbz    x1, .Lno_pauth2
 
-
-
-
-
-
-
-  ldr    x1,      [x0, #0x108]  // ra sign state
-  cbz    x1, .Lnopauth2
-// yes pauth
-
+  // lr is signed
   and    x1, x1, #2
-  cbz    x1, .Lnosignwithpc2
-// sign with pc
+  cbnz   x1, .Lsign_with_pc2
 
-  ldr    x1,      [x0, #0x118]  // use b key
-  cbz    x1, .Luseakeyandpc2
+  // lr is signed without pc as a second modifier
+  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  cbnz   x1, .Lsign_with_b_key2
 
-// b key and pc
+  // lr is signed with A key and without pc as a second modifier
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  autiasp
+  ret    x30
+
+.Lsign_with_b_key2:
+  // lr is signed with B key and without pc as a second modifier
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  autibsp
+  ret    x30
+
+.Lsign_with_pc2:
+  // lr is signed with pc as a second modifier
+  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  cbnz   x1, .Lsign_with_pc_b_key2
+
+  // lr is signed with A key and pc as a second modifier
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  pacm
+  autiasp
+  ret    x30
+
+.Lsign_with_pc_b_key2:
+  // lr is signed with B key and pc as a second modifier
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
   pacm
   autibsp
   ret    x30
 
-// a key and pc
-.Luseakeyandpc2:
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  mov    sp,x17                 // restore sp
- 
-  pacm
-  autiasp
-  ret    x30
-
-
-
-// sign without pc
-.Lnosignwithpc2:
-  ldr    x1,      [x0, #0x118]  // use b key
-  cbz    x1, .Luseakeynopc2
-
-// b key and no pc
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  mov    sp,x17                 // restore sp
- 
-  autibsp
-  ret    x30
-
-
-
-
-
-// a key and no pc
-.Luseakeynopc2:
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  mov    sp,x17                 // restore sp
-  autiasp
-  ret    x30
-
-
-
-
-.Lnopauth2:
-
-
-
-
-
-
+.Lno_pauth2:
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
 #if defined(__ARM_FEATURE_GCS_DEFAULT)
@@ -866,9 +827,6 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   gcspushm x30
 Lnogcs:
 #endif
-
-// TODO: AUTH BEFORE RETURN
-
   ret    x30                    // jump to pc
 
 #elif defined(__arm__) && !defined(__APPLE__)
