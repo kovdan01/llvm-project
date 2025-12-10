@@ -162,27 +162,16 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
           _LIBUNWIND_ABORT("Bad unwind through arm64e");
         }
       }
-// #elif defined(__ARM_FEATURE_PAC_DEFAULT)
-//       // TODO: proper signing scheme
-//       {
-//         // TODO: check
-//         // if (authenticated_value < info.start_ip ||
-//         //     authenticated_value > info.end_ip)
-//         //   _LIBUNWIND_ABORT("PC vs frame info mismatch");
-
-//                // PC should have been signed with the sp, so we verify that
-//                // roundtripping does not fail.
-//         pint_t pc = (pint_t)co->getReg(UNW_REG_IP);
-//         if (ptrauth_auth_and_resign((void *)pc, ptrauth_key_return_address, sp,
-//                                     ptrauth_key_return_address,
-//                                     sp) != (void *)pc) {
-//           _LIBUNWIND_LOG("Bad unwind through arm64e (0x%zX, 0x%zX)->0x%zX\n",
-//                          pc, sp,
-//                          (pint_t)ptrauth_auth_data(
-//                              (void *)pc, ptrauth_key_return_address, sp));
-//           _LIBUNWIND_ABORT("Bad unwind through arm64e");
-//         }
-//       }
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+      // We expect IP register value to be signed only for a full-fledged
+      // PAuth ABI such as Apple's arm64e or Linux's pauthtest. Otherwise,
+      // the value to be assigned to the IP register is an unsigned pointer,
+      // so we need to update RA sign info and mark the pointer as unsigned.
+      // This prevents attempts of unsigned pointer authentication in case
+      // if previously a signed RA was stored in the IP register field.
+      co->setReg(UNW_AARCH64_RA_SIGN_STATE, 0);
+      co->setReg(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER, 0);
+      co->setReg(UNW_AARCH64_RA_SIGN_USE_B_KEY, 0);
 #endif
 
       // If the original call expects stack adjustment, perform this now.
@@ -193,12 +182,6 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
       // any such platforms and Clang doesn't export a macro for them.
       if (info.gp)
         co->setReg(UNW_REG_SP, sp + info.gp);
-#if defined(_LIBUNWIND_TARGET_AARCH64) && !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-      // TODO
-      co->setReg(UNW_AARCH64_RA_SIGN_STATE, 0);
-      co->setReg(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER, 0);
-      co->setReg(UNW_AARCH64_RA_SIGN_USE_B_KEY, 0);
-#endif
       co->setReg(UNW_REG_IP, value);
       co->setInfoBasedOnIPRegister(false);
     } else {

@@ -77,10 +77,6 @@ private:
 #if defined(_LIBUNWIND_TARGET_AARCH64)
   static pint_t getRASignState(A &addressSpace, const R &registers, pint_t cfa,
                                const PrologInfo &prolog);
-  static bool isReturnAddressSigned(A &addressSpace, R registers, pint_t cfa,
-                                    PrologInfo &prolog);
-  static bool isReturnAddressSignedWithPC(A &addressSpace, R registers,
-                                          pint_t cfa, PrologInfo &prolog);
 #endif
 };
 
@@ -185,37 +181,6 @@ typename A::pint_t DwarfInstructions<A, R>::getRASignState(A &addressSpace,
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
     return static_cast<pint_t>(regloc.value);
   return getSavedRegister(addressSpace, registers, cfa, regloc);
-}
-
-template <typename A, typename R>
-bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
-                                                    R registers, pint_t cfa,
-                                                    PrologInfo &prolog) {
-  pint_t raSignState;
-  auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
-  if (regloc.location == CFI_Parser<A>::kRegisterUnused)
-    raSignState = static_cast<pint_t>(regloc.value);
-  else
-    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
-
-  // Only bit[0] is meaningful.
-  return raSignState & 0x01;
-}
-
-template <typename A, typename R>
-bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
-                                                          R registers,
-                                                          pint_t cfa,
-                                                          PrologInfo &prolog) {
-  pint_t raSignState;
-  auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
-  if (regloc.location == CFI_Parser<A>::kRegisterUnused)
-    raSignState = static_cast<pint_t>(regloc.value);
-  else
-    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
-
-  // Only bit[1] is meaningful.
-  return raSignState & 0x02;
 }
 #endif
 
@@ -336,12 +301,15 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
+        pint_t raSignState = getRASignState(addressSpace, registers,
+                                            cfa, prolog);
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
         if (newRegisters.isReturnAddressSignedWithPC()) {
-          newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER, prolog.ptrAuthDiversifier);
+          newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
+                                   prolog.ptrAuthDiversifier);
         }
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_USE_B_KEY, cieInfo.addressesSignedWithBKey ? 1 : 0);
+        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_USE_B_KEY,
+                                 cieInfo.addressesSignedWithBKey ? 1 : 0);
 #endif
       }
 #endif

@@ -617,23 +617,42 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
   __unw_get_reg(cursor, UNW_REG_IP, &result);
 
 #if defined(_LIBUNWIND_TARGET_AARCH64)
-  // TODO
-  // If we are in an arm64e frame, then the PC should have been signed with the
-  // sp
   {
-    unw_word_t sign_state, use_b_key;
-    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &sign_state);
-    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &use_b_key);
-    if (sign_state & 1) { // TODO: proper signing scheme
+    unw_word_t raSignState, raSignUseBKey;
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &raSignState);
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &raSignUseBKey);
+
+    bool isRASigned = (sign_state & 1);
+    bool isRASignedWithPC = (sign_state & 2);
+
+    if (isRASigned) { // TODO: proper signing scheme
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+      _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
+#else
       unw_word_t sp;
       __unw_get_reg(cursor, UNW_REG_SP, &sp);
+
       register unsigned long long x17 __asm("x17") = result;
       register unsigned long long x16 __asm("x16") = sp;
 
-      if (sign_state & 2) {
-        assert(false); // TODO
+      if (isRASignedWithPC) {
+        unw_word_t raSignSecondModifier;
+        __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
+                      &raSignSecondModifier);
+
+        register uint64_t x15 __asm("x15") = raSignSecondModifier;
+
+        if (raSignUseBKey) {
+          __asm__("hint 0x27\n\t"     // pacm
+                  "hint 0xe\n\t"      // autib1716
+                  : "+r"(x17) : "r"(x16), "r"(x15));
+        } else {
+          __asm__("hint 0x27\n\t"     // pacm
+                  "hint 0xc\n\t"      // autia1716
+                  : "+r"(x17) : "r"(x16), "r"(x15));
+        }
       } else {
-        if (use_b_key) {
+        if (raSignUseBKey) {
           __asm__("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
         } else {
           __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
@@ -643,6 +662,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
       if ((x17 & 0xffff000000000000ull) != 0)
         _LIBUNWIND_ABORT("_Unwind_GetIP PTRAUTH FAILURE");
       result = x17;
+#endif
     }
   }
 #endif
