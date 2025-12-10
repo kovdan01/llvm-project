@@ -769,6 +769,16 @@ LnoR2Fix:
 #define __has_feature(__feature) 0
 #endif
 
+#ifdef __ARM_FEATURE_PAC_DEFAULT
+#define UNW_ARM_FEATURE_PAC_DEFAULT __ARM_FEATURE_PAC_DEFAULT
+#else
+#if __has_feature(ptrauth_returns)
+#define UNW_ARM_FEATURE_PAC_DEFAULT 2
+#else
+#define UNW_ARM_FEATURE_PAC_DEFAULT 0
+#endif
+#endif
+
 //
 // extern int __unw_getcontext(unw_context_t* thread_state)
 //
@@ -778,15 +788,11 @@ LnoR2Fix:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
-#if __has_feature(ptrauth_calls)
-  pacibsp
-#else
 // TODO: proper choice between different signing schemes
-#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
+#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
   hint   0x19                     // paciasp
-#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
+#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
   hint   0x1b                     // pacibsp
-#endif
 #endif
 
   stp    x0, x1,  [x0, #0x000]
@@ -808,13 +814,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
   str    x30,     [x0, #0x100]    // store return address as pc
-#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
+#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
   mov    x16, #1
   str    x16,     [x0, #0x108]    // __state = 1
   ldr    x16,     [x0, #0x080]
   str    xzr,     [x0, #0x110]    // __second_modifier = 0
   str    xzr,     [x0, #0x118]    // __use_b_key = 0
-#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
+#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
   mov    x16, #1
   str    x16,     [x0, #0x108]    // __state = 1
   str    xzr,     [x0, #0x110]    // __second_modifier = 0
@@ -847,17 +853,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #endif
   mov    x0, #0                   // return UNW_ESUCCESS
 
-#if __has_feature(ptrauth_calls)
-  retab
-#else
 // TODO: proper choice between different signing schemes
-#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
+#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
   hint   0x1d                     // autiasp
-#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
+#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
   hint   0x1f                     // autibsp
 #endif
   ret
-#endif
 
 //
 // extern "C" int64_t __libunwind_Registers_arm64_za_disable()
