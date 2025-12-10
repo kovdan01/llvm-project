@@ -2116,16 +2116,16 @@ inline bool Registers_arm64::validRegister(int regNum) const {
     return true;
   if (regNum == UNW_REG_SP)
     return true;
-  if (regNum < 0)
-    return false;
-  if (regNum > 95)
-    return false;
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
     return true;
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     return true;
   if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
     return true;
+  if (regNum < 0)
+    return false;
+  if (regNum > 95)
+    return false;
   if (regNum == UNW_AARCH64_VG)
     return true;
   if ((regNum > 32) && (regNum < 64))
