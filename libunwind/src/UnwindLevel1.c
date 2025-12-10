@@ -658,9 +658,6 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
           __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
         }
       }
-
-      if ((x17 & 0xffff000000000000ull) != 0)
-        _LIBUNWIND_ABORT("_Unwind_GetIP PTRAUTH FAILURE");
       result = x17;
 #endif
     }
