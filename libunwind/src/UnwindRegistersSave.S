@@ -782,9 +782,9 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   pacibsp
 #else
 // TODO: proper choice between different signing schemes
-#if __ARM_FEATURE_PAC_DEFAULT == 1
+#if (__ARM_FEATURE_PAC_DEFAULT & 3) == 1
   hint   0x19                     // paciasp
-#elif __ARM_FEATURE_PAC_DEFAULT == 2
+#elif (__ARM_FEATURE_PAC_DEFAULT & 3) == 2
   hint   0x1b                     // pacibsp
 #endif
 #endif
