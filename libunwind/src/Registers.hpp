@@ -1896,28 +1896,28 @@ public:
     if (isReturnAddressSignedWithPC()) {
       register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
       if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
+        asm("hint 0xe    \n\t"  // autib1716
             "mov x16, x14\n\t"
-            "hint 0x27\n\t"     // pacm
-            "hint 0xa"          // pacib1716
+            "hint 0x27   \n\t"  // pacm
+            "hint 0xa        "  // pacib1716
             : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
       } else {
-        asm("hint 0xc\n\t"      // autia1716
+        asm("hint 0xc    \n\t"  // autia1716
             "mov x16, x14\n\t"
-            "hint 0x27\n\t"     // pacm
-            "hint 0x8"          // pacia1716
+            "hint 0x27   \n\t"  // pacm
+            "hint 0x8        "  // pacia1716
             : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
       }
     } else {
       if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
+        asm("hint 0xe    \n\t"  // autib1716
             "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
+            "hint 0xa        "  // pacib1716
             : "+r"(x17) : "r"(x16), "r"(x14));
       } else {
-        asm("hint 0xc\n\t"      // autia1716
+        asm("hint 0xc\n\t    "  // autia1716
             "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
+            "hint 0x8        "  // pacia1716
             : "+r"(x17) : "r"(x16), "r"(x14));
       }
     }
@@ -1945,28 +1945,28 @@ public:
       register uint64_t x15 __asm("x15") =
           _registers.__ra_sign.__second_modifier;
       if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xe\n\t"      // autib1716
+        asm("hint 0x27   \n\t"  // pacm
+            "hint 0xe    \n\t"  // autib1716
             "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
+            "hint 0xa        "  // pacib1716
             : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
       } else {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xc\n\t"      // autia1716
+        asm("hint 0x27   \n\t"  // pacm
+            "hint 0xc    \n\t"  // autia1716
             "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
+            "hint 0x8        "  // pacia1716
             : "+r"(x17) : "r"(x16), "r"(x15), "r"(x14));
       }
     } else {
       if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe\n\t"      // autib1716
+        asm("hint 0xe    \n\t"  // autib1716
             "mov x16, x14\n\t"
-            "hint 0xa"          // pacib1716
+            "hint 0xa        "  // pacib1716
             : "+r"(x17) : "r"(x16), "r"(x14));
       } else {
-        asm("hint 0xc\n\t"      // autia1716
+        asm("hint 0xc    \n\t"  // autia1716
             "mov x16, x14\n\t"
-            "hint 0x8"          // pacia1716
+            "hint 0x8        "  // pacia1716
             : "+r"(x17) : "r"(x16), "r"(x14));
       }
     }
@@ -1994,18 +1994,18 @@ public:
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
     abortCrossRASigning();
 #else
-    register unsigned long long x17 __asm("x17") = inplaceAuthedLinkRegister;
-    register unsigned long long x16 __asm("x16") = getSP();
+    register reg_t x17 __asm("x17") = inplaceAuthedLinkRegister;
+    register reg_t x16 __asm("x16") = getSP();
     if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") =
+      register reg_t x15 __asm("x15") =
           _registers.__ra_sign.__second_modifier;
       if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xe\n\t"      // autib1716
+        asm("hint 0x27\n\t"  // pacm
+            "hint 0xe     "  // autib1716
             : "+r"(x17) : "r"(x16), "r"(x15));
       } else {
-        asm("hint 0x27\n\t"     // pacm
-            "hint 0xc\n\t"      // autia1716
+        asm("hint 0x27\n\t"  // pacm
+            "hint 0xc     "  // autia1716
             : "+r"(x17) : "r"(x16), "r"(x15));
       }
     } else {
@@ -2022,11 +2022,9 @@ public:
   bool isReturnAddressSigned() const {
     return _registers.__ra_sign.__state & 1;
   }
-
   bool isReturnAddressSignedWithPC() const {
     return _registers.__ra_sign.__state & 2;
   }
-
   bool isReturnAddressSignedWithBKey() const {
     return _registers.__ra_sign.__use_b_key;
   }

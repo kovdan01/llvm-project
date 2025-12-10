@@ -622,20 +622,24 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &raSignState);
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &raSignUseBKey);
 
-    bool isRASigned = (raSignState & 1);
-    bool isRASignedWithPC = (raSignState & 2);
+    bool isReturnAddressSigned = (raSignState & 1);
+    bool isReturnAddressSignedWithPC = (raSignState & 2);
 
-    if (isRASigned) { // TODO: proper signing scheme
+    if (isReturnAddressSigned) {
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+      // We should never go here since non-null RA signed state is either set
+      // by architecture-specific __unw_getcontext or by stepWithDwarf which
+      // already contains a corresponding check and should have already
+      // emitted the UNW_ECROSSRASIGNING error.
       _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
 #else
       unw_word_t sp;
       __unw_get_reg(cursor, UNW_REG_SP, &sp);
 
-      register unsigned long long x17 __asm("x17") = result;
-      register unsigned long long x16 __asm("x16") = sp;
+      register uint64_t x17 __asm("x17") = result;
+      register uint64_t x16 __asm("x16") = sp;
 
-      if (isRASignedWithPC) {
+      if (isReturnAddressSignedWithPC) {
         unw_word_t raSignSecondModifier;
         __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
                       &raSignSecondModifier);
@@ -643,12 +647,12 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
         register uint64_t x15 __asm("x15") = raSignSecondModifier;
 
         if (raSignUseBKey) {
-          __asm__("hint 0x27\n\t"     // pacm
-                  "hint 0xe\n\t"      // autib1716
+          __asm__("hint 0x27\n\t"  // pacm
+                  "hint 0xe     "  // autib1716
                   : "+r"(x17) : "r"(x16), "r"(x15));
         } else {
-          __asm__("hint 0x27\n\t"     // pacm
-                  "hint 0xc\n\t"      // autia1716
+          __asm__("hint 0x27\n\t"  // pacm
+                  "hint 0xc     "  // autia1716
                   : "+r"(x17) : "r"(x16), "r"(x15));
         }
       } else {

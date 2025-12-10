@@ -770,14 +770,18 @@ LnoR2Fix:
 #endif
 
 #ifdef __ARM_FEATURE_PAC_DEFAULT
-#define UNW_ARM_FEATURE_PAC_DEFAULT __ARM_FEATURE_PAC_DEFAULT
+# define UNW_ARM_FEATURE_PAC_DEFAULT __ARM_FEATURE_PAC_DEFAULT
 #else
-#if __has_feature(ptrauth_returns)
-#define UNW_ARM_FEATURE_PAC_DEFAULT 2
-#else
-#define UNW_ARM_FEATURE_PAC_DEFAULT 0
+# if __has_feature(ptrauth_returns)
+#  define UNW_ARM_FEATURE_PAC_DEFAULT 2
+# else
+#  define UNW_ARM_FEATURE_PAC_DEFAULT 0
+# endif
 #endif
-#endif
+
+#define UNW_RA_SIGNED            ((UNW_ARM_FEATURE_PAC_DEFAULT & 3) != 0)
+#define UNW_RA_SIGNED_WITH_B_KEY ((UNW_ARM_FEATURE_PAC_DEFAULT & 2) != 0)
+#define UNW_RA_SIGNED_WITH_PC    ((UNW_ARM_FEATURE_PAC_DEFAULT & 8) != 0)
 
 //
 // extern int __unw_getcontext(unw_context_t* thread_state)
@@ -788,11 +792,16 @@ LnoR2Fix:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
-// TODO: proper choice between different signing schemes
-#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
-  hint   0x19                     // paciasp
-#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
+#if UNW_RA_SIGNED
+# if UNW_RA_SIGNED_WITH_PC
+  hint   0x27                     // pacm
+.L__unw_getcontext_start:
+# endif
+# if UNW_RA_SIGNED_WITH_B_KEY
   hint   0x1b                     // pacibsp
+# else
+  hint   0x19                     // paciasp
+# endif
 #endif
 
   stp    x0, x1,  [x0, #0x000]
@@ -814,22 +823,33 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
   str    x30,     [x0, #0x100]    // store return address as pc
-#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
+
+  // Fill subfields of __ra_sign field
+#if UNW_RA_SIGNED
+# if UNW_RA_SIGNED_WITH_PC
+  adrp   x16, .L__unw_getcontext_start
+  add    x16, x16, :lo12:.L__unw_getcontext_start
+  str    x16,     [x0, #0x110]    // __second_modifier = x16
+# else
+  str    xzr,     [x0, #0x110]    // __second_modifier = 0
+# endif
+
   mov    x16, #1
   str    x16,     [x0, #0x108]    // __state = 1
-  ldr    x16,     [x0, #0x080]
+
+# if UNW_RA_SIGNED_WITH_B_KEY
+  str    x16,     [x0, #0x118]    // __use_b_key = 1
+# else
+  str    xzr,     [x0, #0x118]    // __use_b_key = 0
+# endif
+
+  ldr    x16,     [x0, #0x080]    // restore x16 after clobber
+#else
+  str    xzr,     [x0, #0x108]    // __state = 0
   str    xzr,     [x0, #0x110]    // __second_modifier = 0
   str    xzr,     [x0, #0x118]    // __use_b_key = 0
-#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
-  mov    x16, #1
-  str    x16,     [x0, #0x108]    // __state = 1
-  str    xzr,     [x0, #0x110]    // __second_modifier = 0
-  str    x16,     [x0, #0x118]    // __use_b_key = 1
-  ldr    x16,     [x0, #0x080]
-// TODO: PC
-#else
-  str    xzr,     [x0, #0x108]
 #endif
+
   // skip cpsr
 #if defined(__ARM_FP) && __ARM_FP != 0
   stp    d0, d1,  [x0, #0x120]
@@ -853,11 +873,17 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #endif
   mov    x0, #0                   // return UNW_ESUCCESS
 
-// TODO: proper choice between different signing schemes
-#if (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 1
-  hint   0x1d                     // autiasp
-#elif (UNW_ARM_FEATURE_PAC_DEFAULT & 3) == 2
+#if UNW_RA_SIGNED
+# if UNW_RA_SIGNED_WITH_PC
+  adrp   x16, .L__unw_getcontext_start
+  add    x16, x16, :lo12:.L__unw_getcontext_start
+  hint   0x27                     // pacm
+# endif
+# if UNW_RA_SIGNED_WITH_B_KEY
   hint   0x1f                     // autibsp
+# else
+  hint   0x1d                     // autiasp
+# endif
 #endif
   ret
 

@@ -672,7 +672,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldp    x8, x9,  [x0, #0x040]
   ldp    x10,x11, [x0, #0x050]
   ldp    x12,x13, [x0, #0x060]
-  ldp    x14,x15, [x0, #0x070]
+  // x14 and x15 are used as scratch registers in this function
+  // and will be restored later.
   // x16 and x17 were clobbered by the call into the unwinder, so no point in
   // restoring them.
   ldp    x18,x19, [x0, #0x090]
@@ -702,38 +703,159 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldr    d30,     [x0, #0x210]
   ldr    d31,     [x0, #0x218]
 #endif
+//  // Finally, restore sp. This must be done after the last read from the
+//  // context struct, because it is allocated on the stack, and an exception
+//  // could clobber the de-allocated portion of the stack after sp has been
+//  // restored.
+
+// TODO: later
+//  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
+
+  ldr    lr,      [x0, #0x100]  // restore pc into lr
+  ldr    x14,     [x0, #0x0F8]  // sp
+  ldr    x15,     [x0, #0x110]  // second modifier
+  add    x16, x0, #0x100
+  ldr    x17,     [x0, #0x100]  // restore pc into x17
+
+// TODO: RESIGN
+
+
+  ldr    x1,      [x0, #0x108]  // ra sign state
+  cbz    x1, .Lnopauth
+// yes pauth
+
+  and    x1, x1, #2
+  cbz    x1, .Lnosignwithpc
+// sign with pc
+
+  ldr    x1,      [x0, #0x118]  // use b key
+  cbz    x1, .Luseakeyandpc
+
+// b key and pc
+  autib1716
+  mov    x16, x14
+  pacm
+  pacib1716
+  b .Lnopauth
+
+// a key and pc
+.Luseakeyandpc:
+  autia1716
+  mov    x16, x14
+  pacm
+  pacia1716
+  b .Lnopauth
+
+
+
+
+// sign without pc
+.Lnosignwithpc:
+  ldr    x1,      [x0, #0x118]  // use b key
+  cbz    x1, .Luseakeynopc
+
+// b key and no pc
+  autib1716
+  mov    x16, x14
+  pacib1716
+  b .Lnopauth
+
+
+
+
+
+// a key and no pc
+.Luseakeynopc:
+  autia1716
+  mov    x16, x14
+  pacia1716
+  b .Lnopauth
+
+
+
+
+.Lnopauth:
+  mov    lr, x17
+  ldp    x14,x15, [x0, #0x070]
+  ldr    x16,     [x0, #0x110]  // second modifier
   // Finally, restore sp. This must be done after the last read from the
   // context struct, because it is allocated on the stack, and an exception
   // could clobber the de-allocated portion of the stack after sp has been
   // restored.
 
-  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
-  ldr    lr,      [x0, #0x100]  // restore pc into lr
+  ldr    x17,     [x0, #0x0F8]  // load sp into scratch
 
-// TODO proper signing scheme
 
-  ldr    x17,     [x0, #0x108]  // x17 = __ra_sign.__state
-  cmp    x17, xzr
-  b.eq   .Lpauthend1
-  add    x16, x0, #0x100
-  ldr    x17,     [x0, #0x118]  // x17 = __ra_sign.__use_b_key
-  cmp    x17, xzr
-  b.eq   .Lpauthakey1
-  mov    x17, lr
-  hint   0xe // autib1716
-  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
-  hint   0xa // pacib1716
-  mov    lr, x17
-  b      .Lpauthend1
-.Lpauthakey1:
-  mov    x17, lr
-  hint   0xc // autia1716
-  ldr    x16,     [x0, #0x0F8]  // load sp into scratch
-  hint   0x8 // pacia1716
-  mov    lr, x17
-.Lpauthend1:
 
-  mov    sp,x16                 // restore sp
+
+
+
+
+
+  ldr    x1,      [x0, #0x108]  // ra sign state
+  cbz    x1, .Lnopauth2
+// yes pauth
+
+  and    x1, x1, #2
+  cbz    x1, .Lnosignwithpc2
+// sign with pc
+
+  ldr    x1,      [x0, #0x118]  // use b key
+  cbz    x1, .Luseakeyandpc2
+
+// b key and pc
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  pacm
+  autibsp
+  ret    x30
+
+// a key and pc
+.Luseakeyandpc2:
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+ 
+  pacm
+  autiasp
+  ret    x30
+
+
+
+// sign without pc
+.Lnosignwithpc2:
+  ldr    x1,      [x0, #0x118]  // use b key
+  cbz    x1, .Luseakeynopc2
+
+// b key and no pc
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+ 
+  autibsp
+  ret    x30
+
+
+
+
+
+// a key and no pc
+.Luseakeynopc2:
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  autiasp
+  ret    x30
+
+
+
+
+.Lnopauth2:
+
+
+
+
+
+
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
 #if defined(__ARM_FEATURE_GCS_DEFAULT)
   // If GCS is enabled we need to push the address we're returning to onto the
   // GCS stack. We can't just return using br, as there won't be a BTI landing
@@ -745,22 +867,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 Lnogcs:
 #endif
 
-  // TODO proper signing scheme
-  ldr    x17,     [x0, #0x108]  // x17 = __ra_sign.__state
-  cmp    x17, xzr
-  b.eq   .Lpauthend2
-  ldr    x17,     [x0, #0x118]  // x17 = __ra_sign.__use_b_key
-  cmp    x17, xzr
-  b.eq   .Lpauthakey2
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  hint   0x1f                   // autibsp
-  ret    x30                    // jump to pc
-.Lpauthakey2:
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  hint   0x1d                   // autiasp
-  ret    x30                    // jump to pc
-.Lpauthend2:
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+// TODO: AUTH BEFORE RETURN
+
   ret    x30                    // jump to pc
 
 #elif defined(__arm__) && !defined(__APPLE__)
