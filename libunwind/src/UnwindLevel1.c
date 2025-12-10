@@ -622,8 +622,8 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &raSignState);
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &raSignUseBKey);
 
-    bool isRASigned = (sign_state & 1);
-    bool isRASignedWithPC = (sign_state & 2);
+    bool isRASigned = (raSignState & 1);
+    bool isRASignedWithPC = (raSignState & 2);
 
     if (isRASigned) { // TODO: proper signing scheme
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
