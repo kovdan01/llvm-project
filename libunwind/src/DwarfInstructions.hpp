@@ -75,8 +75,8 @@ private:
     __builtin_unreachable();
   }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
-  static pint_t getRASignState(A &addressSpace, const R &registers, pint_t cfa,
-                               const PrologInfo &prolog);
+  static pint_t getRASigningSchemeState(A &addressSpace, const R &registers,
+                                        pint_t cfa, const PrologInfo &prolog);
 #endif
 };
 
@@ -174,9 +174,8 @@ v128 DwarfInstructions<A, R>::getSavedVectorRegister(
 }
 #if defined(_LIBUNWIND_TARGET_AARCH64)
 template <typename A, typename R>
-typename A::pint_t
-DwarfInstructions<A, R>::getRASignState(A &addressSpace, const R &registers,
-                                        pint_t cfa, const PrologInfo &prolog) {
+typename A::pint_t DwarfInstructions<A, R>::getRASigningSchemeState(
+    A &addressSpace, const R &registers, pint_t cfa, const PrologInfo &prolog) {
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
     return static_cast<pint_t>(regloc.value);
@@ -284,20 +283,17 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
       // using the v8.3 pointer authentication extensions. In order to
       // store signed return address in the registers context structure, we
       // need to save the signing scheme for this address.
-      pint_t raSignState = getRASignState(addressSpace, registers, cfa, prolog);
+      pint_t raSignState =
+          getRASigningSchemeState(addressSpace, registers, cfa, prolog);
       bool isReturnAddressSigned = (raSignState & 1);
       if ((R::getArch() == REGISTERS_ARM64) && isReturnAddressSigned &&
           returnAddress != 0) {
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
-        if (newRegisters.isReturnAddressSignedWithPC()) {
-          newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
-                                   prolog.ptrAuthDiversifier);
-        }
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_USE_B_KEY,
-                                 cieInfo.addressesSignedWithBKey ? 1 : 0);
+        newRegisters.setRASigningSchemeingScheme(
+            raSignState, cieInfo.addressesSignedWithBKey,
+            prolog.ptrAuthDiversifier);
 #endif
       }
 #endif
