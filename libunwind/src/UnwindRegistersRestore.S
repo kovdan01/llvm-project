@@ -711,7 +711,7 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   // involving a second modifier (as described by (__ra_sign.__state & 2)).
 
   ldr    x14,     [x0, #0x0F8]  // x14 = __sp
-  ldr    x15,     [x0, #0x110]  // x15 = __ra_sign.__second_modifier
+  ldr    x15,     [x0, #0x118]  // x15 = __ra_sign.__second_modifier
   add    x16, x0, #0x100        // x16 = &__pc
   ldr    x17,     [x0, #0x100]  // x17 = __pc
 
@@ -725,7 +725,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   cbnz   x1, .Lresign_with_pc
 
   // lr needs resign without pc as a second modifier
-  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
+  and    x1, x1, #4
   cbnz   x1, .Lresign_with_b_key
 
   // lr needs resign with A key and without pc as a second modifier
@@ -743,7 +744,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
 .Lresign_with_pc:
   // lr needs resign with pc as a second modifier
-  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
+  and    x1, x1, #4
   cbnz   x1, .Lresign_with_pc_b_key
 
   // lr needs resign with A key and pc as a second modifier
@@ -782,7 +784,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   cbnz   x1, .Lauth_with_pc
 
   // lr is signed without pc as a second modifier
-  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
+  and    x1, x1, #4
   cbnz   x1, .Lauth_with_b_key
 
   // lr is signed with A key and without pc as a second modifier
@@ -800,7 +803,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
 .Lauth_with_pc:
   // lr is signed with pc as a second modifier
-  ldr    x1,      [x0, #0x118]  // x1 = __ra_sign.__use_b_key
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
+  and    x1, x1, #4
   cbnz   x1, .Lauth_with_pc_b_key
 
   // lr is signed with A key and pc as a second modifier

@@ -1878,108 +1878,162 @@ public:
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
-  uint64_t  getIP() const {
+#define CHECK_PAC_AVAILABLE(scratchReg, code, label)                           \
+  "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
+  "lsr  " #scratchReg ", " #scratchReg ", #4         \n\t"                     \
+  "ands " #scratchReg ", " #scratchReg ", #15        \n\t"                     \
+  "cbz  " #scratchReg ", .L" #label "\n\t" code ".L" #label ":\n\t"
+
+  uint64_t getIP() const {
     uint64_t value = _registers.__pc;
 
-    if (!isReturnAddressSigned())
-      return value;
-
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
-#else
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
     // Note the value of the PC was signed to its address in the register state
     // but everyone else expects it to be sign by the SP, so convert on return.
     register uint64_t x17 __asm("x17") = value;
     register uint64_t x16 __asm("x16") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
+    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
     register uint64_t x14 __asm("x14") = getSP();
-    if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") =
-          _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe    \n\t" // autib1716
+
+    register uint64_t x13 __asm("x13") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
+    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+
+    asm(CHECK_PAC_AVAILABLE(x10,
+                            "pacga x13, x12, x13\n\t"
+                            "cmp   x13, x11     \n\t"
+                            "b.eq  .Ltest_pacga_success_getip\n\t"
+                            "brk   #0xc475      \n\t"
+                            ".Ltest_pacga_success_getip:\n\t",
+                            getip_end2)
+
+            "cmp   x12, #0\n\t"
+            "b.ne  .Lcheck1\n\t"
+            "b     .Lgetip_end\n\t"
+
+            ".Lcheck1:\n\t"
+            "cmp   x12, #1\n\t"
+            "b.ne  .Lcheck3\n\t"
+            "hint 0xc    \n\t" // autia1716
+            "mov x16, x14\n\t"
+            "hint 0x8    \n\t" // pacia1716
+            "b     .Lgetip_end\n\t"
+
+            ".Lcheck3:\n\t"
+            "cmp   x12, #3\n\t"
+            "b.ne  .Lcheck5\n\t"
+            "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
-            "hint 0xa        " // pacib1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15), "r"(x14));
-      } else {
-        asm("hint 0xc    \n\t" // autia1716
+            "hint 0x8    \n\t" // pacia1716
+            "b     .Lgetip_end\n\t"
+
+            ".Lcheck5:\n\t"
+            "cmp   x12, #5\n\t"
+            "b.ne  .Lcheck7\n\t"
+            "hint 0xe    \n\t" // autib1716
+            "mov x16, x14\n\t"
+            "hint 0xa    \n\t" // pacib1716
+            "b     .Lgetip_end\n\t"
+
+            ".Lcheck7:\n\t"
+            "cmp   x12, #7\n\t"
+            "b.ne  .Lunexpected\n\t"
+            "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
-            "hint 0x8        " // pacia1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15), "r"(x14));
-      }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe    \n\t" // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa        " // pacib1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x14));
-      } else {
-        asm("hint 0xc    \n\t" // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x8        " // pacia1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x14));
-      }
-    }
+            "hint 0xa    \n\t" // pacib1716
+            "b     .Lgetip_end\n\t"
+
+            ".Lunexpected:\n\t"
+            "brk   #0xc475      \n\t"
+
+            ".Lgetip_end:\n\t"
+        : "+r"(x17)
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     return x17;
+#else
+    if (_registers.__ra_sign.__scheme != 0)
+      abortCrossRASigning();
+    return value;
 #endif
   }
 
   void      setIP(uint64_t value) {
-    if (!isReturnAddressSigned()) {
-      _registers.__pc = value;
-      return;
-    }
-
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
-#else
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
     // Note the value which was set should have been signed with the SP.
     // We then resign with the slot we are being stored in to so that both SP
     // and LR can't be spoofed at the same time.
     register uint64_t x17 __asm("x17") = value;
-    register uint64_t x16 __asm("x16") = getSP();
+    register uint64_t x16 __asm("x16") = _registers.__sp;
+    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
     register uint64_t x14 __asm("x14") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
-    if (isReturnAddressSignedWithPC()) {
-      register uint64_t x15 __asm("x15") =
-          _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27   \n\t" // pacm
-            "hint 0xe    \n\t" // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa        " // pacib1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15), "r"(x14));
-      } else {
-        asm("hint 0x27   \n\t" // pacm
+
+    register uint64_t x13 __asm("x13") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
+    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+
+    asm(CHECK_PAC_AVAILABLE(x10,
+                            "pacga x13, x12, x13\n\t"
+                            "cmp   x13, x11     \n\t"
+                            "b.eq  .Ltest_pacga_success_setip\n\t"
+                            "brk   #0xc475      \n\t"
+                            ".Ltest_pacga_success_setip:\n\t",
+                            setip_end2)
+
+            "cmp   x12, #0\n\t"
+            "b.ne  .Lsetip_check1\n\t"
+            "b     .Lsetip_end\n\t"
+
+            ".Lsetip_check1:\n\t"
+            "cmp   x12, #1\n\t"
+            "b.ne  .Lsetip_check3\n\t"
             "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
-            "hint 0x8        " // pacia1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15), "r"(x14));
-      }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe    \n\t" // autib1716
+            "hint 0x8    \n\t" // pacia1716
+            "b     .Lsetip_end\n\t"
+
+            ".Lsetip_check3:\n\t"
+            "cmp   x12, #3\n\t"
+            "b.ne  .Lsetip_check5\n\t"
+            "hint 0x27   \n\t" // pacm
+            "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
-            "hint 0xa        " // pacib1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x14));
-      } else {
-        asm("hint 0xc    \n\t" // autia1716
+            "hint 0x8    \n\t" // pacia1716
+            "b     .Lsetip_end\n\t"
+
+            ".Lsetip_check5:\n\t"
+            "cmp   x12, #5\n\t"
+            "b.ne  .Lsetip_check7\n\t"
+            "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
-            "hint 0x8        " // pacia1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x14));
-      }
-    }
+            "hint 0xa    \n\t" // pacib1716
+            "b     .Lsetip_end\n\t"
+
+            ".Lsetip_check7:\n\t"
+            "cmp   x12, #7\n\t"
+            "b.ne  .Lsetip_unexpected\n\t"
+            "hint 0x27   \n\t" // pacm
+            "hint 0xe    \n\t" // autib1716
+            "mov x16, x14\n\t"
+            "hint 0xa    \n\t" // pacib1716
+            "b     .Lsetip_end\n\t"
+
+            ".Lsetip_unexpected:\n\t"
+            "brk   #0xc475      \n\t"
+
+            ".Lsetip_end:\n\t"
+        : "+r"(x17)
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     _registers.__pc = x17;
+#else
+    if (_registers.__ra_sign.__scheme != 0)
+      abortCrossRASigning();
+    _registers.__pc = value;
 #endif
   }
 
@@ -1995,6 +2049,8 @@ public:
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
+    test_pacga();
+
     if (!isReturnAddressSigned()) {
       *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
       return;
@@ -2029,14 +2085,44 @@ public:
 #endif
   }
 
+  void compute_pacga() {
+    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
+    asm(CHECK_PAC_AVAILABLE(x14,
+                            "pacga x16, x16, x17 \n\t"
+                            "str   x16, [x17, #8]\n\t",
+                            compute_pacga_end)
+        :
+        : "r"(x17), "r"(x16));
+  }
+
+  void test_pacga(const void *addr) const {
+    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
+    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
+    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
+    asm(CHECK_PAC_AVAILABLE(x14,
+                            "pacga x16, x16, x17\n\t"
+                            "cmp   x16, x15     \n\t"
+                            "b.eq  .Ltest_pacga_success\n\t"
+                            "brk   #0xc475      \n\t"
+                            ".Ltest_pacga_success:\n\t",
+                            test_pacga_end)
+        :
+        : "r"(x17), "r"(x16), "r"(x15));
+  }
+
+  void test_pacga() const {
+    test_pacga(&_registers.__ra_sign.__scheme);
+  }
+
   bool isReturnAddressSigned() const {
-    return _registers.__ra_sign.__state & 1;
+    return _registers.__ra_sign.__scheme & 1;
   }
   bool isReturnAddressSignedWithPC() const {
-    return _registers.__ra_sign.__state & 2;
+    return _registers.__ra_sign.__scheme & 2;
   }
   bool isReturnAddressSignedWithBKey() const {
-    return _registers.__ra_sign.__use_b_key;
+    return _registers.__ra_sign.__scheme & 4;
   }
 
 private:
@@ -2076,10 +2162,10 @@ private:
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
     struct RASign {
-      uint64_t __state = 0;           // RA sign state register
+      uint64_t __scheme = 0;          // RA sign state register
+      uint64_t __scheme_pac = 0;      // MYTODO
       uint64_t __second_modifier = 0; // Additional modifier used for RA
                                       // signing with FEAT_PAuth_LR
-      uint64_t __use_b_key = 0;       // 0 for IA key, 1 for IB key
     } __ra_sign;
   };
 
@@ -2120,6 +2206,8 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   uint64_t pcRegister = 0;
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
+  test_pacga((const uint8_t *)registers + offsetof(GPRs, __ra_sign.__scheme));
+  compute_pacga();
   setIP(pcRegister);
 }
 
@@ -2132,6 +2220,8 @@ Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
+  other.test_pacga();
+  this->compute_pacga();
   setIP(other.getIP());
   return *this;
 }
@@ -2141,11 +2231,12 @@ inline bool Registers_arm64::validRegister(int regNum) const {
     return true;
   if (regNum == UNW_REG_SP)
     return true;
+  // MYTODO
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return true;
+    return false;
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     return true;
-  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME)
     return true;
   if (regNum < 0)
     return false;
@@ -2177,12 +2268,12 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
     return getIP();
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
-  if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return _registers.__ra_sign.__state;
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     return _registers.__ra_sign.__second_modifier;
-  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
-    return _registers.__ra_sign.__use_b_key;
+  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
+    test_pacga();
+    return _registers.__ra_sign.__scheme;
+  }
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
@@ -2199,12 +2290,12 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     setIP(value);
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
-  else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    _registers.__ra_sign.__state = value;
   else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     _registers.__ra_sign.__second_modifier = value;
-  else if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
-    _registers.__ra_sign.__use_b_key = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
+    _registers.__ra_sign.__scheme = value;
+    compute_pacga();
+  }
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)

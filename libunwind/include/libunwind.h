@@ -646,7 +646,7 @@ enum {
   // which are not occupied by real Dwarf registers according to
   // https://github.com/ARM-software/abi-aa/blob/2025Q1/aadwarf64/aadwarf64.rst
   UNW_AARCH64_RA_SIGN_SECOND_MODIFIER = 128,
-  UNW_AARCH64_RA_SIGN_USE_B_KEY = 129,
+  UNW_AARCH64_RA_SIGN_SCHEME = 129,
 
   // FP/vector registers
   UNW_AARCH64_V0 = 64,

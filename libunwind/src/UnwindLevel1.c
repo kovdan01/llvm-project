@@ -618,12 +618,12 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 #if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
     !(defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32))
   {
-    unw_word_t raSignState, raSignUseBKey;
-    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_STATE, &raSignState);
-    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_USE_B_KEY, &raSignUseBKey);
+    unw_word_t raSignScheme;
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SCHEME, &raSignScheme);
 
-    bool isReturnAddressSigned = (raSignState & 1);
-    bool isReturnAddressSignedWithPC = (raSignState & 2);
+    bool isReturnAddressSigned = (raSignScheme & 1);
+    bool isReturnAddressSignedWithPC = (raSignScheme & 2);
+    bool isReturnAddressSignedWithBKey = (raSignScheme & 4);
 
     if (isReturnAddressSigned) {
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
@@ -646,7 +646,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 
         register uint64_t x15 __asm("x15") = raSignSecondModifier;
 
-        if (raSignUseBKey) {
+        if (isReturnAddressSignedWithBKey) {
           __asm__("hint 0x27\n\t" // pacm
                   "hint 0xe     " // autib1716
                   : "+r"(x17)
@@ -658,7 +658,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
                   : "r"(x16), "r"(x15));
         }
       } else {
-        if (raSignUseBKey) {
+        if (isReturnAddressSignedWithBKey) {
           __asm__("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
         } else {
           __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
