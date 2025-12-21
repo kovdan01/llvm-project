@@ -291,13 +291,11 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_STATE, raSignState);
+        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SCHEME, (cieInfo.addressesSignedWithBKey ? 4 : 0) + (raSignState & 3));
         if (newRegisters.isReturnAddressSignedWithPC()) {
           newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
                                    prolog.ptrAuthDiversifier);
         }
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_USE_B_KEY,
-                                 cieInfo.addressesSignedWithBKey ? 1 : 0);
 #endif
       }
 #endif

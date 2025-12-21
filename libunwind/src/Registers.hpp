@@ -1879,6 +1879,8 @@ public:
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
   uint64_t  getIP() const {
+    test_pacga();
+
     uint64_t value = _registers.__pc;
 
     if (!isReturnAddressSigned())
@@ -1931,6 +1933,8 @@ public:
   }
 
   void      setIP(uint64_t value) {
+    test_pacga();
+
     if (!isReturnAddressSigned()) {
       _registers.__pc = value;
       return;
@@ -1995,6 +1999,8 @@ public:
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
+    test_pacga();
+
     if (!isReturnAddressSigned()) {
       *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
       return;
@@ -2029,14 +2035,60 @@ public:
 #endif
   }
 
+  // bool is_pac_available() const {
+  //   register uint64_t x16 __asm("x16");
+  //   asm("mrs  x16, ID_AA64ISAR1_EL1\n\t"
+  //       "lsr  x16, x16, #4         \n\t"
+  //       "ands x16, x16, #15        \n\t"
+  //       : "+r"(x16));
+  //   return x16;
+  // }
+
+  void compute_pacga() {
+    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
+    register uint64_t x14 __asm("x14");
+    asm("mrs  x14, ID_AA64ISAR1_EL1\n\t"
+        "lsr  x14, x14, #4         \n\t"
+        "ands x14, x14, #15        \n\t"
+        "cbz  x14, .Lcompute_pacga_end\n\t"
+        "pacga x16, x16, x17 \n\t"
+        "str   x16, [x17, #8]\n\t"
+        ".Lcompute_pacga_end:\n\t"
+        : "+r"(x14)
+        : "r"(x17), "r"(x16));
+  }
+
+  void test_pacga(const void *addr) const {
+    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
+    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
+    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
+    register uint64_t x14 __asm("x14");
+    asm("mrs  x14, ID_AA64ISAR1_EL1\n\t"
+        "lsr  x14, x14, #4         \n\t"
+        "ands x14, x14, #15        \n\t"
+        "cbz  x14, .Ltest_pacga_end\n\t"
+        "pacga x16, x16, x17\n\t"
+        "cmp   x16, x15     \n\t"
+        "b.eq  .Ltest_pacga_end\n\t"
+        "brk   #0xc475      \n\t"
+        ".Ltest_pacga_end:  \n\t"
+        : "+r"(x14)
+        : "r"(x17), "r"(x16), "r"(x15));
+  }
+
+  void test_pacga() const {
+    test_pacga(&_registers.__ra_sign.__scheme);
+  }
+
   bool isReturnAddressSigned() const {
-    return _registers.__ra_sign.__state & 1;
+    return _registers.__ra_sign.__scheme & 1;
   }
   bool isReturnAddressSignedWithPC() const {
-    return _registers.__ra_sign.__state & 2;
+    return _registers.__ra_sign.__scheme & 2;
   }
   bool isReturnAddressSignedWithBKey() const {
-    return _registers.__ra_sign.__use_b_key;
+    return _registers.__ra_sign.__scheme & 4;
   }
 
 private:
@@ -2076,10 +2128,10 @@ private:
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
     struct RASign {
-      uint64_t __state = 0;           // RA sign state register
+      uint64_t __scheme = 0;          // RA sign state register
+      uint64_t __scheme_pac = 0;      // MYTODO
       uint64_t __second_modifier = 0; // Additional modifier used for RA
                                       // signing with FEAT_PAuth_LR
-      uint64_t __use_b_key = 0;       // 0 for IA key, 1 for IB key
     } __ra_sign;
   };
 
@@ -2120,6 +2172,8 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   uint64_t pcRegister = 0;
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
+  test_pacga((const uint8_t *)registers + offsetof(GPRs, __ra_sign.__scheme));
+  compute_pacga();
   setIP(pcRegister);
 }
 
@@ -2132,6 +2186,8 @@ Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
+  other.test_pacga();
+  this->compute_pacga();
   setIP(other.getIP());
   return *this;
 }
@@ -2141,11 +2197,12 @@ inline bool Registers_arm64::validRegister(int regNum) const {
     return true;
   if (regNum == UNW_REG_SP)
     return true;
+  // MYTODO
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return true;
+    return false;
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     return true;
-  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
+  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME)
     return true;
   if (regNum < 0)
     return false;
@@ -2177,12 +2234,12 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
     return getIP();
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
-  if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    return _registers.__ra_sign.__state;
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     return _registers.__ra_sign.__second_modifier;
-  if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
-    return _registers.__ra_sign.__use_b_key;
+  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
+    test_pacga();
+    return _registers.__ra_sign.__scheme;
+  }
   if (regNum == UNW_AARCH64_FP)
     return getFP();
   if (regNum == UNW_AARCH64_LR)
@@ -2199,12 +2256,12 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     setIP(value);
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
-  else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
-    _registers.__ra_sign.__state = value;
   else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
     _registers.__ra_sign.__second_modifier = value;
-  else if (regNum == UNW_AARCH64_RA_SIGN_USE_B_KEY)
-    _registers.__ra_sign.__use_b_key = value;
+  else if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
+    _registers.__ra_sign.__scheme = value;
+    compute_pacga();
+  }
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);
   else if (regNum == UNW_AARCH64_LR)

@@ -826,28 +826,34 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
   // Fill subfields of __ra_sign field
 #if UNW_RA_SIGNED
-# if UNW_RA_SIGNED_WITH_PC
-  adrp   x16, .L__unw_getcontext_start
-  add    x16, x16, :lo12:.L__unw_getcontext_start
-  str    x16,     [x0, #0x110]    // __second_modifier = x16
-# else
-  str    xzr,     [x0, #0x110]    // __second_modifier = 0
-# endif
-
   mov    x16, #1
-  str    x16,     [x0, #0x108]    // __state = 1
 
 # if UNW_RA_SIGNED_WITH_B_KEY
-  str    x16,     [x0, #0x118]    // __use_b_key = 1
-# else
-  str    xzr,     [x0, #0x118]    // __use_b_key = 0
+  add    x16, x16, #4
 # endif
 
-  ldr    x16,     [x0, #0x080]    // restore x16 after clobber
+# if UNW_RA_SIGNED_WITH_PC
+  add    x16, x16, #2
+  str    x16,     [x0, #0x108]    // __state
+  add    x17, x0, #0x108
+  pacga  x16, x16, x17
+  str    x16,     [x0, #0x110]    // __state_pac
+  adrp   x16, .L__unw_getcontext_start
+  add    x16, x16, :lo12:.L__unw_getcontext_start
+  str    x16,     [x0, #0x118]    // __second_modifier = x16
+# else
+  str    x16,     [x0, #0x108]    // __state
+  add    x17, x0, #0x108
+  pacga  x16, x16, x17
+  str    x16,     [x0, #0x110]    // __state_pac
+  str    xzr,     [x0, #0x118]    // __second_modifier = 0
+# endif
+
+  ldp    x16,x17, [x0, #0x080]    // restore x16 and x17 after clobber
 #else
   str    xzr,     [x0, #0x108]    // __state = 0
-  str    xzr,     [x0, #0x110]    // __second_modifier = 0
-  str    xzr,     [x0, #0x118]    // __use_b_key = 0
+  str    xzr,     [x0, #0x110]    // __scheme_pac = 0
+  str    xzr,     [x0, #0x118]    // __second_modifier = 0
 #endif
 
   // skip cpsr
