@@ -1882,9 +1882,9 @@ public:
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
   "lsr  " #scratchReg ", " #scratchReg ", #4  \n\t"                            \
   "ands " #scratchReg ", " #scratchReg ", #15 \n\t"                            \
-  "cbz  " #scratchReg ", .Lcheck_pac_end"##__LINE__                            \
+  "cbz  " #scratchReg ", .Lcheck_pac_end" #__LINE__                            \
       "\n\t" code "\n\t"                                                       \
-      ".Lcheck_pac_end"##__LINE__ ":\n\t"
+      ".Lcheck_pac_end" #__LINE__ ":\n\t"
 
   uint64_t getIP() const {
     uint64_t value = _registers.__pc;
