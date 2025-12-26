@@ -1878,11 +1878,13 @@ public:
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
-#define CHECK_PAC_AVAILABLE(scratchReg, code, label)                           \
+#define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
-  "lsr  " #scratchReg ", " #scratchReg ", #4         \n\t"                     \
-  "ands " #scratchReg ", " #scratchReg ", #15        \n\t"                     \
-  "cbz  " #scratchReg ", .L" #label "\n\t" code ".L" #label ":\n\t"
+  "lsr  " #scratchReg ", " #scratchReg ", #4  \n\t"                            \
+  "ands " #scratchReg ", " #scratchReg ", #15 \n\t"                            \
+  "cbz  " #scratchReg ", .Lcheck_pac_end"##__LINE__                            \
+      "\n\t" code "\n\t"                                                       \
+      ".Lcheck_pac_end"##__LINE__ ":\n\t"
 
   uint64_t getIP() const {
     uint64_t value = _registers.__pc;
@@ -1906,8 +1908,7 @@ public:
                             "cmp   x13, x11     \n\t"
                             "b.eq  .Ltest_pacga_success_getip\n\t"
                             "brk   #0xc475      \n\t"
-                            ".Ltest_pacga_success_getip:\n\t",
-                            getip_end2)
+                            ".Ltest_pacga_success_getip:\n\t")
 
             "cmp   x12, #0\n\t"
             "b.ne  .Lcheck1\n\t"
@@ -1982,8 +1983,7 @@ public:
                             "cmp   x13, x11     \n\t"
                             "b.eq  .Ltest_pacga_success_setip\n\t"
                             "brk   #0xc475      \n\t"
-                            ".Ltest_pacga_success_setip:\n\t",
-                            setip_end2)
+                            ".Ltest_pacga_success_setip:\n\t")
 
             "cmp   x12, #0\n\t"
             "b.ne  .Lsetip_check1\n\t"
@@ -2088,10 +2088,8 @@ public:
   void compute_pacga() {
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
     register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
-    asm(CHECK_PAC_AVAILABLE(x14,
-                            "pacga x16, x16, x17 \n\t"
-                            "str   x16, [x17, #8]\n\t",
-                            compute_pacga_end)
+    asm(CHECK_PAC_AVAILABLE(x14, "pacga x16, x16, x17 \n\t"
+                                 "str   x16, [x17, #8]\n\t")
         :
         : "r"(x17), "r"(x16));
   }
@@ -2100,13 +2098,11 @@ public:
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
     register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
     register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
-    asm(CHECK_PAC_AVAILABLE(x14,
-                            "pacga x16, x16, x17\n\t"
-                            "cmp   x16, x15     \n\t"
-                            "b.eq  .Ltest_pacga_success\n\t"
-                            "brk   #0xc475      \n\t"
-                            ".Ltest_pacga_success:\n\t",
-                            test_pacga_end)
+    asm(CHECK_PAC_AVAILABLE(x14, "pacga x16, x16, x17\n\t"
+                                 "cmp   x16, x15     \n\t"
+                                 "b.eq  .Ltest_pacga_success\n\t"
+                                 "brk   #0xc475      \n\t"
+                                 ".Ltest_pacga_success:\n\t")
         :
         : "r"(x17), "r"(x16), "r"(x15));
   }
