@@ -205,6 +205,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
       // building for AArch64 natively.
 #if defined(__aarch64__)
       if (stage2 && cieInfo.mteTaggedFrame) {
+        // MYTODO: do we need to make this native only and abort on non-native?
         pint_t sp = registers.getSP();
         pint_t p = sp;
         // AArch64 doesn't require the value of SP to be 16-byte aligned at
@@ -291,11 +292,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
         return UNW_ECROSSRASIGNING;
 #else
-        newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SCHEME, (cieInfo.addressesSignedWithBKey ? 4 : 0) + (raSignState & 3));
-        if (newRegisters.isReturnAddressSignedWithPC()) {
-          newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
-                                   prolog.ptrAuthDiversifier);
-        }
+        newRegisters.setRASigningScheme(raSignState, cieInfo.addressesSignedWithBKey, prolog.ptrAuthDiversifier);
 #endif
       }
 #endif

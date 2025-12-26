@@ -654,6 +654,8 @@ Lnovec:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
+// MYTODO: pac
+
   #if defined(_LIBUNWIND_TRACE_RET_INJECT)
     cbz     w1, 1f
   0:
@@ -712,58 +714,103 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
   ldr    x14,     [x0, #0x0F8]  // x14 = __sp
   ldr    x15,     [x0, #0x118]  // x15 = __ra_sign.__second_modifier
+
+
+
+
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
+  ldr    x16,      [x0, #0x110]  // x16 = __ra_sign.__state_pac
+
+
+
+  mrs  x17, ID_AA64ISAR1_EL1
+  lsr  x17, x17, #24 
+  ands x17, x17, #255 
+  cbnz x17, .Lcheck_pac_code1
+  /* AAA */ 
+  mrs  x17, ID_AA64ISAR2_EL1
+  lsr  x17, x17, #8 
+  ands x17, x17, #15 
+  cbnz x17, .Lcheck_pac_code1
+  /* AAA */ 
+  b .Lcheck_pac_end1
+/* AAA */ 
+  .Lcheck_pac_code1:
+
+// MYTODO: check 5 for ptrauth_returns
+
+  add    x17, x0, #0x108
+  pacga x17, x1, x17
+  cmp   x17, x16     
+  b.eq  .Ltest_pacga_success
+  brk   #0xc474      
+  .Ltest_pacga_success:
+
+/* AAA */ 
+  .Lcheck_pac_end1:
+
+#if __has_feature(ptrauth_returns)
+  cmp   x1, #5     
+  b.eq  .Ltest_pacga_success2
+  brk   #0xc474      
+  .Ltest_pacga_success2:
+#endif
+
   add    x16, x0, #0x100        // x16 = &__pc
   ldr    x17,     [x0, #0x100]  // x17 = __pc
 
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  and    x1, x1, #1
-  cbz    x1, .Lresign_end
 
-  // lr needs resign
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  and    x1, x1, #2
-  cbnz   x1, .Lresign_with_pc
 
-  // lr needs resign without pc as a second modifier
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  and    x1, x1, #4
-  cbnz   x1, .Lresign_with_b_key
 
-  // lr needs resign with A key and without pc as a second modifier
-  hint   0xc                    // autia1716
-  mov    x16, x14               // x16 = __sp
-  hint   0x8                    // pacia1716
-  b .Lresign_end
 
-.Lresign_with_b_key:
-  // lr needs resign with B key and without pc as a second modifier
-  hint   0xe                    // autib1716
-  mov    x16, x14               // x16 = __sp
-  hint   0xa                    // pacib1716
-  b .Lresign_end
 
-.Lresign_with_pc:
-  // lr needs resign with pc as a second modifier
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
-  and    x1, x1, #4
-  cbnz   x1, .Lresign_with_pc_b_key
+// MYTODO: pacga
 
-  // lr needs resign with A key and pc as a second modifier
-  hint   0xc                    // autia1716
-  mov    x16, x14               // x16 = __sp
-  hint   0x27                   // pacm
-  hint   0x8                    // pacia1716
-  b .Lresign_end
+  cmp   x1, #0
+  b.ne  .Lrestore_check1
+  b     .Lrestore_end
 
-.Lresign_with_pc_b_key:
-  // lr needs resign with B key and pc as a second modifier
-  hint   0xe                    // autib1716
-  mov    x16, x14               // x16 = __sp
-  hint   0x27                   // pacm
-  hint   0xa                    // pacib1716
-  b .Lresign_end
+  .Lrestore_check1:
+  cmp   x1, #1
+  b.ne  .Lrestore_check3
+  hint 0xc     // autia1716
+  mov x16, x14
+  hint 0x8     // pacia1716
+  b     .Lrestore_end
 
-.Lresign_end:
+  .Lrestore_check3:
+  cmp   x1, #3
+  b.ne  .Lrestore_check5
+  hint 0x27    // pacm
+  hint 0xc     // autia1716
+  mov x16, x14
+  hint 0x27    // pacm
+  hint 0x8     // pacia1716
+  b     .Lrestore_end
+
+  .Lrestore_check5:
+  cmp   x1, #5
+  b.ne  .Lrestore_check7
+  hint 0xe     // autib1716
+  mov x16, x14
+  hint 0xa     // pacib1716
+  b     .Lrestore_end
+
+  .Lrestore_check7:
+  cmp   x1, #7
+  b.ne  .Lrestore_unexpected
+  hint 0x27    // pacm
+  hint 0xe     // autib1716
+  mov x16, x14
+  hint 0x27    // pacm
+  hint 0xa     // pacib1716
+  b     .Lrestore_end
+
+  .Lrestore_unexpected:
+  brk   #0xc474      
+
+  .Lrestore_end:
+
   mov    lr, x17                // assign final lr value
   ldp    x14,x15, [x0, #0x070]  // restore x14,x15
   ldr    x16,     [x0, #0x110]  // second modifier for auti{a|b}sp with PACM
@@ -772,55 +819,52 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   // context struct, because it is allocated on the stack, and an exception
   // could clobber the de-allocated portion of the stack after sp has been
   // restored.
+
   ldr    x17,     [x0, #0x0F8]  // load sp into scratch
 
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  and    x1, x1, #1
-  cbz    x1, .Lauth_end
+// MYTODO comment: no additional check for signing scheme
+  cmp   x1, #0
+  b.ne  .Lauth_check1
+  b     .Lauth_end
 
-  // lr is signed
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  and    x1, x1, #2
-  cbnz   x1, .Lauth_with_pc
-
-  // lr is signed without pc as a second modifier
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
-  and    x1, x1, #4
-  cbnz   x1, .Lauth_with_b_key
-
-  // lr is signed with A key and without pc as a second modifier
+  .Lauth_check1:
+  cmp   x1, #1
+  b.ne  .Lauth_check3
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
   hint   0x1d                   // autiasp
   ret    x30
 
-.Lauth_with_b_key:
-  // lr is signed with B key and without pc as a second modifier
+  .Lauth_check3:
+  cmp   x1, #3
+  b.ne  .Lauth_check5
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
-  hint   0x1f                   // autibsp
-  ret    x30
-
-.Lauth_with_pc:
-  // lr is signed with pc as a second modifier
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__use_b_key
-  and    x1, x1, #4
-  cbnz   x1, .Lauth_with_pc_b_key
-
-  // lr is signed with A key and pc as a second modifier
-  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
-  mov    sp,x17                 // restore sp
-  hint   0x27                   // pacm
+  hint 0x27                     // pacm
   hint   0x1d                   // autiasp
   ret    x30
 
-.Lauth_with_pc_b_key:
-  // lr is signed with B key and pc as a second modifier
+  .Lauth_check5:
+  cmp   x1, #5
+  b.ne  .Lauth_check7
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
-  hint   0x27                   // pacm
   hint   0x1f                   // autibsp
   ret    x30
+
+  .Lauth_check7:
+  cmp   x1, #7
+  b.ne  .Lauth_unexpected
+
+  ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
+  mov    sp,x17                 // restore sp
+  hint 0x27                     // pacm
+  hint   0x1f                   // autibsp
+  ret    x30
+
+
+  .Lauth_unexpected:
+  brk   #0xc474
 
 .Lauth_end:
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
