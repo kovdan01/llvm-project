@@ -1882,8 +1882,8 @@ public:
 #define STRING(x) STRING_IMPL(x)
 #define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
-  "lsr  " #scratchReg ", " #scratchReg ", #4  \n\t"                            \
-  "ands " #scratchReg ", " #scratchReg ", #15 \n\t"                            \
+  "lsr  " #scratchReg ", " #scratchReg ", #24  \n\t"                            \
+  "ands " #scratchReg ", " #scratchReg ", #255 \n\t"                            \
   "cbz  " #scratchReg ", .Lcheck_pac_end" STRING(__LINE__)                            \
       "\n\t" code "\n\t"                                                       \
       ".Lcheck_pac_end" STRING(__LINE__) ":\n\t"
