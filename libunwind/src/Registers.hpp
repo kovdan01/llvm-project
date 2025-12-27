@@ -2161,7 +2161,7 @@ private:
   void setRASigningScheme(uint64_t raSignState, bool isRASignedWithBKey, uint64_t secondModifier) {
     register uint64_t x16 __asm("x16") = raSignState + (isRASignedWithBKey ? 4 : 0);
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x15 __asm("x15") = secondModifier);
+    register uint64_t x15 __asm("x15") = secondModifier;
 
     asm(
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
@@ -2226,7 +2226,7 @@ private:
                                  "pacga x16, xzr, x17 \n\t"
                                  "str   x16, [x17, #8]\n\t")
         :
-        : "r"(x17), "r"(x16));
+        : "r"(x17));
   }
 
   void compute_pacga() {
@@ -2459,6 +2459,7 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     if (value != 0)
       _LIBUNWIND_ABORT("cannot set non-null value for arm64 PAuth second modifier")
     _registers.__ra_sign.__second_modifier = 0;
+#endif
   } else if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
     // MYTODO comment
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
@@ -2467,6 +2468,7 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     if (value != 0)
       _LIBUNWIND_ABORT("cannot set non-null value for arm64 PAuth signing scheme")
     setZeroSigningScheme();
+#endif
   }
 #endif
   else if (regNum == UNW_AARCH64_FP)
