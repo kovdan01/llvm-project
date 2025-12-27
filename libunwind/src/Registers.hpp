@@ -2167,9 +2167,9 @@ public:
     asm(
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x16, 5     \n\t"
-        "b.eq  .Lcompute_pacga_success\n\t"
+        "b.eq  .Lsetscheme_success\n\t"
         "brk   #0xc474      \n\t"
-        ".Lcompute_pacga_success:\n\t"
+        ".Lsetscheme_success:\n\t"
 #endif
         "cmp   x16, #0\n\t"
         "b.ne  .Lsetscheme_check1\n\t"
@@ -2276,14 +2276,14 @@ private:
     register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
     asm(CHECK_PAC_AVAILABLE(x14, "pacga x17, x16, x17\n\t"
                                  "cmp   x17, x15     \n\t"
-                                 "b.eq  .Ltest_pacga_success\n\t"
+                                 "b.eq  .Lget_ra_scheme_success\n\t"
                                  "brk   #0xc474      \n\t"
-                                 ".Ltest_pacga_success:\n\t")
+                                 ".Lget_ra_scheme_success:\n\t")
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x16, 5     \n\t"
-        "b.eq  .Ltest_pacga_success2\n\t"
+        "b.eq  .Lget_ra_scheme_success2\n\t"
         "brk   #0xc474      \n\t"
-        ".Ltest_pacga_success2:\n\t"
+        ".Lget_ra_scheme_success2:\n\t"
 #endif
         :
         : "r"(x17), "r"(x16), "r"(x15));
