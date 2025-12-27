@@ -2158,6 +2158,7 @@ private:
     _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
   }
 #else
+public:
   void setRASigningScheme(uint64_t raSignState, bool isRASignedWithBKey, uint64_t secondModifier) {
     register uint64_t x16 __asm("x16") = raSignState + (isRASignedWithBKey ? 4 : 0);
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
@@ -2213,6 +2214,7 @@ private:
         :
         : "r"(x17), "r"(x16), "r"(x15));
   }
+private:
 
   void setZeroSigningScheme() {
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
