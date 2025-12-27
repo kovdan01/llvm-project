@@ -1878,7 +1878,8 @@ public:
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
-#define STRING(x) #x
+#define STRING_IMPL(x) #x
+#define STRING(x) x
 #define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
   "lsr  " #scratchReg ", " #scratchReg ", #4  \n\t"                            \
