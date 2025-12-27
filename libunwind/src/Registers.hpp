@@ -2078,40 +2078,110 @@ public:
   void
   loadAndAuthenticateLinkRegister(reg_t inplaceAuthedLinkRegister,
                                   link_reg_t *referenceAuthedLinkRegister) {
-    test_pacga();
-
-    if (!isReturnAddressSigned()) {
-      *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
-      return;
-    }
-
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    abortCrossRASigning();
-#else
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
     register reg_t x17 __asm("x17") = inplaceAuthedLinkRegister;
-    register reg_t x16 __asm("x16") = getSP();
-    if (isReturnAddressSignedWithPC()) {
-      register reg_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0x27\n\t" // pacm
-            "hint 0xe     " // autib1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15));
-      } else {
-        asm("hint 0x27\n\t" // pacm
-            "hint 0xc     " // autia1716
-            : "+r"(x17)
-            : "r"(x16), "r"(x15));
-      }
-    } else {
-      if (isReturnAddressSignedWithBKey()) {
-        asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-      } else {
-        asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-      }
-    }
-    *referenceAuthedLinkRegister = x17;
+    register reg_t x16 __asm("x16") = _registers.__sp;
+    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+
+    register uint64_t x13 __asm("x13") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
+    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+
+    asm(CHECK_PAC_AVAILABLE(x10,
+                            "pacga x13, x12, x13\n\t"
+                            "cmp   x13, x11     \n\t"
+                            "b.eq  .Ltest_pacga_success_load\n\t"
+                            "brk   #0xc475      \n\t"
+                            ".Ltest_pacga_success_load:\n\t")
+
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x12, 5     \n\t"
+        "b.eq  .Ltest_pacga_success_load2\n\t"
+        "brk   #0xc475      \n\t"
+        ".Ltest_pacga_success_load2:\n\t"
 #endif
+
+        "cmp   x12, #0\n\t"
+        "b.ne  .Lload_check1\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check1:\n\t"
+        "cmp   x12, #1\n\t"
+        "b.ne  .Lload_check3\n\t"
+        "hint 0xc\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check3:\n\t"
+        "cmp   x12, #3\n\t"
+        "b.ne  .Lload_check5\n\t"
+        "hint 0x27\n\t" // pacm
+        "hint 0xc \n\t" // autia1716
+        "b     .Lload_end\n\t"
+
+        ".Lload_check5:\n\t"
+        "cmp   x12, #5\n\t"
+        "b.ne  .Lload_check7\n\t"
+        "hint 0xe\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check7:\n\t"
+        "cmp   x12, #7\n\t"
+        "b.ne  .Lload_unexpected\n\t"
+        "hint 0x27\n\t" // pacm
+        "hint 0xe \n\t" // autib1716
+        "b     .Lload_end\n\t"
+
+        ".Lload_unexpected:\n\t"
+        "brk   #0xc475      \n\t"
+
+        ".Lload_end:\n\t"
+        : "+r"(x17)
+        : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11));
+    *referenceAuthedLinkRegister = x17;
+#else
+if (_registers.__ra_sign.__scheme != 0)
+  abortCrossRASigning();
+*referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+#endif
+
+
+
+
+//     test_pacga();
+
+//     if (!isReturnAddressSigned()) {
+//       *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+//       return;
+//     }
+
+// #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+//     abortCrossRASigning();
+// #else
+//     register reg_t x17 __asm("x17") = inplaceAuthedLinkRegister;
+//     register reg_t x16 __asm("x16") = getSP();
+//     if (isReturnAddressSignedWithPC()) {
+//       register reg_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+//       if (isReturnAddressSignedWithBKey()) {
+//         asm("hint 0x27\n\t" // pacm
+//             "hint 0xe     " // autib1716
+//             : "+r"(x17)
+//             : "r"(x16), "r"(x15));
+//       } else {
+//         asm("hint 0x27\n\t" // pacm
+//             "hint 0xc     " // autia1716
+//             : "+r"(x17)
+//             : "r"(x16), "r"(x15));
+//       }
+//     } else {
+//       if (isReturnAddressSignedWithBKey()) {
+//         asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
+//       } else {
+//         asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+//       }
+//     }
+//     *referenceAuthedLinkRegister = x17;
+// #endif
   }
 
   void compute_pacga() {
@@ -2153,15 +2223,15 @@ public:
     test_pacga(&_registers.__ra_sign.__scheme);
   }
 
-  bool isReturnAddressSigned() const {
-    return _registers.__ra_sign.__scheme & 1;
-  }
-  bool isReturnAddressSignedWithPC() const {
-    return _registers.__ra_sign.__scheme & 2;
-  }
-  bool isReturnAddressSignedWithBKey() const {
-    return _registers.__ra_sign.__scheme & 4;
-  }
+  // bool isReturnAddressSigned() const {
+  //   return _registers.__ra_sign.__scheme & 1;
+  // }
+  // bool isReturnAddressSignedWithPC() const {
+  //   return _registers.__ra_sign.__scheme & 2;
+  // }
+  // bool isReturnAddressSignedWithBKey() const {
+  //   return _registers.__ra_sign.__scheme & 4;
+  // }
 
 private:
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
