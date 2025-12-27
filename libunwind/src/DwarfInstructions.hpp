@@ -292,7 +292,8 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace,
         return UNW_ECROSSRASIGNING;
 #else
         newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SCHEME, (cieInfo.addressesSignedWithBKey ? 4 : 0) + (raSignState & 3));
-        if (newRegisters.isReturnAddressSignedWithPC()) {
+        // MYTODO prone to substitution
+        if (raSignState & 2) {
           newRegisters.setRegister(UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
                                    prolog.ptrAuthDiversifier);
         }
