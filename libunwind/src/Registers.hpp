@@ -1879,7 +1879,7 @@ public:
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
 #define STRING_IMPL(x) #x
-#define STRING(x) x
+#define STRING(x) STRING_IMPL(x)
 #define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
   "lsr  " #scratchReg ", " #scratchReg ", #4  \n\t"                            \
