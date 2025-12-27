@@ -1884,9 +1884,22 @@ public:
   "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
   "lsr  " #scratchReg ", " #scratchReg ", #24  \n\t"                            \
   "ands " #scratchReg ", " #scratchReg ", #255 \n\t"                            \
-  "cbz  " #scratchReg ", .Lcheck_pac_end" STRING(__LINE__)                            \
-      "\n\t" code "\n\t"                                                       \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__)          "\n\t"                  \
+  /* AAA */ \
+  "mrs  " #scratchReg ", ID_AA64ISAR2_EL1\n\t"                                 \
+  "lsr  " #scratchReg ", " #scratchReg ", #8  \n\t"                            \
+  "ands " #scratchReg ", " #scratchReg ", #15 \n\t"                            \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__)          "\n\t"                  \
+  /* AAA */ \
+  "b .Lcheck_pac_end" STRING(__LINE__) "\n\t" \
+/* AAA */ \
+  ".Lcheck_pac_code" STRING(__LINE__) ":\n\t" \
+       code "\n\t"                                                       \
+/* AAA */ \
       ".Lcheck_pac_end" STRING(__LINE__) ":\n\t"
+
+#undef STRING
+#undef STRING_IMPL
 
   uint64_t getIP() const {
     uint64_t value = _registers.__pc;
