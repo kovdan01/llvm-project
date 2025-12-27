@@ -1925,6 +1925,13 @@ public:
                             "brk   #0xc475      \n\t"
                             ".Ltest_pacga_success_getip:\n\t")
 
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x12, 5     \n\t"
+        "b.eq  .Ltest_pacga_success_getip2\n\t"
+        "brk   #0xc475      \n\t"
+        ".Ltest_pacga_success_getip2:\n\t"
+#endif
+
             "cmp   x12, #0\n\t"
             "b.ne  .Lcheck1\n\t"
             "b     .Lgetip_end\n\t"
@@ -1999,6 +2006,13 @@ public:
                             "b.eq  .Ltest_pacga_success_setip\n\t"
                             "brk   #0xc475      \n\t"
                             ".Ltest_pacga_success_setip:\n\t")
+
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x12, 5     \n\t"
+        "b.eq  .Ltest_pacga_success_setip2\n\t"
+        "brk   #0xc475      \n\t"
+        ".Ltest_pacga_success_setip2:\n\t"
+#endif
 
             "cmp   x12, #0\n\t"
             "b.ne  .Lsetip_check1\n\t"
@@ -2103,7 +2117,14 @@ public:
   void compute_pacga() {
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
     register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
-    asm(CHECK_PAC_AVAILABLE(x14, "pacga x16, x16, x17 \n\t"
+    asm(
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x16, 5     \n\t"
+        "b.eq  .Lcompute_pacga_success\n\t"
+        "brk   #0xc475      \n\t"
+        ".Lcompute_pacga_success:\n\t"
+#endif
+        CHECK_PAC_AVAILABLE(x14, "pacga x16, x16, x17 \n\t"
                                  "str   x16, [x17, #8]\n\t")
         :
         : "r"(x17), "r"(x16));
@@ -2113,11 +2134,17 @@ public:
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
     register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
     register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
-    asm(CHECK_PAC_AVAILABLE(x14, "pacga x16, x16, x17\n\t"
-                                 "cmp   x16, x15     \n\t"
+    asm(CHECK_PAC_AVAILABLE(x14, "pacga x17, x16, x17\n\t"
+                                 "cmp   x17, x15     \n\t"
                                  "b.eq  .Ltest_pacga_success\n\t"
                                  "brk   #0xc475      \n\t"
                                  ".Ltest_pacga_success:\n\t")
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x16, 5     \n\t"
+        "b.eq  .Ltest_pacga_success2\n\t"
+        "brk   #0xc475      \n\t"
+        ".Ltest_pacga_success2:\n\t"
+#endif
         :
         : "r"(x17), "r"(x16), "r"(x15));
   }
