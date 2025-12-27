@@ -1898,8 +1898,8 @@ public:
 /* AAA */ \
       ".Lcheck_pac_end" STRING(__LINE__) ":\n\t"
 
-#undef STRING
-#undef STRING_IMPL
+// #undef STRING
+// #undef STRING_IMPL
 
   uint64_t getIP() const {
     uint64_t value = _registers.__pc;
