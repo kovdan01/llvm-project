@@ -1913,7 +1913,7 @@ public:
     register uint64_t x16 __asm("x16") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
     register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
-    register uint64_t x14 __asm("x14") = getSP();
+    register uint64_t x14 __asm("x14") = _registers.__sp;
 
     register uint64_t x13 __asm("x13") =
         reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
