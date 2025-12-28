@@ -824,8 +824,8 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   str    x1,      [x0, #0x0F8]
 
 #if UNW_RA_SIGNED
-  mov x16, x30
-  mov x17, sp
+  mov x17, x30
+  mov x16, sp
 # if UNW_RA_SIGNED_WITH_PC
   adrp   x15, .L__unw_getcontext_start
   add    x15, x15, :lo12:.L__unw_getcontext_start
@@ -838,7 +838,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   hint   0xc                    // autia1716
 # endif
 
-  add x17, x0, #0x100
+  add x16, x0, #0x100
 # if UNW_RA_SIGNED_WITH_PC
   hint   0x27                     // pacm
 # endif
@@ -850,7 +850,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 # endif
 
 
-  str    x16,     [x0, #0x100]    // store return address as pc
+  str    x17,     [x0, #0x100]    // store return address as pc
 
 #else
   str    x30,     [x0, #0x100]    // store return address as pc
