@@ -822,7 +822,39 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   str    x30,     [x0, #0x0F0]
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
+
+#if UNW_RA_SIGNED
+  mov x16, x30
+  mov x17, sp
+# if UNW_RA_SIGNED_WITH_PC
+  adrp   x15, .L__unw_getcontext_start
+  add    x15, x15, :lo12:.L__unw_getcontext_start
+  hint   0x27                     // pacm
+# endif
+
+# if UNW_RA_SIGNED_WITH_B_KEY
+  hint   0xe                    // autib1716
+# else
+  hint   0xc                    // autia1716
+# endif
+
+  add x17, x0, #0x100
+# if UNW_RA_SIGNED_WITH_PC
+  hint   0x27                     // pacm
+# endif
+
+# if UNW_RA_SIGNED_WITH_B_KEY
+  hint   0xa                    // pacib1716
+# else
+  hint   0x8                    // pacia1716
+# endif
+
+
+  str    x16,     [x0, #0x100]    // store return address as pc
+
+#else
   str    x30,     [x0, #0x100]    // store return address as pc
+#endif
 
   // Fill subfields of __ra_sign field
 #if UNW_RA_SIGNED
@@ -835,17 +867,76 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 # if UNW_RA_SIGNED_WITH_PC
   add    x16, x16, #2
   str    x16,     [x0, #0x108]    // __state
+
+
+  mrs  x17, ID_AA64ISAR1_EL1
+  lsr  x17, x17, #24 
+  ands x17, x17, #255 
+  cbnz x17, .Lcheck_pac_code1
+  /* AAA */ 
+  mrs  x17, ID_AA64ISAR2_EL1
+  lsr  x17, x17, #8 
+  ands x17, x17, #15 
+  cbnz x17, .Lcheck_pac_code1
+  /* AAA */ 
+  b .Lcheck_pac_end1
+/* AAA */ 
+  .Lcheck_pac_code1:
+
   add    x17, x0, #0x108
   pacga  x16, x16, x17
   str    x16,     [x0, #0x110]    // __state_pac
+
+
+/* AAA */ 
+  .Lcheck_pac_end1:
+
+//  add    x17, x0, #0x108
+//  pacga  x16, x16, x17
+//  str    x16,     [x0, #0x110]    // __state_pac
+
+
+
+
   adrp   x16, .L__unw_getcontext_start
   add    x16, x16, :lo12:.L__unw_getcontext_start
   str    x16,     [x0, #0x118]    // __second_modifier = x16
 # else
   str    x16,     [x0, #0x108]    // __state
+
+  mrs  x17, ID_AA64ISAR1_EL1
+  lsr  x17, x17, #24 
+  ands x17, x17, #255 
+  cbnz x17, .Lcheck_pac_code2
+  /* AAA */ 
+  mrs  x17, ID_AA64ISAR2_EL1
+  lsr  x17, x17, #8 
+  ands x17, x17, #15 
+  cbnz x17, .Lcheck_pac_code2
+  /* AAA */ 
+  b .Lcheck_pac_end2
+/* AAA */ 
+  .Lcheck_pac_code2:
+
   add    x17, x0, #0x108
   pacga  x16, x16, x17
   str    x16,     [x0, #0x110]    // __state_pac
+
+
+
+/* AAA */ 
+  .Lcheck_pac_end2:
+
+
+
+
+
+
+
+
+
+
+
   str    xzr,     [x0, #0x118]    // __second_modifier = 0
 # endif
 

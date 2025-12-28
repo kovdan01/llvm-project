@@ -749,6 +749,7 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   cbnz   x1, .Lresign_with_pc_b_key
 
   // lr needs resign with A key and pc as a second modifier
+  hint   0x27                   // pacm
   hint   0xc                    // autia1716
   mov    x16, x14               // x16 = __sp
   hint   0x27                   // pacm
@@ -757,6 +758,7 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
 .Lresign_with_pc_b_key:
   // lr needs resign with B key and pc as a second modifier
+  hint   0x27                   // pacm
   hint   0xe                    // autib1716
   mov    x16, x14               // x16 = __sp
   hint   0x27                   // pacm

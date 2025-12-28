@@ -1949,6 +1949,7 @@ public:
             ".Lcheck3:\n\t"
             "cmp   x12, #3\n\t"
             "b.ne  .Lcheck5\n\t"
+            "hint 0x27   \n\t" // pacm
             "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
@@ -1966,6 +1967,7 @@ public:
             ".Lcheck7:\n\t"
             "cmp   x12, #7\n\t"
             "b.ne  .Lunexpected\n\t"
+            "hint 0x27   \n\t" // pacm
             "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
@@ -2034,6 +2036,7 @@ public:
             "hint 0x27   \n\t" // pacm
             "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
+            "hint 0x27   \n\t" // pacm
             "hint 0x8    \n\t" // pacia1716
             "b     .Lsetip_end\n\t"
 
@@ -2051,6 +2054,7 @@ public:
             "hint 0x27   \n\t" // pacm
             "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
+            "hint 0x27   \n\t" // pacm
             "hint 0xa    \n\t" // pacib1716
             "b     .Lsetip_end\n\t"
 
