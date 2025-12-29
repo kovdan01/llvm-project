@@ -849,10 +849,6 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov x16, #UNW_RA_SIGNING_SCHEME
   str    x16,     [x0, #0x108]    // __state
 
-
-
-
-
   mrs  x17, ID_AA64ISAR1_EL1
   lsr  x17, x17, #24 
   ands x17, x17, #255 
@@ -882,88 +878,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 # endif
   str    x17,     [x0, #0x118]    // __second_modifier = x17
 
-
   ldp    x16,x17, [x0, #0x080]    // restore x16 and x17 after clobber
-
-
-
-
-//
-//
-//#if UNW_RA_SIGNED
-//  mov    x16, #1
-//
-//# if UNW_RA_SIGNED_WITH_B_KEY
-//  add    x16, x16, #4
-//# endif
-//
-//// MYTODO: choice between 0 1 3 5 7
-//# if UNW_RA_SIGNED_WITH_PC
-//  add    x16, x16, #2
-//  str    x16,     [x0, #0x108]    // __state
-//
-//
-//  mrs  x17, ID_AA64ISAR1_EL1
-//  lsr  x17, x17, #24 
-//  ands x17, x17, #255 
-//  cbnz x17, .Lcheck_pac_code1
-//  /* AAA */ 
-//  mrs  x17, ID_AA64ISAR2_EL1
-//  lsr  x17, x17, #8 
-//  ands x17, x17, #15 
-//  cbnz x17, .Lcheck_pac_code1
-//  /* AAA */ 
-//  b .Lcheck_pac_end1
-///* AAA */ 
-//  .Lcheck_pac_code1:
-//// MYTODO: check 5 for ptrauth_returns
-//  add    x17, x0, #0x108
-//  pacga  x17, x16, x17
-//  str    x17,     [x0, #0x110]    // __state_pac
-//
-///* AAA */ 
-//  .Lcheck_pac_end1:
-//
-//
-//  adrp   x16, .L__unw_getcontext_start
-//  add    x16, x16, :lo12:.L__unw_getcontext_start
-//  str    x16,     [x0, #0x118]    // __second_modifier = x16
-//# else
-//  str    x16,     [x0, #0x108]    // __state
-//
-//  mrs  x17, ID_AA64ISAR1_EL1
-//  lsr  x17, x17, #24 
-//  ands x17, x17, #255 
-//  cbnz x17, .Lcheck_pac_code2
-//  /* AAA */ 
-//  mrs  x17, ID_AA64ISAR2_EL1
-//  lsr  x17, x17, #8 
-//  ands x17, x17, #15 
-//  cbnz x17, .Lcheck_pac_code2
-//  /* AAA */ 
-//  b .Lcheck_pac_end2
-///* AAA */ 
-//  .Lcheck_pac_code2:
-//// MYTODO: check 5 for ptrauth_returns
-//
-//  add    x17, x0, #0x108
-//  pacga  x17, x16, x17
-//  str    x17,     [x0, #0x110]    // __state_pac
-//
-///* AAA */ 
-//  .Lcheck_pac_end2:
-//
-//
-//
-//  str    xzr,     [x0, #0x118]    // __second_modifier = 0
-//# endif
-//
-//  ldp    x16,x17, [x0, #0x080]    // restore x16 and x17 after clobber
-//#else
-//  str    xzr,     [x0, #0x108]    // __state = 0
-//  str    xzr,     [x0, #0x110]    // __scheme_pac = 0
-//  str    xzr,     [x0, #0x118]    // __second_modifier = 0
-//#endif
 
   // skip cpsr
 #if defined(__ARM_FP) && __ARM_FP != 0
