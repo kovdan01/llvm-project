@@ -651,7 +651,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
         "mrs  x12, ID_AA64ISAR2_EL1 \n\t"
         "lsr  x12, x12, #8          \n\t"
         "ands x12, x12, #15         \n\t"
-        "cbnz x12, .Lcheck_pac"     \n\t"
+        "cbnz x12, .Lcheck_pac      \n\t"
         "b .Lno_pauth               \n\t"
         ".Lcheck_pac:               \n\t"
 
@@ -672,6 +672,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
         ".Lpauthabi_success:     \n\t"
 #endif
 
+        // See also SIGNING_SCHEME_FLAGS_SWITCH in Registers.hpp.
         "cmp   x14, #0     \n\t"
         "b.ne  .Lswitch_1  \n\t"
         "b     .Lswitch_end\n\t"

@@ -2180,8 +2180,9 @@ private:
     );
   }
 
-  void recomputeSigningSchemeFlagsPAC(uint64_t oldModifier) {
-    register uint64_t x17 __asm("x17") = oldModifier;
+  void recomputeSigningSchemeFlagsPAC(void *oldModifier) {
+    register uint64_t x17 __asm("x17") =
+        reinterpret_cast<uint64_t>(oldModifier);
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
     register uint64_t x15 __asm("x15") =
         _registers.__ra_signing_scheme.__flags_pac;
@@ -2253,9 +2254,9 @@ private:
 //     );
 //   }
 
-  void checkRASigningSchemeFlagsIntegrity() const {
-    checkRASigningSchemeFlagsIntegrity(&_registers.__ra_signing_scheme.__flags);
-  }
+  // void checkRASigningSchemeFlagsIntegrity() const {
+  //   checkRASigningSchemeFlagsIntegrity(&_registers.__ra_signing_scheme.__flags);
+  // }
 
   // Is PAuth is available, returns signing scheme flags value with embedded
   // PAC computed with GA key and SP modifier. The PAC computed by PACGA only
