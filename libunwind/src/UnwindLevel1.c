@@ -616,8 +616,8 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
   __unw_get_reg(cursor, UNW_REG_IP, &result);
 
 #if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
-    defined(_LIBUNWIND_IS_NATIVE_ONLY) !(                                      \
-        defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32))
+    defined(_LIBUNWIND_IS_NATIVE_ONLY) &&                                      \
+    !(defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32))
   {
     unw_word_t raSigningSchemeFlagsWithPAC;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS,
