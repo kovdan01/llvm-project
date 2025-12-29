@@ -1989,31 +1989,6 @@ public:
                         "hint 0x27   \n\t"  // pacm
                         "hint 0xa    \n\t"  // pacib1716
             )
-
-//         SIGNING_SCHEME_SWITCH(x12,
-//                               // If 0:
-//                               "",
-//                               // If 1:
-//                               "hint 0xc    \n\t" // autia1716
-//                               "mov x16, x14\n\t"
-//                               "hint 0x8    \n\t" // pacia1716
-//                               , // If 3:
-//                               "hint 0x27   \n\t" // pacm
-//                               "hint 0xc    \n\t" // autia1716
-//                               "mov x16, x14\n\t"
-//                               "hint 0x27   \n\t" // pacm
-//                               "hint 0x8    \n\t" // pacia1716
-// , // If 5:
-//                               "hint 0xe    \n\t" // autib1716
-//                               "mov x16, x14\n\t"
-//                               "hint 0xa    \n\t" // pacib1716
-// , // If 7:
-//                               "hint 0x27   \n\t" // pacm
-//                               "hint 0xe    \n\t" // autib1716
-//                               "mov x16, x14\n\t"
-//                               "hint 0x27   \n\t" // pacm
-//                               "hint 0xa    \n\t" // pacib1716
-//                               )
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     return x17;
@@ -2075,32 +2050,6 @@ public:
                         "hint 0x27   \n\t"  // pacm
                         "hint 0xa    \n\t"  // pacib1716
             )
-
-        // SIGNING_SCHEME_SWITCH(x12,
-        //                       // If 0:
-        //                       "",
-        //                       // If 1:
-        //                       "hint 0xc    \n\t" // autia1716
-        //                       "mov x16, x14\n\t"
-        //                       "hint 0x8    \n\t" // pacia1716
-        //                       ,                  // If 3:
-        //                       "hint 0x27   \n\t" // pacm
-        //                       "hint 0xc    \n\t" // autia1716
-        //                       "mov x16, x14\n\t"
-        //                       "hint 0x27   \n\t" // pacm
-        //                       "hint 0x8    \n\t" // pacia1716
-        //                       ,                  // If 5:
-        //                       "hint 0xe    \n\t" // autib1716
-        //                       "mov x16, x14\n\t"
-        //                       "hint 0xa    \n\t" // pacib1716
-        //                       ,                  // If 7:
-        //                       "hint 0x27   \n\t" // pacm
-        //                       "hint 0xe    \n\t" // autib1716
-        //                       "mov x16, x14\n\t"
-        //                       "hint 0x27   \n\t" // pacm
-        //                       "hint 0xa    \n\t" // pacib1716
-        //                       )
-
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     _registers.__pc = x17;
@@ -2209,7 +2158,6 @@ public:
         ".Lsetscheme_unexpected_begin:\n\t"
         "brk   #0xc474      \n\t"
         ".Lsetscheme_unexpected_end:\n\t"
-
 
         "str   x16, [x17, #0]\n\t"
         CHECK_PAC_AVAILABLE(x14,
