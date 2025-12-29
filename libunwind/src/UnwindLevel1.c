@@ -618,56 +618,76 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 #if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
     !(defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32))
   {
-    unw_word_t raSignScheme;
-    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SCHEME, &raSignScheme);
+    unw_word_t raSigningSchemeFlags;
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS,
+                  &raSigningSchemeFlags);
 
-    // TODO: inline asm for everything
-    bool isReturnAddressSigned = (raSignScheme & 1);
-    bool isReturnAddressSignedWithPC = (raSignScheme & 2);
-    bool isReturnAddressSignedWithBKey = (raSignScheme & 4);
-
-    if (isReturnAddressSigned) {
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-      // We should never go here since non-null RA signed state is either set
-      // by architecture-specific __unw_getcontext or by stepWithDwarf which
-      // already contains a corresponding check and should have already
-      // emitted the UNW_ECROSSRASIGNING error.
+    // We should never go here since non-null RA signed state is either set
+    // by architecture-specific __unw_getcontext or by stepWithDwarf which
+    // already contains a corresponding check and should have already
+    // emitted the UNW_ECROSSRASIGNING error.
+    if (raSigningSchemeFlags != 0)
       _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
 #else
-      unw_word_t sp;
-      __unw_get_reg(cursor, UNW_REG_SP, &sp);
+    unw_word_t sp;
+    __unw_get_reg(cursor, UNW_REG_SP, &sp);
 
-      register uint64_t x17 __asm("x17") = result;
-      register uint64_t x16 __asm("x16") = sp;
+    unw_word_t raSigningSchemeSecondModifier;
+    __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER,
+                  &raSigningSchemeSecondModifier);
 
-      if (isReturnAddressSignedWithPC) {
-        unw_word_t raSignSecondModifier;
-        __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SECOND_MODIFIER,
-                      &raSignSecondModifier);
+    register uint64_t x17 __asm("x17") = result;
+    register uint64_t x16 __asm("x16") = sp;
+    register uint64_t x15 __asm("x15") = raSigningSchemeSecondModifier;
+    register uint64_t x14 __asm("x14") = raSigningSchemeFlags;
 
-        register uint64_t x15 __asm("x15") = raSignSecondModifier;
-
-        if (isReturnAddressSignedWithBKey) {
-          __asm__("hint 0x27\n\t" // pacm
-                  "hint 0xe     " // autib1716
-                  : "+r"(x17)
-                  : "r"(x16), "r"(x15));
-        } else {
-          __asm__("hint 0x27\n\t" // pacm
-                  "hint 0xc     " // autia1716
-                  : "+r"(x17)
-                  : "r"(x16), "r"(x15));
-        }
-      } else {
-        if (isReturnAddressSignedWithBKey) {
-          __asm__("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
-        } else {
-          __asm__("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
-        }
-      }
-      result = x17;
+    __asm__(
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        "cmp   x14, 5     \n\t"
+        "b.eq  .Ltest_pacga_success_load2\n\t"
+        "brk   #0xc474      \n\t"
+        ".Ltest_pacga_success_load2:\n\t"
 #endif
-    }
+
+        "cmp   x14, #0\n\t"
+        "b.ne  .Lload_check1\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check1:\n\t"
+        "cmp   x14, #1\n\t"
+        "b.ne  .Lload_check3\n\t"
+        "hint 0xc\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check3:\n\t"
+        "cmp   x14, #3\n\t"
+        "b.ne  .Lload_check5\n\t"
+        "hint 0x27\n\t" // pacm
+        "hint 0xc \n\t" // autia1716
+        "b     .Lload_end\n\t"
+
+        ".Lload_check5:\n\t"
+        "cmp   x14, #5\n\t"
+        "b.ne  .Lload_check7\n\t"
+        "hint 0xe\n\t"
+        "b     .Lload_end\n\t"
+
+        ".Lload_check7:\n\t"
+        "cmp   x14, #7\n\t"
+        "b.ne  .Lload_unexpected\n\t"
+        "hint 0x27\n\t" // pacm
+        "hint 0xe \n\t" // autib1716
+        "b     .Lload_end\n\t"
+
+        ".Lload_unexpected:\n\t"
+        "brk   #0xc474      \n\t"
+
+        ".Lload_end:\n\t"
+        : "+r"(x17)
+        : "r"(x16), "r"(x15), "r"(x14));
+    result = x17;
+#endif
   }
 #endif
 

@@ -2428,9 +2428,9 @@ inline bool Registers_arm64::validRegister(int regNum) const {
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
     return false;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+  if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER)
     return true;
-  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME)
+  if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS)
     return true;
 #endif
   if (regNum < 0)
@@ -2464,9 +2464,9 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
   if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     return _registers.__sp;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
+  if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER)
     return _registers.__ra_signing_scheme.__second_modifier;
-  if (regNum == UNW_AARCH64_RA_SIGN_SCHEME)
+  if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS)
     return getRASigningSchemeingScheme();
 #endif
   if (regNum == UNW_AARCH64_FP)
@@ -2487,15 +2487,15 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
     _registers.__sp = value;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-  else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER ||
-           regNum == UNW_AARCH64_RA_SIGN_SCHEME)
+  else if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER ||
+           regNum == UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS)
     _LIBUNWIND_ABORT("Cannot change signing scheme for PAuth-enabled ABI");
 #else
-  else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER) {
+  else if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER) {
     assert(value == 0 &&
            "Should only be called from __unw_set_reg with value 0");
     _registers.__ra_signing_scheme.__second_modifier = 0;
-  } else if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
+  } else if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS) {
     assert(value == 0 &&
            "Should only be called from __unw_set_reg with value 0");
     setZeroSigningScheme();
