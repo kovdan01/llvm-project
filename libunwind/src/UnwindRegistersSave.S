@@ -852,21 +852,18 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mrs    x17, ID_AA64ISAR1_EL1
   lsr    x17, x17, #24
   ands   x17, x17, #255
-  cbnz   x17, .Lcheck_pac_code1
+  cbnz   x17, .Lcompute_pac
   mrs    x17, ID_AA64ISAR2_EL1
   lsr    x17, x17, #8
   ands   x17, x17, #15
-  cbnz   x17, .Lcheck_pac_code1
+  cbnz   x17, .Lcompute_pac
   str    xzr,     [x0, #0x110]    // __flags_pac
-  b .Lcheck_pac_end1
-/* AAA */ 
-  .Lcheck_pac_code1:
+  b      .Lno_pauth
+  .Lcompute_pac:
   add    x17, x0, #0x108
   pacga  x17, x16, x17
   str    x17,     [x0, #0x110]    // __flags_pac
-
-/* AAA */ 
-  .Lcheck_pac_end1:
+  .Lno_pauth:
 
 #if UNW_RA_SIGNED_WITH_PC
   adrp   x17, .L__unw_getcontext_start
