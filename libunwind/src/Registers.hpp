@@ -1969,71 +1969,30 @@ public:
             ".Ltest_pacga_success_getip2:\n\t"
 #endif
 
-        SIGNING_SCHEME_SWITCH(x12, "",
+        SIGNING_SCHEME_SWITCH(x12,
+                              // If 0:
+                              "",
+                              // If 1:
                               "hint 0xc    \n\t" // autia1716
                               "mov x16, x14\n\t"
-                              "hint 0x8    \n\t", // pacia1716
-
+                              "hint 0x8    \n\t" // pacia1716
+                              , // If 3:
                               "hint 0x27   \n\t" // pacm
                               "hint 0xc    \n\t" // autia1716
                               "mov x16, x14\n\t"
-                              "hint 0x27   \n\t"  // pacm
-                              "hint 0x8    \n\t", // pacia1716
-
+                              "hint 0x27   \n\t" // pacm
+                              "hint 0x8    \n\t" // pacia1716
+, // If 5:
                               "hint 0xe    \n\t" // autib1716
                               "mov x16, x14\n\t"
-                              "hint 0xa    \n\t", // pacib1716
-
+                              "hint 0xa    \n\t" // pacib1716
+, // If 7:
                               "hint 0x27   \n\t" // pacm
                               "hint 0xe    \n\t" // autib1716
                               "mov x16, x14\n\t"
                               "hint 0x27   \n\t" // pacm
                               "hint 0xa    \n\t" // pacib1716
                               )
-        // "cmp   x12, #0\n\t"
-        // "b.ne  .Lcheck1\n\t"
-        // "b     .Lgetip_end\n\t"
-
-        // ".Lcheck1:\n\t"
-        // "cmp   x12, #1\n\t"
-        // "b.ne  .Lcheck3\n\t"
-        // "hint 0xc    \n\t" // autia1716
-        // "mov x16, x14\n\t"
-        // "hint 0x8    \n\t" // pacia1716
-        // "b     .Lgetip_end\n\t"
-
-        // ".Lcheck3:\n\t"
-        // "cmp   x12, #3\n\t"
-        // "b.ne  .Lcheck5\n\t"
-        // "hint 0x27   \n\t" // pacm
-        // "hint 0xc    \n\t" // autia1716
-        // "mov x16, x14\n\t"
-        // "hint 0x27   \n\t" // pacm
-        // "hint 0x8    \n\t" // pacia1716
-        // "b     .Lgetip_end\n\t"
-
-        // ".Lcheck5:\n\t"
-        // "cmp   x12, #5\n\t"
-        // "b.ne  .Lcheck7\n\t"
-        // "hint 0xe    \n\t" // autib1716
-        // "mov x16, x14\n\t"
-        // "hint 0xa    \n\t" // pacib1716
-        // "b     .Lgetip_end\n\t"
-
-        // ".Lcheck7:\n\t"
-        // "cmp   x12, #7\n\t"
-        // "b.ne  .Lunexpected\n\t"
-        // "hint 0x27   \n\t" // pacm
-        // "hint 0xe    \n\t" // autib1716
-        // "mov x16, x14\n\t"
-        // "hint 0x27   \n\t" // pacm
-        // "hint 0xa    \n\t" // pacib1716
-        // "b     .Lgetip_end\n\t"
-
-        // ".Lunexpected:\n\t"
-        // "brk   #0xc474      \n\t"
-
-        // ".Lgetip_end:\n\t"
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     return x17;
@@ -2076,50 +2035,74 @@ public:
         ".Ltest_pacga_success_setip2:\n\t"
 #endif
 
-            "cmp   x12, #0\n\t"
-            "b.ne  .Lsetip_check1\n\t"
-            "b     .Lsetip_end\n\t"
-
-            ".Lsetip_check1:\n\t"
-            "cmp   x12, #1\n\t"
-            "b.ne  .Lsetip_check3\n\t"
+            SIGNING_SCHEME_SWITCH(x12,
+                              // If 0:
+                              "",
+                              // If 1:
             "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
             "hint 0x8    \n\t" // pacia1716
-            "b     .Lsetip_end\n\t"
-
-            ".Lsetip_check3:\n\t"
-            "cmp   x12, #3\n\t"
-            "b.ne  .Lsetip_check5\n\t"
+                              , // If 3:
             "hint 0x27   \n\t" // pacm
             "hint 0xc    \n\t" // autia1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
             "hint 0x8    \n\t" // pacia1716
-            "b     .Lsetip_end\n\t"
-
-            ".Lsetip_check5:\n\t"
-            "cmp   x12, #5\n\t"
-            "b.ne  .Lsetip_check7\n\t"
+, // If 5:
             "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
             "hint 0xa    \n\t" // pacib1716
-            "b     .Lsetip_end\n\t"
-
-            ".Lsetip_check7:\n\t"
-            "cmp   x12, #7\n\t"
-            "b.ne  .Lsetip_unexpected\n\t"
+, // If 7:
             "hint 0x27   \n\t" // pacm
             "hint 0xe    \n\t" // autib1716
             "mov x16, x14\n\t"
             "hint 0x27   \n\t" // pacm
             "hint 0xa    \n\t" // pacib1716
-            "b     .Lsetip_end\n\t"
+                              )
+            // "cmp   x12, #0\n\t"
+            // "b.ne  .Lsetip_check1\n\t"
+            // "b     .Lsetip_end\n\t"
 
-            ".Lsetip_unexpected:\n\t"
-            "brk   #0xc474      \n\t"
+            // ".Lsetip_check1:\n\t"
+            // "cmp   x12, #1\n\t"
+            // "b.ne  .Lsetip_check3\n\t"
+            // "hint 0xc    \n\t" // autia1716
+            // "mov x16, x14\n\t"
+            // "hint 0x8    \n\t" // pacia1716
+            // "b     .Lsetip_end\n\t"
 
-            ".Lsetip_end:\n\t"
+            // ".Lsetip_check3:\n\t"
+            // "cmp   x12, #3\n\t"
+            // "b.ne  .Lsetip_check5\n\t"
+            // "hint 0x27   \n\t" // pacm
+            // "hint 0xc    \n\t" // autia1716
+            // "mov x16, x14\n\t"
+            // "hint 0x27   \n\t" // pacm
+            // "hint 0x8    \n\t" // pacia1716
+            // "b     .Lsetip_end\n\t"
+
+            // ".Lsetip_check5:\n\t"
+            // "cmp   x12, #5\n\t"
+            // "b.ne  .Lsetip_check7\n\t"
+            // "hint 0xe    \n\t" // autib1716
+            // "mov x16, x14\n\t"
+            // "hint 0xa    \n\t" // pacib1716
+            // "b     .Lsetip_end\n\t"
+
+            // ".Lsetip_check7:\n\t"
+            // "cmp   x12, #7\n\t"
+            // "b.ne  .Lsetip_unexpected\n\t"
+            // "hint 0x27   \n\t" // pacm
+            // "hint 0xe    \n\t" // autib1716
+            // "mov x16, x14\n\t"
+            // "hint 0x27   \n\t" // pacm
+            // "hint 0xa    \n\t" // pacib1716
+            // "b     .Lsetip_end\n\t"
+
+            // ".Lsetip_unexpected:\n\t"
+            // "brk   #0xc474      \n\t"
+
+            // ".Lsetip_end:\n\t"
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     _registers.__pc = x17;
@@ -2168,40 +2151,55 @@ public:
         ".Ltest_pacga_success_load2:\n\t"
 #endif
 
-        "cmp   x12, #0\n\t"
-        "b.ne  .Lload_check1\n\t"
-        "b     .Lload_end\n\t"
-
-        ".Lload_check1:\n\t"
-        "cmp   x12, #1\n\t"
-        "b.ne  .Lload_check3\n\t"
-        "hint 0xc\n\t"
-        "b     .Lload_end\n\t"
-
-        ".Lload_check3:\n\t"
-        "cmp   x12, #3\n\t"
-        "b.ne  .Lload_check5\n\t"
+            SIGNING_SCHEME_SWITCH(x12,
+                              // If 0:
+                              "",
+                              // If 1:
+            "hint 0xc\n\t"
+                              , // If 3:
         "hint 0x27\n\t" // pacm
         "hint 0xc \n\t" // autia1716
-        "b     .Lload_end\n\t"
-
-        ".Lload_check5:\n\t"
-        "cmp   x12, #5\n\t"
-        "b.ne  .Lload_check7\n\t"
-        "hint 0xe\n\t"
-        "b     .Lload_end\n\t"
-
-        ".Lload_check7:\n\t"
-        "cmp   x12, #7\n\t"
-        "b.ne  .Lload_unexpected\n\t"
+, // If 5:
+            "hint 0xe\n\t"
+, // If 7:
         "hint 0x27\n\t" // pacm
         "hint 0xe \n\t" // autib1716
-        "b     .Lload_end\n\t"
 
-        ".Lload_unexpected:\n\t"
-        "brk   #0xc474      \n\t"
+        // "cmp   x12, #0\n\t"
+        // "b.ne  .Lload_check1\n\t"
+        // "b     .Lload_end\n\t"
 
-        ".Lload_end:\n\t"
+        // ".Lload_check1:\n\t"
+        // "cmp   x12, #1\n\t"
+        // "b.ne  .Lload_check3\n\t"
+        // "hint 0xc\n\t"
+        // "b     .Lload_end\n\t"
+
+        // ".Lload_check3:\n\t"
+        // "cmp   x12, #3\n\t"
+        // "b.ne  .Lload_check5\n\t"
+        // "hint 0x27\n\t" // pacm
+        // "hint 0xc \n\t" // autia1716
+        // "b     .Lload_end\n\t"
+
+        // ".Lload_check5:\n\t"
+        // "cmp   x12, #5\n\t"
+        // "b.ne  .Lload_check7\n\t"
+        // "hint 0xe\n\t"
+        // "b     .Lload_end\n\t"
+
+        // ".Lload_check7:\n\t"
+        // "cmp   x12, #7\n\t"
+        // "b.ne  .Lload_unexpected\n\t"
+        // "hint 0x27\n\t" // pacm
+        // "hint 0xe \n\t" // autib1716
+        // "b     .Lload_end\n\t"
+
+        // ".Lload_unexpected:\n\t"
+        // "brk   #0xc474      \n\t"
+
+        // ".Lload_end:\n\t"
+                              )
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11));
     *referenceAuthedLinkRegister = x17;
@@ -2239,39 +2237,53 @@ public:
         "brk   #0xc474      \n\t"
         ".Lsetscheme_success:\n\t"
 #endif
-        "cmp   x16, #0\n\t"
-        "b.ne  .Lsetscheme_check1\n\t"
-        "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        "b     .Lsetscheme_end\n\t"
 
-        ".Lsetscheme_check1:\n\t"
-        "cmp   x16, #1\n\t"
-        "b.ne  .Lsetscheme_check3\n\t"
-        "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        "b     .Lsetscheme_end\n\t"
-
-        ".Lsetscheme_check3:\n\t"
-        "cmp   x16, #3\n\t"
-        "b.ne  .Lsetscheme_check5\n\t"
+            SIGNING_SCHEME_SWITCH(x16,
+                              // If 0:
+                              "cbnz  x15, .Lsetscheme_unexpected\n\t",
+                              // If 1:
+            "cbnz  x15, .Lsetscheme_unexpected\n\t"
+                              , // If 3:
+         "cbz  x15, .Lsetscheme_unexpected\n\t"
+, // If 5:
+            "cbnz  x15, .Lsetscheme_unexpected\n\t"
+, // If 7:
         "cbz  x15, .Lsetscheme_unexpected\n\t"
-        "b     .Lsetscheme_end\n\t"
+                              )
+        // "cmp   x16, #0\n\t"
+        // "b.ne  .Lsetscheme_check1\n\t"
+        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
+        // "b     .Lsetscheme_end\n\t"
 
-        ".Lsetscheme_check5:\n\t"
-        "cmp   x16, #5\n\t"
-        "b.ne  .Lsetscheme_check7\n\t"
-        "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        "b     .Lsetscheme_end\n\t"
+        // ".Lsetscheme_check1:\n\t"
+        // "cmp   x16, #1\n\t"
+        // "b.ne  .Lsetscheme_check3\n\t"
+        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
+        // "b     .Lsetscheme_end\n\t"
 
-        ".Lsetscheme_check7:\n\t"
-        "cmp   x16, #7\n\t"
-        "b.ne  .Lsetscheme_unexpected\n\t"
-        "cbz  x15, .Lsetscheme_unexpected\n\t"
-        "b     .Lsetscheme_end\n\t"
+        // ".Lsetscheme_check3:\n\t"
+        // "cmp   x16, #3\n\t"
+        // "b.ne  .Lsetscheme_check5\n\t"
+        // "cbz  x15, .Lsetscheme_unexpected\n\t"
+        // "b     .Lsetscheme_end\n\t"
 
-        ".Lsetscheme_unexpected:\n\t"
+        // ".Lsetscheme_check5:\n\t"
+        // "cmp   x16, #5\n\t"
+        // "b.ne  .Lsetscheme_check7\n\t"
+        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
+        // "b     .Lsetscheme_end\n\t"
+
+        // ".Lsetscheme_check7:\n\t"
+        // "cmp   x16, #7\n\t"
+        // "b.ne  .Lsetscheme_unexpected\n\t"
+        // "cbz  x15, .Lsetscheme_unexpected\n\t"
+        // "b     .Lsetscheme_end\n\t"
+
+        "b .Lsetscheme_unexpected_end\n\t"
+        ".Lsetscheme_unexpected_begin:\n\t"
         "brk   #0xc474      \n\t"
 
-        ".Lsetscheme_end:\n\t"
+        ".Lsetscheme_unexpected_end:\n\t"
 
 
         "str   x16, [x17, #0]\n\t"
