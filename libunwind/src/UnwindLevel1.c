@@ -712,7 +712,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 
         ".Lload_end:\n\t"
         : "+r"(x17)
-        : "r"(x16), "r"(x15), "r"(x14));
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13));
     result = x17;
   }
 #endif
