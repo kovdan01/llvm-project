@@ -1923,7 +1923,7 @@ public:
         _registers.__ra_signing_scheme.__flags_pac;
 
     asm(CHECK_PAC_AVAILABLE(x10,
-                            "pacga x13, x12, x14\n\t"
+                            "pacga x13, x12, 14\n\t"
                             "cmp   x13, x11     \n\t"
                             "b.eq  .Ltest_pacga_success_getip\n\t"
                             "brk   #0xc474      \n\t"
@@ -2338,7 +2338,11 @@ private:
       // Valid values: 0, 1, 3, 5, 7.
       uint64_t __flags = 0;
 
-      // Pointer authentication code for the `__flags` value computed with GA key (if `pacga` instruction is available) and `__sp` value as a modifier. crucial to check integrity of `__flags` since the signing scheme is defined at runtime and attacker can substitute both the pointer and the signing scheme.
+      // Pointer authentication code for the `__flags` value computed with GA
+      // key (if `pacga` instruction is available) and address diversity. It is
+      // crucial to check integrity of `__flags` since the signing scheme is
+      // defined at runtime and attacker can substitute both the pointer and the
+      // signing scheme.
       uint64_t __flags_pac = 0;
 
       // Additional modifier used for RA signing with FEAT_PAuth_LR.
