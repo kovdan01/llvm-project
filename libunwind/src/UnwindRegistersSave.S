@@ -863,7 +863,8 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   b .Lcheck_pac_end1
 /* AAA */ 
   .Lcheck_pac_code1:
-  pacga  x17, x16, x1
+  add    x17, x0, #0x108
+  pacga  x17, x16, x17
   str    x17,     [x0, #0x110]    // __state_pac
 
 /* AAA */ 
