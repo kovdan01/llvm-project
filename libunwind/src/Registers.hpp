@@ -1912,13 +1912,15 @@ public:
     register uint64_t x17 __asm("x17") = value;
     register uint64_t x16 __asm("x16") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
-    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__second_modifier;
     register uint64_t x14 __asm("x14") = _registers.__sp;
 
     register uint64_t x13 __asm("x13") =
-        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
-    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
+    register uint64_t x11 __asm("x11") =
+        _registers.__ra_signing_scheme.__flags_pac;
 
     asm(CHECK_PAC_AVAILABLE(x10,
                             "pacga x13, x12, x13\n\t"
@@ -1982,8 +1984,8 @@ public:
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     return x17;
 #else
-    if (_registers.__ra_sign.__scheme != 0)
-      abortCrossRASigning();
+    if (_registers.__ra_signing_scheme.__flags != 0)
+      abortCrossRASigningSchemeing();
     return value;
 #endif
   }
@@ -1995,14 +1997,16 @@ public:
     // and LR can't be spoofed at the same time.
     register uint64_t x17 __asm("x17") = value;
     register uint64_t x16 __asm("x16") = _registers.__sp;
-    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__second_modifier;
     register uint64_t x14 __asm("x14") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
 
     register uint64_t x13 __asm("x13") =
-        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
-    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
+    register uint64_t x11 __asm("x11") =
+        _registers.__ra_signing_scheme.__flags_pac;
 
     asm(CHECK_PAC_AVAILABLE(x10,
                             "pacga x13, x12, x13\n\t"
@@ -2066,8 +2070,8 @@ public:
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     _registers.__pc = x17;
 #else
-    if (_registers.__ra_sign.__scheme != 0)
-      abortCrossRASigning();
+    if (_registers.__ra_signing_scheme.__flags != 0)
+      abortCrossRASigningSchemeing();
     _registers.__pc = value;
 #endif
   }
@@ -2087,12 +2091,14 @@ public:
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
     register reg_t x17 __asm("x17") = inplaceAuthedLinkRegister;
     register reg_t x16 __asm("x16") = _registers.__sp;
-    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__second_modifier;
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__second_modifier;
 
     register uint64_t x13 __asm("x13") =
-        reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x12 __asm("x12") = _registers.__ra_sign.__scheme;
-    register uint64_t x11 __asm("x11") = _registers.__ra_sign.__scheme_pac;
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
+    register uint64_t x11 __asm("x11") =
+        _registers.__ra_signing_scheme.__flags_pac;
 
     asm(CHECK_PAC_AVAILABLE(x10,
                             "pacga x13, x12, x13\n\t"
@@ -2146,15 +2152,15 @@ public:
         : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11));
     *referenceAuthedLinkRegister = x17;
 #else
-if (_registers.__ra_sign.__scheme != 0)
-  abortCrossRASigning();
-*referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
+    if (_registers.__ra_signing_scheme.__flags != 0)
+      abortCrossRASigningSchemeing();
+    *referenceAuthedLinkRegister = inplaceAuthedLinkRegister;
 #endif
   }
 
 private:
 #if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  void abortCrossRASigning() const {
+  void abortCrossRASigningSchemeing() const {
     // We should never go here since non-null RA signed state is either set
     // by architecture-specific __unw_getcontext or by stepWithDwarf which
     // already contains a corresponding check and should have already
@@ -2163,9 +2169,13 @@ private:
   }
 #else
 public:
-  void setRASigningScheme(uint64_t raSignState, bool isRASignedWithBKey, uint64_t secondModifier) {
-    register uint64_t x16 __asm("x16") = raSignState + (isRASignedWithBKey ? 4 : 0);
-    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+  void setRASigningSchemeingScheme(uint64_t raSignState,
+                                   bool isRASigningSchemeedWithBKey,
+                                   uint64_t secondModifier) {
+    register uint64_t x16 __asm("x16") =
+        raSignState + (isRASigningSchemeedWithBKey ? 4 : 0);
+    register uint64_t x17 __asm("x17") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x15 __asm("x15") = secondModifier;
 
     asm(
@@ -2218,10 +2228,12 @@ public:
         :
         : "r"(x17), "r"(x16), "r"(x15));
   }
+
 private:
 
   void setZeroSigningScheme() {
-    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
+    register uint64_t x17 __asm("x17") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
 
     asm("ldr   x16, [x17, #16]\n\t"
         "cbz .Lsetzero_ok\n\t"
@@ -2236,8 +2248,9 @@ private:
   }
 
   void compute_pacga() {
-    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
+    register uint64_t x17 __asm("x17") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
     asm(
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x16, 5     \n\t"
@@ -2251,10 +2264,11 @@ private:
         : "r"(x17), "r"(x16));
   }
 
-  void checkRASigningSchemeIntegrity(const void *addr) const {
+  void checkRASigningSchemeingSchemeIntegrity(const void *addr) const {
     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
-    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
-    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
+    register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__flags_pac;
     asm(CHECK_PAC_AVAILABLE(x14, "pacga x17, x16, x17\n\t"
                                  "cmp   x17, x15     \n\t"
                                  "b.eq  .Ltest_pacga_success\n\t"
@@ -2270,14 +2284,17 @@ private:
         : "r"(x17), "r"(x16), "r"(x15));
   }
 
-  void checkRASigningSchemeIntegrity() const {
-    checkRASigningSchemeIntegrity(&_registers.__ra_sign.__scheme);
+  void checkRASigningSchemeingSchemeIntegrity() const {
+    checkRASigningSchemeingSchemeIntegrity(
+        &_registers.__ra_signing_scheme.__flags);
   }
 
-  uint64_t getRASigningScheme() const {
-    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(&_registers.__ra_sign.__scheme);
-    register uint64_t x16 __asm("x16") = _registers.__ra_sign.__scheme;
-    register uint64_t x15 __asm("x15") = _registers.__ra_sign.__scheme_pac;
+  uint64_t getRASigningSchemeingScheme() const {
+    register uint64_t x17 __asm("x17") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__flags_pac;
     asm(CHECK_PAC_AVAILABLE(x14, "pacga x17, x16, x17\n\t"
                                  "cmp   x17, x15     \n\t"
                                  "b.eq  .Lget_ra_scheme_success\n\t"
@@ -2293,7 +2310,6 @@ private:
         : "r"(x17), "r"(x16), "r"(x15));
     return x16;
   }
-
 
 #endif
 
@@ -2322,12 +2338,24 @@ private:
     uint64_t __lr = 0;            // Link register x30
     uint64_t __sp = 0;            // Stack pointer x31
     uint64_t __pc = 0;            // Program counter
-    struct RASign {
-      uint64_t __scheme = 0;          // RA sign state register
-      uint64_t __scheme_pac = 0;      // MYTODO
-      uint64_t __second_modifier = 0; // Additional modifier used for RA
-                                      // signing with FEAT_PAuth_LR
-    } __ra_sign;
+    struct RASigningScheme {
+      // Bitmask for RA signing parameters:
+      // - bit 0: is RA signed;
+      // - bit 1: is RA signed with second modifier;
+      // - bit 2: is RA signed with B key.
+      // Valid values: 0, 1, 3, 5, 7.
+      uint64_t __flags = 0;
+
+      // Pointer authentication code for the `__flags` value computed with GA
+      // key (if `pacga` instruction is available) and address diversity. It is
+      // crucial to check integrity of `__flags` since the signing scheme is
+      // defined at runtime and attacker can substitute both the pointer and the
+      // signing scheme.
+      uint64_t __flags_pac = 0;
+
+      // Additional modifier used for RA signing with FEAT_PAuth_LR.
+      uint64_t __second_modifier = 0;
+    } __ra_signing_scheme;
   };
 
   struct Misc {
@@ -2367,7 +2395,8 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   uint64_t pcRegister = 0;
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
-  checkRASigningSchemeIntegrity((const uint8_t *)registers + offsetof(GPRs, __ra_sign.__scheme));
+  checkRASigningSchemeingSchemeIntegrity(
+      (const uint8_t *)registers + offsetof(GPRs, __ra_signing_scheme.__flags));
   compute_pacga();
   setIP(pcRegister);
 }
@@ -2380,7 +2409,7 @@ inline Registers_arm64 &
 Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  other.checkRASigningSchemeIntegrity();
+  other.checkRASigningSchemeingSchemeIntegrity();
   this->compute_pacga();
 #endif
   // We perform this step to ensure that we correctly authenticate and re-sign
@@ -2394,7 +2423,8 @@ inline bool Registers_arm64::validRegister(int regNum) const {
     return true;
   if (regNum == UNW_REG_SP)
     return true;
-  // MYTODO
+  // UNW_AARCH64_RA_SIGN_STATE is a Dwarf pseudo-register and is not stored in
+  // the context struct.
   if (regNum == UNW_AARCH64_RA_SIGN_STATE)
     return false;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
@@ -2435,9 +2465,9 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
     return _registers.__sp;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
   if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER)
-    return _registers.__ra_sign.__second_modifier;
+    return _registers.__ra_signing_scheme.__second_modifier;
   if (regNum == UNW_AARCH64_RA_SIGN_SCHEME)
-    return getRASigningScheme();
+    return getRASigningSchemeingScheme();
 #endif
   if (regNum == UNW_AARCH64_FP)
     return getFP();
@@ -2456,26 +2486,21 @@ inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
   else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+  else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER ||
+           regNum == UNW_AARCH64_RA_SIGN_SCHEME)
+    _LIBUNWIND_ABORT("Cannot change signing scheme for PAuth-enabled ABI");
+#else
   else if (regNum == UNW_AARCH64_RA_SIGN_SECOND_MODIFIER) {
-    // MYTODO comment
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-    asm("brk   #0xc474      \n\t");
-#else
-    // MYTODO comment
-    if (value != 0)
-      _LIBUNWIND_ABORT("cannot set non-null value for arm64 PAuth second modifier")
-    _registers.__ra_sign.__second_modifier = 0;
-#endif
+    assert(value == 0 &&
+           "Should only be called from __unw_set_reg with value 0");
+    _registers.__ra_signing_scheme.__second_modifier = 0;
   } else if (regNum == UNW_AARCH64_RA_SIGN_SCHEME) {
-    // MYTODO comment
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-    asm("brk   #0xc474      \n\t");
-#else
-    if (value != 0)
-      _LIBUNWIND_ABORT("cannot set non-null value for arm64 PAuth signing scheme")
+    assert(value == 0 &&
+           "Should only be called from __unw_set_reg with value 0");
     setZeroSigningScheme();
-#endif
   }
+#endif
 #endif
   else if (regNum == UNW_AARCH64_FP)
     setFP(value);

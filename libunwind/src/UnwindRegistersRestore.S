@@ -737,8 +737,6 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 /* AAA */ 
   .Lcheck_pac_code1:
 
-// MYTODO: check 5 for ptrauth_returns
-
   add    x17, x0, #0x108
   pacga x17, x1, x17
   cmp   x17, x16     
@@ -758,13 +756,6 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
   add    x16, x0, #0x100        // x16 = &__pc
   ldr    x17,     [x0, #0x100]  // x17 = __pc
-
-
-
-
-
-
-// MYTODO: pacga
 
   cmp   x1, #0
   b.ne  .Lrestore_check1
@@ -822,7 +813,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
   ldr    x17,     [x0, #0x0F8]  // load sp into scratch
 
-// MYTODO comment: no additional check for signing scheme
+  // Integrity of the signing scheme stored in x1 was checked above and no
+  // manipulations on x1 were performed since then, so skip this check.
   cmp   x1, #0
   b.ne  .Lauth_check1
   b     .Lauth_end

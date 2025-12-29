@@ -621,6 +621,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     unw_word_t raSignScheme;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGN_SCHEME, &raSignScheme);
 
+    // TODO: inline asm for everything
     bool isReturnAddressSigned = (raSignScheme & 1);
     bool isReturnAddressSignedWithPC = (raSignScheme & 2);
     bool isReturnAddressSignedWithBKey = (raSignScheme & 4);
