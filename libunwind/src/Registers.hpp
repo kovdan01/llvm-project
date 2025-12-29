@@ -1969,30 +1969,51 @@ public:
             ".Ltest_pacga_success_getip2:\n\t"
 #endif
 
-        SIGNING_SCHEME_SWITCH(x12,
-                              // If 0:
-                              "",
-                              // If 1:
-                              "hint 0xc    \n\t" // autia1716
-                              "mov x16, x14\n\t"
-                              "hint 0x8    \n\t" // pacia1716
-                              , // If 3:
-                              "hint 0x27   \n\t" // pacm
-                              "hint 0xc    \n\t" // autia1716
-                              "mov x16, x14\n\t"
-                              "hint 0x27   \n\t" // pacm
-                              "hint 0x8    \n\t" // pacia1716
-, // If 5:
-                              "hint 0xe    \n\t" // autib1716
-                              "mov x16, x14\n\t"
-                              "hint 0xa    \n\t" // pacib1716
-, // If 7:
-                              "hint 0x27   \n\t" // pacm
-                              "hint 0xe    \n\t" // autib1716
-                              "mov x16, x14\n\t"
-                              "hint 0x27   \n\t" // pacm
-                              "hint 0xa    \n\t" // pacib1716
-                              )
+        SIGNING_SCHEME_SWITCH(
+            /*schemeReg=*/x12,
+            /*codeIf0=*/"",
+            /*codeIf1=*/"hint 0xc    \n\t"  // autia1716
+                        "mov x16, x14\n\t"
+                        "hint 0x8    \n\t", // pacia1716
+            /*codeIf3=*/"hint 0x27   \n\t"  // pacm
+                        "hint 0xc    \n\t"  // autia1716
+                        "mov x16, x14\n\t"
+                        "hint 0x27   \n\t"  // pacm
+                        "hint 0x8    \n\t", // pacia1716
+            /*codeIf5=*/"hint 0xe    \n\t"  // autib1716
+                        "mov x16, x14\n\t"
+                        "hint 0xa    \n\t", // pacib1716
+            /*codeIf7=*/"hint 0x27   \n\t"  // pacm
+                        "hint 0xe    \n\t"  // autib1716
+                        "mov x16, x14\n\t"
+                        "hint 0x27   \n\t"  // pacm
+                        "hint 0xa    \n\t"  // pacib1716
+            )
+
+//         SIGNING_SCHEME_SWITCH(x12,
+//                               // If 0:
+//                               "",
+//                               // If 1:
+//                               "hint 0xc    \n\t" // autia1716
+//                               "mov x16, x14\n\t"
+//                               "hint 0x8    \n\t" // pacia1716
+//                               , // If 3:
+//                               "hint 0x27   \n\t" // pacm
+//                               "hint 0xc    \n\t" // autia1716
+//                               "mov x16, x14\n\t"
+//                               "hint 0x27   \n\t" // pacm
+//                               "hint 0x8    \n\t" // pacia1716
+// , // If 5:
+//                               "hint 0xe    \n\t" // autib1716
+//                               "mov x16, x14\n\t"
+//                               "hint 0xa    \n\t" // pacib1716
+// , // If 7:
+//                               "hint 0x27   \n\t" // pacm
+//                               "hint 0xe    \n\t" // autib1716
+//                               "mov x16, x14\n\t"
+//                               "hint 0x27   \n\t" // pacm
+//                               "hint 0xa    \n\t" // pacib1716
+//                               )
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     return x17;
@@ -2021,88 +2042,65 @@ public:
     register uint64_t x11 __asm("x11") =
         _registers.__ra_signing_scheme.__flags_pac;
 
-    asm(CHECK_PAC_AVAILABLE(x10,
-                            "pacga x13, x12, x13\n\t"
-                            "cmp   x13, x11     \n\t"
-                            "b.eq  .Ltest_pacga_success_setip\n\t"
-                            "brk   #0xc474      \n\t"
-                            ".Ltest_pacga_success_setip:\n\t")
+    asm(CHECK_PAC_AVAILABLE(x10, "pacga x13, x12, x13\n\t"
+                                 "cmp   x13, x11     \n\t"
+                                 "b.eq  .Ltest_pacga_success_setip\n\t"
+                                 "brk   #0xc474      \n\t"
+                                 ".Ltest_pacga_success_setip:\n\t")
 
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        "cmp   x12, 5     \n\t"
-        "b.eq  .Ltest_pacga_success_setip2\n\t"
-        "brk   #0xc474      \n\t"
-        ".Ltest_pacga_success_setip2:\n\t"
+            "cmp   x12, 5     \n\t"
+            "b.eq  .Ltest_pacga_success_setip2\n\t"
+            "brk   #0xc474      \n\t"
+            ".Ltest_pacga_success_setip2:\n\t"
 #endif
 
-            SIGNING_SCHEME_SWITCH(x12,
-                              // If 0:
-                              "",
-                              // If 1:
-            "hint 0xc    \n\t" // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x8    \n\t" // pacia1716
-                              , // If 3:
-            "hint 0x27   \n\t" // pacm
-            "hint 0xc    \n\t" // autia1716
-            "mov x16, x14\n\t"
-            "hint 0x27   \n\t" // pacm
-            "hint 0x8    \n\t" // pacia1716
-, // If 5:
-            "hint 0xe    \n\t" // autib1716
-            "mov x16, x14\n\t"
-            "hint 0xa    \n\t" // pacib1716
-, // If 7:
-            "hint 0x27   \n\t" // pacm
-            "hint 0xe    \n\t" // autib1716
-            "mov x16, x14\n\t"
-            "hint 0x27   \n\t" // pacm
-            "hint 0xa    \n\t" // pacib1716
-                              )
-            // "cmp   x12, #0\n\t"
-            // "b.ne  .Lsetip_check1\n\t"
-            // "b     .Lsetip_end\n\t"
+        SIGNING_SCHEME_SWITCH(
+            /*schemeReg=*/x12,
+            /*codeIf0=*/"",
+            /*codeIf1=*/"hint 0xc    \n\t"  // autia1716
+                        "mov x16, x14\n\t"
+                        "hint 0x8    \n\t", // pacia1716
+            /*codeIf3=*/"hint 0x27   \n\t"  // pacm
+                        "hint 0xc    \n\t"  // autia1716
+                        "mov x16, x14\n\t"
+                        "hint 0x27   \n\t"  // pacm
+                        "hint 0x8    \n\t", // pacia1716
+            /*codeIf5=*/"hint 0xe    \n\t"  // autib1716
+                        "mov x16, x14\n\t"
+                        "hint 0xa    \n\t", // pacib1716
+            /*codeIf7=*/"hint 0x27   \n\t"  // pacm
+                        "hint 0xe    \n\t"  // autib1716
+                        "mov x16, x14\n\t"
+                        "hint 0x27   \n\t"  // pacm
+                        "hint 0xa    \n\t"  // pacib1716
+            )
 
-            // ".Lsetip_check1:\n\t"
-            // "cmp   x12, #1\n\t"
-            // "b.ne  .Lsetip_check3\n\t"
-            // "hint 0xc    \n\t" // autia1716
-            // "mov x16, x14\n\t"
-            // "hint 0x8    \n\t" // pacia1716
-            // "b     .Lsetip_end\n\t"
+        // SIGNING_SCHEME_SWITCH(x12,
+        //                       // If 0:
+        //                       "",
+        //                       // If 1:
+        //                       "hint 0xc    \n\t" // autia1716
+        //                       "mov x16, x14\n\t"
+        //                       "hint 0x8    \n\t" // pacia1716
+        //                       ,                  // If 3:
+        //                       "hint 0x27   \n\t" // pacm
+        //                       "hint 0xc    \n\t" // autia1716
+        //                       "mov x16, x14\n\t"
+        //                       "hint 0x27   \n\t" // pacm
+        //                       "hint 0x8    \n\t" // pacia1716
+        //                       ,                  // If 5:
+        //                       "hint 0xe    \n\t" // autib1716
+        //                       "mov x16, x14\n\t"
+        //                       "hint 0xa    \n\t" // pacib1716
+        //                       ,                  // If 7:
+        //                       "hint 0x27   \n\t" // pacm
+        //                       "hint 0xe    \n\t" // autib1716
+        //                       "mov x16, x14\n\t"
+        //                       "hint 0x27   \n\t" // pacm
+        //                       "hint 0xa    \n\t" // pacib1716
+        //                       )
 
-            // ".Lsetip_check3:\n\t"
-            // "cmp   x12, #3\n\t"
-            // "b.ne  .Lsetip_check5\n\t"
-            // "hint 0x27   \n\t" // pacm
-            // "hint 0xc    \n\t" // autia1716
-            // "mov x16, x14\n\t"
-            // "hint 0x27   \n\t" // pacm
-            // "hint 0x8    \n\t" // pacia1716
-            // "b     .Lsetip_end\n\t"
-
-            // ".Lsetip_check5:\n\t"
-            // "cmp   x12, #5\n\t"
-            // "b.ne  .Lsetip_check7\n\t"
-            // "hint 0xe    \n\t" // autib1716
-            // "mov x16, x14\n\t"
-            // "hint 0xa    \n\t" // pacib1716
-            // "b     .Lsetip_end\n\t"
-
-            // ".Lsetip_check7:\n\t"
-            // "cmp   x12, #7\n\t"
-            // "b.ne  .Lsetip_unexpected\n\t"
-            // "hint 0x27   \n\t" // pacm
-            // "hint 0xe    \n\t" // autib1716
-            // "mov x16, x14\n\t"
-            // "hint 0x27   \n\t" // pacm
-            // "hint 0xa    \n\t" // pacib1716
-            // "b     .Lsetip_end\n\t"
-
-            // ".Lsetip_unexpected:\n\t"
-            // "brk   #0xc474      \n\t"
-
-            // ".Lsetip_end:\n\t"
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
     _registers.__pc = x17;
@@ -2137,69 +2135,29 @@ public:
     register uint64_t x11 __asm("x11") =
         _registers.__ra_signing_scheme.__flags_pac;
 
-    asm(CHECK_PAC_AVAILABLE(x10,
-                            "pacga x13, x12, x13\n\t"
-                            "cmp   x13, x11     \n\t"
-                            "b.eq  .Ltest_pacga_success_load\n\t"
-                            "brk   #0xc474      \n\t"
-                            ".Ltest_pacga_success_load:\n\t")
+    asm(CHECK_PAC_AVAILABLE(x10, "pacga x13, x12, x13\n\t"
+                                 "cmp   x13, x11     \n\t"
+                                 "b.eq  .Ltest_pacga_success_load\n\t"
+                                 "brk   #0xc474      \n\t"
+                                 ".Ltest_pacga_success_load:\n\t")
 
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        "cmp   x12, 5     \n\t"
-        "b.eq  .Ltest_pacga_success_load2\n\t"
-        "brk   #0xc474      \n\t"
-        ".Ltest_pacga_success_load2:\n\t"
+            "cmp   x12, 5     \n\t"
+            "b.eq  .Ltest_pacga_success_load2\n\t"
+            "brk   #0xc474      \n\t"
+            ".Ltest_pacga_success_load2:\n\t"
 #endif
 
-            SIGNING_SCHEME_SWITCH(x12,
-                              // If 0:
-                              "",
-                              // If 1:
-            "hint 0xc\n\t"
-                              , // If 3:
-        "hint 0x27\n\t" // pacm
-        "hint 0xc \n\t" // autia1716
-, // If 5:
-            "hint 0xe\n\t"
-, // If 7:
-        "hint 0x27\n\t" // pacm
-        "hint 0xe \n\t" // autib1716
-
-        // "cmp   x12, #0\n\t"
-        // "b.ne  .Lload_check1\n\t"
-        // "b     .Lload_end\n\t"
-
-        // ".Lload_check1:\n\t"
-        // "cmp   x12, #1\n\t"
-        // "b.ne  .Lload_check3\n\t"
-        // "hint 0xc\n\t"
-        // "b     .Lload_end\n\t"
-
-        // ".Lload_check3:\n\t"
-        // "cmp   x12, #3\n\t"
-        // "b.ne  .Lload_check5\n\t"
-        // "hint 0x27\n\t" // pacm
-        // "hint 0xc \n\t" // autia1716
-        // "b     .Lload_end\n\t"
-
-        // ".Lload_check5:\n\t"
-        // "cmp   x12, #5\n\t"
-        // "b.ne  .Lload_check7\n\t"
-        // "hint 0xe\n\t"
-        // "b     .Lload_end\n\t"
-
-        // ".Lload_check7:\n\t"
-        // "cmp   x12, #7\n\t"
-        // "b.ne  .Lload_unexpected\n\t"
-        // "hint 0x27\n\t" // pacm
-        // "hint 0xe \n\t" // autib1716
-        // "b     .Lload_end\n\t"
-
-        // ".Lload_unexpected:\n\t"
-        // "brk   #0xc474      \n\t"
-
-        // ".Lload_end:\n\t"
-                              )
+        SIGNING_SCHEME_SWITCH(
+            /*schemeReg=*/x12,
+            /*codeIf0=*/"",
+            /*codeIf1=*/"hint 0xc \n\t", // autia1716
+            /*codeIf3=*/"hint 0x27\n\t"  // pacm
+                        "hint 0xc \n\t", // autia1716
+            /*codeIf5=*/"hint 0xe \n\t", // autib1716
+            /*codeIf7=*/"hint 0x27\n\t"  // pacm
+                        "hint 0xe \n\t"  // autib1716
+            )
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11));
     *referenceAuthedLinkRegister = x17;
@@ -2238,51 +2196,18 @@ public:
         ".Lsetscheme_success:\n\t"
 #endif
 
-            SIGNING_SCHEME_SWITCH(x16,
-                              // If 0:
-                              "cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
-                              // If 1:
-            "cbnz  x15, .Lsetscheme_unexpected_begin\n\t"
-                              , // If 3:
-         "cbz  x15, .Lsetscheme_unexpected_begin\n\t"
-, // If 5:
-            "cbnz  x15, .Lsetscheme_unexpected_begin\n\t"
-, // If 7:
-        "cbz  x15, .Lsetscheme_unexpected_begin\n\t"
-                              )
-        // "cmp   x16, #0\n\t"
-        // "b.ne  .Lsetscheme_check1\n\t"
-        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        // "b     .Lsetscheme_end\n\t"
-
-        // ".Lsetscheme_check1:\n\t"
-        // "cmp   x16, #1\n\t"
-        // "b.ne  .Lsetscheme_check3\n\t"
-        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        // "b     .Lsetscheme_end\n\t"
-
-        // ".Lsetscheme_check3:\n\t"
-        // "cmp   x16, #3\n\t"
-        // "b.ne  .Lsetscheme_check5\n\t"
-        // "cbz  x15, .Lsetscheme_unexpected\n\t"
-        // "b     .Lsetscheme_end\n\t"
-
-        // ".Lsetscheme_check5:\n\t"
-        // "cmp   x16, #5\n\t"
-        // "b.ne  .Lsetscheme_check7\n\t"
-        // "cbnz  x15, .Lsetscheme_unexpected\n\t"
-        // "b     .Lsetscheme_end\n\t"
-
-        // ".Lsetscheme_check7:\n\t"
-        // "cmp   x16, #7\n\t"
-        // "b.ne  .Lsetscheme_unexpected\n\t"
-        // "cbz  x15, .Lsetscheme_unexpected\n\t"
-        // "b     .Lsetscheme_end\n\t"
+        SIGNING_SCHEME_SWITCH(
+            /*schemeReg=*/x16,
+            /*codeIf0=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
+            /*codeIf1=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
+            /*codeIf3=*/"cbz   x15, .Lsetscheme_unexpected_begin\n\t",
+            /*codeIf5=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
+            /*codeIf7=*/"cbz   x15, .Lsetscheme_unexpected_begin\n\t"
+            )
 
         "b .Lsetscheme_unexpected_end\n\t"
         ".Lsetscheme_unexpected_begin:\n\t"
         "brk   #0xc474      \n\t"
-
         ".Lsetscheme_unexpected_end:\n\t"
 
 
