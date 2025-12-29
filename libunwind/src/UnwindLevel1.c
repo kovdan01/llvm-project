@@ -638,7 +638,6 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     register uint64_t x14 __asm("x14") = raSigningSchemeFlags;
     register uint64_t x13 __asm("x13") = raSigningSchemeFlagsPAC;
 
-    // Note: signing scheme flags integrity is checked on the
     __asm__(
 
         "mrs  " "x12" ", ID_AA64ISAR1_EL1\n\t"
@@ -665,10 +664,6 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
                                                      \
         /* AAA */ \
         ".Lcheck_pac_end_getip" ":\n\t"
-
-
-
-
 
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x14, 5     \n\t"
