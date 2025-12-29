@@ -715,85 +715,85 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldr    x1,      [x0, #0x108]  // x1 = __ra_signing_scheme.__flags
   ldr    x16,      [x0, #0x110]  // x16 = __ra_signing_scheme.__flags_pac
 
-
+  // Check if PAuth feature is available. See also
+  // RUN_IF_PAUTH_FEATURE_PRESENT in Registers.hpp
   mrs  x17, ID_AA64ISAR1_EL1
-  lsr  x17, x17, #24 
-  ands x17, x17, #255 
-  cbnz x17, .Lcheck_pac_code1
-  /* AAA */ 
+  lsr  x17, x17, #24
+  ands x17, x17, #255
+  cbnz x17, .Lcheck_pac
   mrs  x17, ID_AA64ISAR2_EL1
-  lsr  x17, x17, #8 
-  ands x17, x17, #15 
-  cbnz x17, .Lcheck_pac_code1
-  /* AAA */ 
-  b .Lcheck_pac_end1
-/* AAA */ 
-  .Lcheck_pac_code1:
+  lsr  x17, x17, #8
+  ands x17, x17, #15
+  cbnz x17, .Lcheck_pac
+  b .Lno_pauth
+  .Lcheck_pac:
 
-  add    x17, x0, #0x108
+  // See also CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY in Registers.hpp.
+  add   x17, x0, #0x108
   pacga x17, x1, x17
-  cmp   x17, x16     
-  b.eq  .Ltest_pacga_success
-  brk   #0xc474      
-  .Ltest_pacga_success:
+  cmp   x17, x16
+  b.eq  .Lpacga_success
+  brk   #0xc474
+  .Lpacga_success:
+  .Lno_pauth:
 
-/* AAA */ 
-  .Lcheck_pac_end1:
-
+  // See also CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI
+  // in Registers.hpp.
 #if __has_feature(ptrauth_returns)
-  cmp   x1, #5     
-  b.eq  .Ltest_pacga_success2
-  brk   #0xc474      
-  .Ltest_pacga_success2:
+  cmp   x1, #5
+  b.eq  .Lpauthabi_success
+  brk   #0xc474
+  .Lpauthabi_success
 #endif
 
   add    x16, x0, #0x100        // x16 = &__pc
   ldr    x17,     [x0, #0x100]  // x17 = __pc
 
+  // See also SIGNING_SCHEME_FLAGS_SWITCH in Registers.hpp.
   cmp   x1, #0
-  b.ne  .Lrestore_check1
-  b     .Lrestore_end
+  b.ne  .Lswitch_1716_1
+  b     .Lswitch_1716_end
 
-  .Lrestore_check1:
+  .Lswitch_1716_1:
   cmp   x1, #1
-  b.ne  .Lrestore_check3
+  b.ne  .Lswitch_1716_3
   hint 0xc     // autia1716
   mov x16, x14
   hint 0x8     // pacia1716
-  b     .Lrestore_end
+  b     .Lswitch_1716_end
 
-  .Lrestore_check3:
+  .Lswitch_1716_3:
   cmp   x1, #3
-  b.ne  .Lrestore_check5
+  b.ne  .Lswitch_1716_5
   hint 0x27    // pacm
   hint 0xc     // autia1716
   mov x16, x14
   hint 0x27    // pacm
   hint 0x8     // pacia1716
-  b     .Lrestore_end
+  b     .Lswitch_1716_end
 
-  .Lrestore_check5:
+  .Lswitch_1716_5:
   cmp   x1, #5
-  b.ne  .Lrestore_check7
+  b.ne  .Lswitch_1716_7
   hint 0xe     // autib1716
   mov x16, x14
   hint 0xa     // pacib1716
-  b     .Lrestore_end
+  b     .Lswitch_1716_end
 
-  .Lrestore_check7:
+  .Lswitch_1716_7:
   cmp   x1, #7
-  b.ne  .Lrestore_unexpected
+  b.ne  .Lswitch_1716_unexpected
   hint 0x27    // pacm
   hint 0xe     // autib1716
   mov x16, x14
   hint 0x27    // pacm
   hint 0xa     // pacib1716
-  b     .Lrestore_end
+  b     .Lswitch_1716_end
 
-  .Lrestore_unexpected:
-  brk   #0xc474      
+  .Lswitch_1716_unexpected:
+  brk   #0xc474
 
-  .Lrestore_end:
+  .Lswitch_1716_end:
 
   mov    lr, x17                // assign final lr value
   ldp    x14,x15, [x0, #0x070]  // restore x14,x15
@@ -808,50 +808,51 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
   // Integrity of the signing scheme stored in x1 was checked above and no
   // manipulations on x1 were performed since then, so skip this check.
+
+  // See also SIGNING_SCHEME_FLAGS_SWITCH in Registers.hpp.
   cmp   x1, #0
-  b.ne  .Lauth_check1
-  b     .Lauth_end
+  b.ne  .Lswitch_lrsp_1
+  b     .Lswitch_lrsp_end
 
-  .Lauth_check1:
+  .Lswitch_lrsp_1:
   cmp   x1, #1
-  b.ne  .Lauth_check3
+  b.ne  .Lswitch_lrsp_3
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
   hint   0x1d                   // autiasp
   ret    x30
 
-  .Lauth_check3:
+  .Lswitch_lrsp_3:
   cmp   x1, #3
-  b.ne  .Lauth_check5
+  b.ne  .Lswitch_lrsp_5
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
-  hint 0x27                     // pacm
+  hint   0x27                   // pacm
   hint   0x1d                   // autiasp
   ret    x30
 
-  .Lauth_check5:
+  .Lswitch_lrsp_5:
   cmp   x1, #5
-  b.ne  .Lauth_check7
+  b.ne  .Lswitch_lrsp_7
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
   hint   0x1f                   // autibsp
   ret    x30
 
-  .Lauth_check7:
+  .Lswitch_lrsp_7:
   cmp   x1, #7
-  b.ne  .Lauth_unexpected
+  b.ne  .Lswitch_lrsp_unexpected
 
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
-  hint 0x27                     // pacm
+  hint   0x27                   // pacm
   hint   0x1f                   // autibsp
   ret    x30
 
-
-  .Lauth_unexpected:
+  .Lswitch_lrsp_unexpected:
   brk   #0xc474
 
-.Lauth_end:
+.Lswitch_lrsp_end:
   ldp    x0, x1,  [x0, #0x000]  // restore x0,x1
   mov    sp,x17                 // restore sp
 #if defined(__ARM_FEATURE_GCS_DEFAULT)
