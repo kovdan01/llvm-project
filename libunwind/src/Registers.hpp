@@ -2180,7 +2180,7 @@ private:
     );
   }
 
-  void recomputeSigningSchemeFlagsPAC(void *oldModifier) {
+  void recomputeSigningSchemeFlagsPAC(const uint8_t *oldModifier) {
     register uint64_t x17 __asm("x17") =
         reinterpret_cast<uint64_t>(oldModifier);
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
