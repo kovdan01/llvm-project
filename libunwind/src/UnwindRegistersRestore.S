@@ -743,7 +743,7 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   cmp   x1, #5
   b.eq  .Lpauthabi_success
   brk   #0xc474
-  .Lpauthabi_success
+  .Lpauthabi_success:
 #endif
 
   add    x16, x0, #0x100        // x16 = &__pc

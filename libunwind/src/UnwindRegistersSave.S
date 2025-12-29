@@ -840,41 +840,39 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   str    x30,     [x0, #0x0F0]
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
-
-// MYTODO comment
   str    x30,     [x0, #0x100]    // store return address as pc
 
-  // Fill subfields of __ra_sign field
+  // Fill subfields of __ra_signing_scheme field
 
-  mov x16, #UNW_RA_SIGNING_SCHEME
-  str    x16,     [x0, #0x108]    // __state
+  mov    x16, #UNW_RA_SIGNING_SCHEME
+  str    x16,     [x0, #0x108]    // __flags
 
-  mrs  x17, ID_AA64ISAR1_EL1
-  lsr  x17, x17, #24 
-  ands x17, x17, #255 
-  cbnz x17, .Lcheck_pac_code1
-  /* AAA */ 
-  mrs  x17, ID_AA64ISAR2_EL1
-  lsr  x17, x17, #8 
-  ands x17, x17, #15 
-  cbnz x17, .Lcheck_pac_code1
-  /* AAA */ 
-  str    xzr,     [x0, #0x110]    // __state_pac
+  // Check if PAuth feature is available. See also
+  // RUN_IF_PAUTH_FEATURE_PRESENT in Registers.hpp
+  mrs    x17, ID_AA64ISAR1_EL1
+  lsr    x17, x17, #24
+  ands   x17, x17, #255
+  cbnz   x17, .Lcheck_pac_code1
+  mrs    x17, ID_AA64ISAR2_EL1
+  lsr    x17, x17, #8
+  ands   x17, x17, #15
+  cbnz   x17, .Lcheck_pac_code1
+  str    xzr,     [x0, #0x110]    // __flags_pac
   b .Lcheck_pac_end1
 /* AAA */ 
   .Lcheck_pac_code1:
   add    x17, x0, #0x108
   pacga  x17, x16, x17
-  str    x17,     [x0, #0x110]    // __state_pac
+  str    x17,     [x0, #0x110]    // __flags_pac
 
 /* AAA */ 
   .Lcheck_pac_end1:
-  
+
 #if UNW_RA_SIGNED_WITH_PC
   adrp   x17, .L__unw_getcontext_start
   add    x17, x17, :lo12:.L__unw_getcontext_start
 # else
-  mov x17, xzr
+  mov    x17, xzr
 # endif
   str    x17,     [x0, #0x118]    // __second_modifier = x17
 
