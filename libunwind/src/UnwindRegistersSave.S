@@ -823,42 +823,8 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   mov    x1,sp
   str    x1,      [x0, #0x0F8]
 
-//#if UNW_RA_SIGNED
-//  mov x17, x30
-//  mov x16, sp
-//# if UNW_RA_SIGNED_WITH_PC
-//  adrp   x15, .L__unw_getcontext_start
-//  add    x15, x15, :lo12:.L__unw_getcontext_start
-//  hint   0x27                     // pacm
-//# endif
-//
-//# if UNW_RA_SIGNED_WITH_B_KEY
-//  hint   0xe                    // autib1716
-//# else
-//  hint   0xc                    // autia1716
-//# endif
-//
-//  add x16, x0, #0x100
-//# if UNW_RA_SIGNED_WITH_PC
-//  hint   0x27                     // pacm
-//# endif
-//
-//# if UNW_RA_SIGNED_WITH_B_KEY
-//  hint   0xa                    // pacib1716
-//# else
-//  hint   0x8                    // pacia1716
-//# if UNW_RA_SIGNED_WITH_PC
-//  ldr    x15, [x0, #0x078]    // restore x15
-//# endif
-//# endif
-//
-//
-//  str    x17,     [x0, #0x100]    // store return address as pc
-//
-//#else
 // MYTODO comment
   str    x30,     [x0, #0x100]    // store return address as pc
-//#endif
 
   // Fill subfields of __ra_sign field
 #if UNW_RA_SIGNED
@@ -886,20 +852,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   b .Lcheck_pac_end1
 /* AAA */ 
   .Lcheck_pac_code1:
-
+// MYTODO: check 5 for ptrauth_returns
   add    x17, x0, #0x108
   pacga  x16, x16, x17
   str    x16,     [x0, #0x110]    // __state_pac
 
-
 /* AAA */ 
   .Lcheck_pac_end1:
-
-//  add    x17, x0, #0x108
-//  pacga  x16, x16, x17
-//  str    x16,     [x0, #0x110]    // __state_pac
-
-
 
 
   adrp   x16, .L__unw_getcontext_start
@@ -921,24 +880,14 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   b .Lcheck_pac_end2
 /* AAA */ 
   .Lcheck_pac_code2:
+// MYTODO: check 5 for ptrauth_returns
 
   add    x17, x0, #0x108
   pacga  x16, x16, x17
   str    x16,     [x0, #0x110]    // __state_pac
 
-
-
 /* AAA */ 
   .Lcheck_pac_end2:
-
-
-
-
-
-
-
-
-
 
 
   str    xzr,     [x0, #0x118]    // __second_modifier = 0
