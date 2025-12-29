@@ -1876,7 +1876,7 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
   ".Lswitch_1_" STRING(__LINE__) ":"           "\n\t"                          \
   "cmp " #schemeReg ", #1"                     "\n\t"                          \
   "b.ne .Lswitch_3_" STRING(__LINE__)          "\n\t"                          \
-  codeIf1 "                                    "\n\t"                          \
+  codeIf1                                      "\n\t"                          \
   "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
   ".Lswitch_3_" STRING(__LINE__) ":            "\n\t"                          \
   "cmp " #schemeReg ", #3"                     "\n\t"                          \
