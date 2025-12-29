@@ -2261,7 +2261,7 @@ private:
                                  "brk   #0xc474      \n\t"
                                  ".Ltest_pacga_success:\n\t")
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        "cmp   x16, 5     \n\t"
+        "cmp   x16, #5     \n\t"
         "b.eq  .Ltest_pacga_success2\n\t"
         "brk   #0xc474      \n\t"
         ".Ltest_pacga_success2:\n\t"

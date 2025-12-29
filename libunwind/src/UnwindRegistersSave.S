@@ -834,7 +834,11 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   add    x16, x16, #4
 # endif
 
+// MYTODO: choice between 0 1 3 5 7
 # if UNW_RA_SIGNED_WITH_PC
+#if __has_feature(ptrauth_returns)
+  brk   #0xc474      
+#endif
   add    x16, x16, #2
   str    x16,     [x0, #0x108]    // __state
 
@@ -854,8 +858,8 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   .Lcheck_pac_code1:
 // MYTODO: check 5 for ptrauth_returns
   add    x17, x0, #0x108
-  pacga  x16, x16, x17
-  str    x16,     [x0, #0x110]    // __state_pac
+  pacga  x17, x16, x17
+  str    x17,     [x0, #0x110]    // __state_pac
 
 /* AAA */ 
   .Lcheck_pac_end1:
@@ -865,6 +869,13 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   add    x16, x16, :lo12:.L__unw_getcontext_start
   str    x16,     [x0, #0x118]    // __second_modifier = x16
 # else
+#if __has_feature(ptrauth_returns)
+  cmp   x16, #5     
+  b.eq  .Ltest_pacga_success2
+  brk   #0xc474      
+  .Ltest_pacga_success2:
+#endif
+
   str    x16,     [x0, #0x108]    // __state
 
   mrs  x17, ID_AA64ISAR1_EL1
@@ -883,11 +894,12 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 // MYTODO: check 5 for ptrauth_returns
 
   add    x17, x0, #0x108
-  pacga  x16, x16, x17
-  str    x16,     [x0, #0x110]    // __state_pac
+  pacga  x17, x16, x17
+  str    x17,     [x0, #0x110]    // __state_pac
 
 /* AAA */ 
   .Lcheck_pac_end2:
+
 
 
   str    xzr,     [x0, #0x118]    // __second_modifier = 0

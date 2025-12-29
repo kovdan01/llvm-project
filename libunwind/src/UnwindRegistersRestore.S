@@ -654,6 +654,8 @@ Lnovec:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
+// MYTODO: pac
+
   #if defined(_LIBUNWIND_TRACE_RET_INJECT)
     cbz     w1, 1f
   0:
@@ -746,6 +748,13 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
 /* AAA */ 
   .Lcheck_pac_end1:
+
+#if __has_feature(ptrauth_returns)
+  cmp   x1, #5     
+  b.eq  .Ltest_pacga_success2
+  brk   #0xc474      
+  .Ltest_pacga_success2:
+#endif
 
   add    x16, x0, #0x100        // x16 = &__pc
   ldr    x17,     [x0, #0x100]  // x17 = __pc
