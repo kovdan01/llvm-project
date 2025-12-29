@@ -642,75 +642,73 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
 
     // TODO: make similar code from Registers.hpp reusable and adopt it here.
     __asm__(
+        // Check if PAuth feature is available. See also
+        // RUN_IF_PAUTH_FEATURE_PRESENT in Registers.hpp
+        "mrs  x12, ID_AA64ISAR1_EL1 \n\t"
+        "lsr  x12, x12, #24         \n\t"
+        "ands x12, x12, #255        \n\t"
+        "cbnz x12, .Lcheck_pac      \n\t"
+        "mrs  x12, ID_AA64ISAR2_EL1 \n\t"
+        "lsr  x12, x12, #8          \n\t"
+        "ands x12, x12, #15         \n\t"
+        "cbnz x12, .Lcheck_pac"     \n\t"
+        "b .Lno_pauth               \n\t"
+        ".Lcheck_pac:               \n\t"
 
-        "mrs  " "x12" ", ID_AA64ISAR1_EL1\n\t"
-        "lsr  " "x12" ", " "x12" ", #24  \n\t"
-        "ands " "x12" ", " "x12" ", #255 \n\t"
-        "cbnz " "x12" ", .Lcheck_pac_code_getip"         "\n\t"
-        /* AAA */
-        "mrs  " "x12" ", ID_AA64ISAR2_EL1\n\t"
-        "lsr  " "x12" ", " "x12" ", #8  \n\t"
-        "ands " "x12" ", " "x12" ", #15 \n\t"
-        "cbnz " "x12" ", .Lcheck_pac_code_getip"       "\n\t"
-        /* AAA */
-        "b .Lcheck_pac_end_getip"  "\n\t"
-        /* AAA */
-        ".Lcheck_pac_code_getip" ":\n\t"
+        // See also CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY in Registers.hpp.
+        "pacga x12, x14, x16  \n\t"
+        "cmp   x12, x13       \n\t"
+        "b.eq  .Lpacga_success\n\t"
+        "brk   #0xc474        \n\t"
+        ".Lpacga_success:     \n\t"
+        ".Lno_pauth:          \n\t"
 
-
-       "pacga x12, x14, x16\n\t"
-       "cmp   x12, x13     \n\t"
-       "b.eq  .Ltest_pacga_success_load\n\t"
-       "brk   #0xc474      \n\t"
-       ".Ltest_pacga_success_load:\n\t"
-
-                                                     \
-        /* AAA */ \
-        ".Lcheck_pac_end_getip" ":\n\t"
-
+        // See also CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI
+        // in Registers.hpp.
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        "cmp   x14, 5     \n\t"
-        "b.eq  .Ltest_pacga_success_load2\n\t"
-        "brk   #0xc474      \n\t"
-        ".Ltest_pacga_success_load2:\n\t"
+        "cmp   x14, 5            \n\t"
+        "b.eq  .Lpauthabi_success\n\t"
+        "brk   #0xc474           \n\t"
+        ".Lpauthabi_success:     \n\t"
 #endif
 
-        "cmp   x14, #0\n\t"
-        "b.ne  .Lload_check1\n\t"
+        "cmp   x14, #0     \n\t"
+        "b.ne  .Lswitch_1  \n\t"
+        "b     .Lswitch_end\n\t"
+
+        ".Lswitch_1:       \n\t"
+        "cmp   x14, #1     \n\t"
+        "b.ne  .Lswitch_3  \n\t"
+        "hint 0xc          \n\t" // autia1716
+        "b     .Lload_end  \n\t"
+
+        ".Lswitch_3:       \n\t"
+        "cmp   x14, #3     \n\t"
+        "b.ne  .Lswitch_5  \n\t"
+        "hint 0x27         \n\t" // pacm
+        "hint 0xc          \n\t" // autia1716
         "b     .Lload_end\n\t"
 
-        ".Lload_check1:\n\t"
-        "cmp   x14, #1\n\t"
-        "b.ne  .Lload_check3\n\t"
-        "hint 0xc\n\t"
-        "b     .Lload_end\n\t"
+        ".Lswitch_5:       \n\t"
+        "cmp   x14, #5     \n\t"
+        "b.ne  .Lswitch_7  \n\t"
+        "hint 0xe          \n\t" // autib1716
+        "b     .Lload_end  \n\t"
 
-        ".Lload_check3:\n\t"
-        "cmp   x14, #3\n\t"
-        "b.ne  .Lload_check5\n\t"
-        "hint 0x27\n\t" // pacm
-        "hint 0xc \n\t" // autia1716
-        "b     .Lload_end\n\t"
+        ".Lswitch_7:       \n\t"
+        "cmp   x14, #7     \n\t"
+        "b.ne  .Lswitch_unexpected\n\t"
+        "hint 0x27         \n\t" // pacm
+        "hint 0xe          \n\t" // autib1716
+        "b     .Lswitch_end\n\t"
 
-        ".Lload_check5:\n\t"
-        "cmp   x14, #5\n\t"
-        "b.ne  .Lload_check7\n\t"
-        "hint 0xe\n\t"
-        "b     .Lload_end\n\t"
+        ".Lswitch_unexpected:\n\t"
+        "brk   #0xc474       \n\t"
 
-        ".Lload_check7:\n\t"
-        "cmp   x14, #7\n\t"
-        "b.ne  .Lload_unexpected\n\t"
-        "hint 0x27\n\t" // pacm
-        "hint 0xe \n\t" // autib1716
-        "b     .Lload_end\n\t"
-
-        ".Lload_unexpected:\n\t"
-        "brk   #0xc474      \n\t"
-
-        ".Lload_end:\n\t"
+        ".Lswitch_end:\n\t"
         : "+r"(x17)
-        : "r"(x16), "r"(x15), "r"(x14), "r"(x13));
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13)
+    );
     result = x17;
   }
 #endif

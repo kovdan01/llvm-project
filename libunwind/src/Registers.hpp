@@ -1842,7 +1842,6 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
 }
 #endif
 
-// MYTODO comment docs
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 
 #define STRING_IMPL(x) #x
@@ -2181,39 +2180,78 @@ private:
     );
   }
 
-  void computeSigningSchemeFlagsPAC() {
-    register uint64_t x17 __asm("x17") =
-        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+  void recomputeSigningSchemeFlagsPAC(uint64_t oldModifier) {
+    register uint64_t x17 __asm("x17") = oldModifier;
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
-    asm(
+    register uint64_t x15 __asm("x15") =
+        _registers.__ra_signing_scheme.__flags_pac;
+    register uint64_t x14 __asm("x14") =
+        reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+            /*schemeReg=*/x16, /*schemePacReg=*/x15,
+            /*modifierReg=*/x17, /*scratchReg=*/x13)
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
 #endif
         RUN_IF_PAUTH_FEATURE_PRESENT(
-            /*scratchReg=*/x14,
-            "pacga x16, x16, x17 \n\t"
-            "str   x16, [x17, #8]\n\t"
+            /*scratchReg=*/x13,
+            "pacga x16, x16, x14 \n\t"
+            "str   x16, [x14, #8]\n\t"
         )
         :
-        : "r"(x17), "r"(x16)
+        : "r"(x17), "r"(x16), "r"(x15), "r"(x14)
     );
+
+//     register uint64_t x17 __asm("x17") =
+//         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+//     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
+//     asm(
+// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
+// #endif
+//         RUN_IF_PAUTH_FEATURE_PRESENT(
+//             /*scratchReg=*/x14,
+//             "pacga x16, x16, x17 \n\t"
+//             "str   x16, [x17, #8]\n\t"
+//             )
+//         :
+//         : "r"(x17), "r"(x16)
+//         );
   }
 
-  void checkRASigningSchemeFlagsIntegrity(const void *addr) const {
-    register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
-    register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
-    register uint64_t x15 __asm("x15") =
-        _registers.__ra_signing_scheme.__flags_pac;
-    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
-            /*schemeReg=*/x16, /*schemePacReg=*/x15,
-            /*modifierReg=*/x17, /*scratchReg=*/x14)
-#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
-#endif
-        :
-        : "r"(x17), "r"(x16), "r"(x15)
-    );
-  }
+//   void computeSigningSchemeFlagsPAC() {
+//     register uint64_t x17 __asm("x17") =
+//         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
+//     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
+//     asm(
+// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
+// #endif
+//         RUN_IF_PAUTH_FEATURE_PRESENT(
+//             /*scratchReg=*/x14,
+//             "pacga x16, x16, x17 \n\t"
+//             "str   x16, [x17, #8]\n\t"
+//         )
+//         :
+//         : "r"(x17), "r"(x16)
+//     );
+//   }
+
+//   void checkRASigningSchemeFlagsIntegrity(const void *addr) const {
+//     register uint64_t x17 __asm("x17") = reinterpret_cast<uint64_t>(addr);
+//     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
+//     register uint64_t x15 __asm("x15") =
+//         _registers.__ra_signing_scheme.__flags_pac;
+//     asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+//             /*schemeReg=*/x16, /*schemePacReg=*/x15,
+//             /*modifierReg=*/x17, /*scratchReg=*/x14)
+// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+//         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
+// #endif
+//         :
+//         : "r"(x17), "r"(x16), "r"(x15)
+//     );
+//   }
 
   void checkRASigningSchemeFlagsIntegrity() const {
     checkRASigningSchemeFlagsIntegrity(&_registers.__ra_signing_scheme.__flags);
@@ -2336,10 +2374,12 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  // MYTODO: combine
-  checkRASigningSchemeFlagsIntegrity(
+  // // MYTODO: combine
+  // checkRASigningSchemeFlagsIntegrity(
+  //     (const uint8_t *)registers + offsetof(GPRs, __ra_signing_scheme.__flags));
+  // computeSigningSchemeFlagsPAC();
+  recomputeSigningSchemeFlagsPAC(
       (const uint8_t *)registers + offsetof(GPRs, __ra_signing_scheme.__flags));
-  computeSigningSchemeFlagsPAC();
 #endif
   setIP(pcRegister);
 }
@@ -2352,8 +2392,9 @@ inline Registers_arm64 &
 Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  other.checkRASigningSchemeFlagsIntegrity();
-  this->computeSigningSchemeFlagsPAC();
+  // other.checkRASigningSchemeFlagsIntegrity();
+  // this->computeSigningSchemeFlagsPAC();
+  recomputeSigningSchemeFlagsPAC((const uint8_t *)&other._registers.__ra_signing_scheme.__flags);
 #endif
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
