@@ -622,8 +622,10 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     unw_word_t raSigningSchemeFlagsWithPAC;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS,
                   &raSigningSchemeFlagsWithPAC);
-    unw_word_t raSigningSchemeFlags    = raSigningSchemeFlagsWithPAC & 0x00000000ffffffffull;
-    unw_word_t raSigningSchemeFlagsPAC = raSigningSchemeFlagsWithPAC & 0xffffffff00000000ull;
+    unw_word_t raSigningSchemeFlags =
+        raSigningSchemeFlagsWithPAC & 0x00000000ffffffffull;
+    unw_word_t raSigningSchemeFlagsPAC =
+        raSigningSchemeFlagsWithPAC & 0xffffffff00000000ull;
 
     unw_word_t sp;
     __unw_get_reg(cursor, UNW_REG_SP, &sp);
@@ -638,6 +640,7 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     register uint64_t x14 __asm("x14") = raSigningSchemeFlags;
     register uint64_t x13 __asm("x13") = raSigningSchemeFlagsPAC;
 
+    // TODO: make similar code from Registers.hpp reusable and adopt it here.
     __asm__(
 
         "mrs  " "x12" ", ID_AA64ISAR1_EL1\n\t"
