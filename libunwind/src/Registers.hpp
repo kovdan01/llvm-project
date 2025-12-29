@@ -1862,20 +1862,23 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
   code                                                      "\n\t"             \
   ".Lcheck_pac_end" STRING(__LINE__) ":"                    "\n\t"
 
+// MYTODO comment, not actually sure it's good
+#define PACGA_TRAP "brk #0xc474\n\t"
+
 #define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(schemeReg, schemePacReg, modifierReg, scratchReg) \
   RUN_IF_PAUTH_FEATURE_PRESENT( \
     scratchReg, \
     "pacga " #modifierReg ", " #schemeReg ", " #modifierReg "\n\t" \
     "cmp " #modifierReg ", " #schemePacReg "\n\t" \
     "b.eq  .Lcheck_integrity_success_" STRING(__LINE__) "\n\t" \
-    "brk   #0xc474      \n\t" \
+    PACGA_TRAP "\n\t" \
     ".Lcheck_integrity_success_" STRING(__LINE__) ":\n\t" \
   )
 
 #define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(schemeReg) \
 "cmp   " #schemeReg ", 5     \n\t" \
     "b.eq  .Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) "\n\t" \
-    "brk   #0xc474      \n\t" \
+    PACGA_TRAP "\n\t" \
     ".Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) ":\n\t" \
 
   // MYTODO comment why brk has this code
@@ -1906,7 +1909,7 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
   codeIf7                                      "\n\t"                          \
   "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
   ".Lswitch_unexpected" STRING(__LINE__) ":"   "\n\t"                          \
-  "brk #0xc474"                                "\n\t"                          \
+  PACGA_TRAP                                   "\n\t"                          \
   ".Lswitch_end_" STRING(__LINE__) ":"         "\n\t"
 
 #endif
@@ -1972,15 +1975,9 @@ public:
             /*schemeReg=*/x12, /*schemePacReg=*/x11, /*modifierReg=*/x13,
             /*scratchReg=*/x10)
 
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x12)
 #endif
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//             "cmp   x12, 5     \n\t"
-//             "b.eq  .Ltest_pacga_success_getip2\n\t"
-//             "brk   #0xc474      \n\t"
-//             ".Ltest_pacga_success_getip2:\n\t"
-// #endif
 
         SIGNING_SCHEME_FLAGS_SWITCH(
             /*schemeReg=*/x12,
@@ -2030,20 +2027,10 @@ public:
     register uint64_t x11 __asm("x11") =
         _registers.__ra_signing_scheme.__flags_pac;
 
-    asm(
-
-        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
             /*schemeReg=*/x12, /*schemePacReg=*/x11, /*modifierReg=*/x13,
             /*scratchReg=*/x10)
-
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//             "cmp   x12, 5     \n\t"
-//             "b.eq  .Ltest_pacga_success_setip2\n\t"
-//             "brk   #0xc474      \n\t"
-//             ".Ltest_pacga_success_setip2:\n\t"
-// #endif
-
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x12)
 #endif
         SIGNING_SCHEME_FLAGS_SWITCH(
@@ -2065,9 +2052,10 @@ public:
                         "mov x16, x14\n\t"
                         "hint 0x27   \n\t"  // pacm
                         "hint 0xa    \n\t"  // pacib1716
-            )
+        )
         : "+r"(x17)
-        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11)
+    );
     _registers.__pc = x17;
 #else
     if (_registers.__ra_signing_scheme.__flags != 0)
@@ -2100,22 +2088,12 @@ public:
     register uint64_t x11 __asm("x11") =
         _registers.__ra_signing_scheme.__flags_pac;
 
-    asm(
-
-        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
             /*schemeReg=*/x12, /*schemePacReg=*/x11, /*modifierReg=*/x13,
             /*scratchReg=*/x10)
-
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x12)
 #endif
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//             "cmp   x12, 5     \n\t"
-//             "b.eq  .Ltest_pacga_success_load2\n\t"
-//             "brk   #0xc474      \n\t"
-//             ".Ltest_pacga_success_load2:\n\t"
-// #endif
-
         SIGNING_SCHEME_FLAGS_SWITCH(
             /*schemeReg=*/x12,
             /*codeIf0=*/"",
@@ -2125,9 +2103,10 @@ public:
             /*codeIf5=*/"hint 0xe \n\t", // autib1716
             /*codeIf7=*/"hint 0x27\n\t"  // pacm
                         "hint 0xe \n\t"  // autib1716
-            )
+        )
         : "+r"(x17)
-        : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11));
+        : "r"(x16), "r"(x15), "r"(x13), "r"(x12), "r"(x11)
+    );
     *referenceAuthedLinkRegister = x17;
 #else
     if (_registers.__ra_signing_scheme.__flags != 0)
@@ -2157,37 +2136,31 @@ public:
     register uint64_t x15 __asm("x15") = secondModifier;
 
     asm(
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//         "cmp   x16, 5     \n\t"
-//         "b.eq  .Lsetscheme_success\n\t"
-//         "brk   #0xc474      \n\t"
-//         ".Lsetscheme_success:\n\t"
-// #endif
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
 #endif
-
         SIGNING_SCHEME_FLAGS_SWITCH(
             /*schemeReg=*/x16,
-            /*codeIf0=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
-            /*codeIf1=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
-            /*codeIf3=*/"cbz   x15, .Lsetscheme_unexpected_begin\n\t",
-            /*codeIf5=*/"cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
-            /*codeIf7=*/"cbz   x15, .Lsetscheme_unexpected_begin\n\t"
-            )
-
-        "b .Lsetscheme_unexpected_end\n\t"
-        ".Lsetscheme_unexpected_begin:\n\t"
-        "brk   #0xc474      \n\t"
-        ".Lsetscheme_unexpected_end:\n\t"
-
-        "str   x16, [x17, #0]\n\t"
-        RUN_IF_PAUTH_FEATURE_PRESENT(x14,
-                                 "pacga x16, x16, x17 \n\t"
-                                 "str   x16, [x17, #8]\n\t")
+            /*codeIf0=*/"cbnz  x15, .Lsetscheme_unexpected\n\t",
+            /*codeIf1=*/"cbnz  x15, .Lsetscheme_unexpected\n\t",
+            /*codeIf3=*/"cbz   x15, .Lsetscheme_unexpected\n\t",
+            /*codeIf5=*/"cbnz  x15, .Lsetscheme_unexpected\n\t",
+            /*codeIf7=*/"cbz   x15, .Lsetscheme_unexpected\n\t"
+        )
+        "b .Lsetscheme_ok       \n\t"
+        ".Lsetscheme_unexpected:\n\t"
+        PACGA_TRAP             "\n\t"
+        ".Lsetscheme_ok:        \n\t"
+        "str x16, [x17, #0]     \n\t"
+        RUN_IF_PAUTH_FEATURE_PRESENT(
+            /*scratchReg=*/x14,
+            "pacga x16, x16, x17 \n\t"
+            "str   x16, [x17, #8]\n\t"
+        )
         "str   x15, [x17, #16]\n\t"
         :
-        : "r"(x17), "r"(x16), "r"(x15));
+        : "r"(x17), "r"(x16), "r"(x15)
+    );
   }
 
 private:
@@ -2196,16 +2169,22 @@ private:
     register uint64_t x17 __asm("x17") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
 
-    asm("ldr   x16, [x17, #16]\n\t"
-        "cbz .Lsetzero_ok\n\t"
-        "brk   #0xc474      \n\t"
-        ".Lsetzero_ok:\n\t"
-        "str   xzr, [x17, #0]\n\t"
-        RUN_IF_PAUTH_FEATURE_PRESENT(x14,
-                                 "pacga x16, xzr, x17 \n\t"
-                                 "str   x16, [x17, #8]\n\t")
+    asm(// Ensure that second modifier is zero
+        "ldr x16, [x17, #16]\n\t"
+        "cbz .Lsetzero_ok   \n\t"
+        PACGA_TRAP         "\n\t"
+        ".Lsetzero_ok:      \n\t"
+        // Assign zero to signing scheme flags field
+        "str xzr, [x17, #0] \n\t"
+        // Compute PAC for signing scheme flags field
+        RUN_IF_PAUTH_FEATURE_PRESENT(
+            /*scratchReg=*/x14,
+            "pacga x16, xzr, x17 \n\t"
+            "str   x16, [x17, #8]\n\t"
+        )
         :
-        : "r"(x17));
+        : "r"(x17)
+    );
   }
 
   void computeSigningSchemeFlagsPAC() {
@@ -2213,19 +2192,17 @@ private:
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
     asm(
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//         "cmp   x16, 5     \n\t"
-//         "b.eq  .LcomputeSigningSchemeFlagsPAC_success\n\t"
-//         "brk   #0xc474      \n\t"
-//         ".LcomputeSigningSchemeFlagsPAC_success:\n\t"
-// #endif
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
 #endif
-        RUN_IF_PAUTH_FEATURE_PRESENT(x14, "pacga x16, x16, x17 \n\t"
-                                 "str   x16, [x17, #8]\n\t")
+        RUN_IF_PAUTH_FEATURE_PRESENT(
+            /*scratchReg=*/x14,
+            "pacga x16, x16, x17 \n\t"
+            "str   x16, [x17, #8]\n\t"
+        )
         :
-        : "r"(x17), "r"(x16));
+        : "r"(x17), "r"(x16)
+    );
   }
 
   void checkRASigningSchemeFlagsIntegrity(const void *addr) const {
@@ -2233,22 +2210,15 @@ private:
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
     register uint64_t x15 __asm("x15") =
         _registers.__ra_signing_scheme.__flags_pac;
-    asm(
-
-        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
-            /*schemeReg=*/x16, /*schemePacReg=*/x15, /*modifierReg=*/x17,
-            /*scratchReg=*/x14)
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//             "cmp   x16, #5     \n\t"
-//             "b.eq  .Ltest_pacga_success2\n\t"
-//             "brk   #0xc474      \n\t"
-//             ".Ltest_pacga_success2:\n\t"
-// #endif
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-      CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
+    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+            /*schemeReg=*/x16, /*schemePacReg=*/x15,
+            /*modifierReg=*/x17, /*scratchReg=*/x14)
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
 #endif
         :
-        : "r"(x17), "r"(x16), "r"(x15));
+        : "r"(x17), "r"(x16), "r"(x15)
+    );
   }
 
   void checkRASigningSchemeFlagsIntegrity() const {
@@ -2265,28 +2235,23 @@ private:
     register uint64_t x14 __asm("x14") = _registers.__sp;
 
     // MYTODO: reuse code from CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY macro.
-    asm(RUN_IF_PAUTH_FEATURE_PRESENT(x13, "pacga x17, x16, x17\n\t"
-                                 "cmp   x17, x15     \n\t"
-                                 "b.eq  .Lget_ra_scheme_success\n\t"
-                                 "brk   #0xc474      \n\t"
-                                 ".Lget_ra_scheme_success:\n\t"
-                                 "pacga x14, x16, x14\n\t"
-                                 "b .Lget_ra_scheme_pac_nonzero\n\t")
-        "mov x14, xzr\n\t"
-        ".Lget_ra_scheme_pac_nonzero:\n\t"
-        #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
+    asm(
+#if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
 #endif
-// #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
-//         "cmp   x16, 5     \n\t"
-//         "b.eq  .Lget_ra_scheme_success2\n\t"
-//         "brk   #0xc474      \n\t"
-//         ".Lget_ra_scheme_success2:\n\t"
-// #endif
-        "orr x14, x14, x16"
-        : "+r"(x14)
-        : "r"(x17), "r"(x16), "r"(x15));
-    return x14;
+        RUN_IF_PAUTH_FEATURE_PRESENT(
+            /*scratchReg=*/x13,
+            "pacga x17, x16, x17          \n\t"
+            "cmp   x17, x15               \n\t"
+            "b.eq  .Lget_ra_scheme_success\n\t"
+            PACGA_TRAP                   "\n\t"
+            ".Lget_ra_scheme_success:     \n\t"
+            "pacga x14, x16, x14          \n\t"
+            "orr   x16, x14, x16          \n\t"
+        )
+        : "+r"(x16)
+        : "r"(x17), "r"(x15), "r"(x14));
+    return x16;
   }
 
 #endif
@@ -2666,6 +2631,8 @@ inline void Registers_arm64::setVectorRegister(int, v128) {
 
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 #undef SIGNING_SCHEME_FLAGS_SWITCH
+#undef CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI
+#undef CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY
 #undef RUN_IF_PAUTH_FEATURE_PRESENT
 #undef STRING
 #undef STRING_IMPL
