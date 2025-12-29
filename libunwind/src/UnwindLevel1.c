@@ -622,8 +622,8 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     unw_word_t raSigningSchemeFlagsWithPAC;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS,
                   &raSigningSchemeFlagsWithPAC);
-    unw_word_t raSigningSchemeFlags    = raSigningSchemeFlags & 0x00000000ffffffffull;
-    unw_word_t raSigningSchemeFlagsPAC = raSigningSchemeFlags & 0xffffffff00000000ull;
+    unw_word_t raSigningSchemeFlags    = raSigningSchemeFlagsWithPAC & 0x00000000ffffffffull;
+    unw_word_t raSigningSchemeFlagsPAC = raSigningSchemeFlagsWithPAC & 0xffffffff00000000ull;
 
     unw_word_t sp;
     __unw_get_reg(cursor, UNW_REG_SP, &sp);
