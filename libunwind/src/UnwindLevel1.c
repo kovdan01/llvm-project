@@ -615,21 +615,15 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
   unw_word_t result;
   __unw_get_reg(cursor, UNW_REG_IP, &result);
 
-#if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
+#if defined(_LIBUNWIND_TARGET_AARCH64) /*&& defined(_LIBUNWIND_IS_NATIVE_ONLY)*/                \
     !(defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32))
   {
-    unw_word_t raSigningSchemeFlags;
+    unw_word_t raSigningSchemeFlagsWithPAC;
     __unw_get_reg(cursor, UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS,
-                  &raSigningSchemeFlags);
+                  &raSigningSchemeFlagsWithPAC);
+    unw_word_t raSigningSchemeFlags    = raSigningSchemeFlags && 0x00000000ffffffffull;
+    unw_word_t raSigningSchemeFlagsPAC = raSigningSchemeFlags && 0xffffffff00000000ull;
 
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-    // We should never go here since non-null RA signed state is either set
-    // by architecture-specific __unw_getcontext or by stepWithDwarf which
-    // already contains a corresponding check and should have already
-    // emitted the UNW_ECROSSRASIGNING error.
-    if (raSigningSchemeFlags != 0)
-      _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
-#else
     unw_word_t sp;
     __unw_get_reg(cursor, UNW_REG_SP, &sp);
 
@@ -641,8 +635,40 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
     register uint64_t x16 __asm("x16") = sp;
     register uint64_t x15 __asm("x15") = raSigningSchemeSecondModifier;
     register uint64_t x14 __asm("x14") = raSigningSchemeFlags;
+    register uint64_t x13 __asm("x13") = raSigningSchemeFlagsPAC;
 
+    // Note: signing scheme flags integrity is checked on the
     __asm__(
+
+        "mrs  " "x12" ", ID_AA64ISAR1_EL1\n\t"
+        "lsr  " "x12" ", " "x12" ", #24  \n\t"
+        "ands " "x12" ", " "x12" ", #255 \n\t"
+        "cbnz " "x12" ", .Lcheck_pac_code_getip"         "\n\t"
+        /* AAA */
+        "mrs  " "x12" ", ID_AA64ISAR2_EL1\n\t"
+        "lsr  " "x12" ", " "x12" ", #8  \n\t"
+        "ands " "x12" ", " "x12" ", #15 \n\t"
+        "cbnz " "x12" ", .Lcheck_pac_code_getip"       "\n\t"
+        /* AAA */
+        "b .Lcheck_pac_end_getip"  "\n\t"
+        /* AAA */
+        ".Lcheck_pac_code_getip" ":\n\t"
+
+
+       "pacga x12, x14, x16\n\t"
+       "cmp   x12, x13     \n\t"
+       "b.eq  .Ltest_pacga_success_load\n\t"
+       "brk   #0xc474      \n\t"
+       ".Ltest_pacga_success_load:\n\t"
+
+                                                     \
+        /* AAA */ \
+        ".Lcheck_pac_end_getip" ":\n\t"
+
+
+
+
+
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x14, 5     \n\t"
         "b.eq  .Ltest_pacga_success_load2\n\t"
@@ -687,7 +713,6 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
         : "+r"(x17)
         : "r"(x16), "r"(x15), "r"(x14));
     result = x17;
-#endif
   }
 #endif
 

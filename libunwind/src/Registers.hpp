@@ -1878,6 +1878,7 @@ public:
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
+// MYTODO comment docs
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 #define STRING_IMPL(x) #x
 #define STRING(x) STRING_IMPL(x)
@@ -2289,26 +2290,33 @@ private:
         &_registers.__ra_signing_scheme.__flags);
   }
 
-  uint64_t getRASigningSchemeingScheme() const {
+  uint64_t getRASigningSchemeFlags() const {
     register uint64_t x17 __asm("x17") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
     register uint64_t x15 __asm("x15") =
         _registers.__ra_signing_scheme.__flags_pac;
-    asm(CHECK_PAC_AVAILABLE(x14, "pacga x17, x16, x17\n\t"
+    register uint64_t x14 __asm("x14") = _registers.__sp;
+
+    asm(CHECK_PAC_AVAILABLE(x13, "pacga x17, x16, x17\n\t"
                                  "cmp   x17, x15     \n\t"
                                  "b.eq  .Lget_ra_scheme_success\n\t"
                                  "brk   #0xc474      \n\t"
-                                 ".Lget_ra_scheme_success:\n\t")
+                                 ".Lget_ra_scheme_success:\n\t"
+                                 "pacga x14, x16, x14\n\t"
+                                 "b .Lget_ra_scheme_pac_nonzero\n\t")
+        "mov x14, xzr\n\t"
+        ".Lget_ra_scheme_pac_nonzero:\n\t"
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         "cmp   x16, 5     \n\t"
         "b.eq  .Lget_ra_scheme_success2\n\t"
         "brk   #0xc474      \n\t"
         ".Lget_ra_scheme_success2:\n\t"
 #endif
-        :
+        "orr x14, x14, x16"
+        : "+r"(x14)
         : "r"(x17), "r"(x16), "r"(x15));
-    return x16;
+    return x14;
   }
 
 #endif
@@ -2467,7 +2475,7 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
   if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_SECOND_MODIFIER)
     return _registers.__ra_signing_scheme.__second_modifier;
   if (regNum == UNW_AARCH64_RA_SIGNING_SCHEME_FLAGS)
-    return getRASigningSchemeingScheme();
+    return getRASigningSchemeFlags();
 #endif
   if (regNum == UNW_AARCH64_FP)
     return getFP();
