@@ -1848,68 +1848,69 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
 #define STRING_IMPL(x) #x
 #define STRING(x) STRING_IMPL(x)
 
-#define RUN_IF_PAUTH_FEATURE_PRESENT(scratchReg, code)                                  \
-  "mrs  " #scratchReg ", ID_AA64ISAR1_EL1"                  "\n\t"             \
-  "lsr  " #scratchReg ", " #scratchReg ", #24"              "\n\t"             \
-  "ands " #scratchReg ", " #scratchReg ", #255"             "\n\t"             \
-  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t"             \
-  "mrs  " #scratchReg ", ID_AA64ISAR2_EL1"                  "\n\t"             \
-  "lsr  " #scratchReg ", " #scratchReg ", #8"               "\n\t"             \
-  "ands " #scratchReg ", " #scratchReg ", #15"              "\n\t"             \
-  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t"             \
-  "b .Lcheck_pac_end" STRING(__LINE__)                      "\n\t"             \
-  ".Lcheck_pac_code" STRING(__LINE__) ":"                   "\n\t"             \
-  code                                                      "\n\t"             \
+#define RUN_IF_PAUTH_FEATURE_PRESENT(scratchReg, code)             \
+  "mrs  " #scratchReg ", ID_AA64ISAR1_EL1"                  "\n\t" \
+  "lsr  " #scratchReg ", " #scratchReg ", #24"              "\n\t" \
+  "ands " #scratchReg ", " #scratchReg ", #255"             "\n\t" \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t" \
+  "mrs  " #scratchReg ", ID_AA64ISAR2_EL1"                  "\n\t" \
+  "lsr  " #scratchReg ", " #scratchReg ", #8"               "\n\t" \
+  "ands " #scratchReg ", " #scratchReg ", #15"              "\n\t" \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t" \
+  "b .Lcheck_pac_end" STRING(__LINE__)                      "\n\t" \
+  ".Lcheck_pac_code" STRING(__LINE__) ":"                   "\n\t" \
+  code                                                      "\n\t" \
   ".Lcheck_pac_end" STRING(__LINE__) ":"                    "\n\t"
 
-// MYTODO comment, not actually sure it's good
+// The '0xc470 + KeyID' trap code is used by LLVM codegen to abort execution
+// on auth failure w/o FPAC. Mimic this behavior assuming GA key ID is 4.
 #define PACGA_TRAP "brk #0xc474\n\t"
 
-#define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(schemeReg, schemePacReg, modifierReg, scratchReg) \
-  RUN_IF_PAUTH_FEATURE_PRESENT( \
-    scratchReg, \
-    "pacga " #modifierReg ", " #schemeReg ", " #modifierReg "\n\t" \
-    "cmp " #modifierReg ", " #schemePacReg "\n\t" \
-    "b.eq  .Lcheck_integrity_success_" STRING(__LINE__) "\n\t" \
-    PACGA_TRAP "\n\t" \
-    ".Lcheck_integrity_success_" STRING(__LINE__) ":\n\t" \
+#define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(schemeReg, schemePacReg, \
+                                             modifierReg, scratchReg) \
+  RUN_IF_PAUTH_FEATURE_PRESENT(                                       \
+    scratchReg,                                                       \
+    "pacga " #modifierReg ", " #schemeReg ", " #modifierReg    "\n\t" \
+    "cmp " #modifierReg ", " #schemePacReg                     "\n\t" \
+    "b.eq  .Lcheck_integrity_success_" STRING(__LINE__)        "\n\t" \
+    PACGA_TRAP                                                 "\n\t" \
+    ".Lcheck_integrity_success_" STRING(__LINE__) ":"          "\n\t" \
   )
 
-#define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(schemeReg) \
-"cmp   " #schemeReg ", 5     \n\t" \
-    "b.eq  .Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) "\n\t" \
-    PACGA_TRAP "\n\t" \
-    ".Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) ":\n\t" \
+#define CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(schemeReg)      \
+  "cmp   " #schemeReg ", 5"                                        "\n\t" \
+  "b.eq  .Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) "\n\t" \
+  PACGA_TRAP                                                       "\n\t" \
+  ".Lcheck_integrity_for_pauthabi_success_" STRING(__LINE__) ":"   "\n\t" \
 
-  // MYTODO comment why brk has this code
-#define SIGNING_SCHEME_FLAGS_SWITCH(schemeReg, codeIf0, codeIf1,               \
-                                    codeIf3, codeIf5, codeIf7)                 \
-  "cmp " #schemeReg ", #0"                     "\n\t"                          \
-  "b.ne .Lswitch_1_"   STRING(__LINE__)        "\n\t"                          \
-  codeIf0                                      "\n\t"                          \
-  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
-  ".Lswitch_1_" STRING(__LINE__) ":"           "\n\t"                          \
-  "cmp " #schemeReg ", #1"                     "\n\t"                          \
-  "b.ne .Lswitch_3_" STRING(__LINE__)          "\n\t"                          \
-  codeIf1                                      "\n\t"                          \
-  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
-  ".Lswitch_3_" STRING(__LINE__) ":"           "\n\t"                          \
-  "cmp " #schemeReg ", #3"                     "\n\t"                          \
-  "b.ne .Lswitch_5_"   STRING(__LINE__)        "\n\t"                          \
-  codeIf3                                      "\n\t"                          \
-  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
-  ".Lswitch_5_" STRING(__LINE__) ":"           "\n\t"                          \
-  "cmp " #schemeReg ", #5"                     "\n\t"                          \
-  "b.ne .Lswitch_7_"   STRING(__LINE__)        "\n\t"                          \
-  codeIf5                                      "\n\t"                          \
-  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
-  ".Lswitch_7_" STRING(__LINE__) ":"           "\n\t"                          \
-  "cmp " #schemeReg ", #7"                     "\n\t"                          \
-  "b.ne .Lswitch_unexpected" STRING(__LINE__)  "\n\t"                          \
-  codeIf7                                      "\n\t"                          \
-  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
-  ".Lswitch_unexpected" STRING(__LINE__) ":"   "\n\t"                          \
-  PACGA_TRAP                                   "\n\t"                          \
+#define SIGNING_SCHEME_FLAGS_SWITCH(schemeReg, codeIf0, codeIf1, \
+                                    codeIf3, codeIf5, codeIf7)   \
+  "cmp " #schemeReg ", #0"                     "\n\t"            \
+  "b.ne .Lswitch_1_"   STRING(__LINE__)        "\n\t"            \
+  codeIf0                                      "\n\t"            \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"            \
+  ".Lswitch_1_" STRING(__LINE__) ":"           "\n\t"            \
+  "cmp " #schemeReg ", #1"                     "\n\t"            \
+  "b.ne .Lswitch_3_" STRING(__LINE__)          "\n\t"            \
+  codeIf1                                      "\n\t"            \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"            \
+  ".Lswitch_3_" STRING(__LINE__) ":"           "\n\t"            \
+  "cmp " #schemeReg ", #3"                     "\n\t"            \
+  "b.ne .Lswitch_5_"   STRING(__LINE__)        "\n\t"            \
+  codeIf3                                      "\n\t"            \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"            \
+  ".Lswitch_5_" STRING(__LINE__) ":"           "\n\t"            \
+  "cmp " #schemeReg ", #5"                     "\n\t"            \
+  "b.ne .Lswitch_7_"   STRING(__LINE__)        "\n\t"            \
+  codeIf5                                      "\n\t"            \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"            \
+  ".Lswitch_7_" STRING(__LINE__) ":"           "\n\t"            \
+  "cmp " #schemeReg ", #7"                     "\n\t"            \
+  "b.ne .Lswitch_unexpected" STRING(__LINE__)  "\n\t"            \
+  codeIf7                                      "\n\t"            \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"            \
+  ".Lswitch_unexpected" STRING(__LINE__) ":"   "\n\t"            \
+  PACGA_TRAP                                   "\n\t"            \
   ".Lswitch_end_" STRING(__LINE__) ":"         "\n\t"
 
 #endif
@@ -1962,23 +1963,18 @@ public:
     register uint64_t x15 __asm("x15") =
         _registers.__ra_signing_scheme.__second_modifier;
     register uint64_t x14 __asm("x14") = _registers.__sp;
-
     register uint64_t x13 __asm("x13") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
     register uint64_t x11 __asm("x11") =
         _registers.__ra_signing_scheme.__flags_pac;
 
-    asm(
-
-        CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
-            /*schemeReg=*/x12, /*schemePacReg=*/x11, /*modifierReg=*/x13,
-            /*scratchReg=*/x10)
-
+    asm(CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY(
+            /*schemeReg=*/x12, /*schemePacReg=*/x11,
+            /*modifierReg=*/x13, /*scratchReg=*/x10)
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x12)
 #endif
-
         SIGNING_SCHEME_FLAGS_SWITCH(
             /*schemeReg=*/x12,
             /*codeIf0=*/"",
@@ -1998,9 +1994,10 @@ public:
                         "mov x16, x14\n\t"
                         "hint 0x27   \n\t"  // pacm
                         "hint 0xa    \n\t"  // pacib1716
-            )
+        )
         : "+r"(x17)
-        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11));
+        : "r"(x16), "r"(x15), "r"(x14), "r"(x13), "r"(x12), "r"(x11)
+    );
     return x17;
 #else
     if (_registers.__ra_signing_scheme.__flags != 0)
@@ -2020,7 +2017,6 @@ public:
         _registers.__ra_signing_scheme.__second_modifier;
     register uint64_t x14 __asm("x14") =
         reinterpret_cast<uint64_t>(&_registers.__pc);
-
     register uint64_t x13 __asm("x13") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
@@ -2081,7 +2077,6 @@ public:
     register reg_t x16 __asm("x16") = _registers.__sp;
     register uint64_t x15 __asm("x15") =
         _registers.__ra_signing_scheme.__second_modifier;
-
     register uint64_t x13 __asm("x13") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x12 __asm("x12") = _registers.__ra_signing_scheme.__flags;
@@ -2115,17 +2110,7 @@ public:
 #endif
   }
 
-private:
-#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
-  void abortCrossRASigningSchemeing() const {
-    // We should never go here since non-null RA signed state is either set
-    // by architecture-specific __unw_getcontext or by stepWithDwarf which
-    // already contains a corresponding check and should have already
-    // emitted the UNW_ECROSSRASIGNING error.
-    _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
-  }
-#else
-public:
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
   void setRASigningSchemeingScheme(uint64_t raSignState,
                                    bool isRASigningSchemeedWithBKey,
                                    uint64_t secondModifier) {
@@ -2146,7 +2131,7 @@ public:
             /*codeIf3=*/"cbz   x15, .Lsetscheme_unexpected\n\t",
             /*codeIf5=*/"cbnz  x15, .Lsetscheme_unexpected\n\t",
             /*codeIf7=*/"cbz   x15, .Lsetscheme_unexpected\n\t"
-        )
+            )
         "b .Lsetscheme_ok       \n\t"
         ".Lsetscheme_unexpected:\n\t"
         PACGA_TRAP             "\n\t"
@@ -2156,15 +2141,24 @@ public:
             /*scratchReg=*/x14,
             "pacga x16, x16, x17 \n\t"
             "str   x16, [x17, #8]\n\t"
-        )
+            )
         "str   x15, [x17, #16]\n\t"
         :
         : "r"(x17), "r"(x16), "r"(x15)
-    );
+        );
   }
+#endif // defined(_LIBUNWIND_IS_NATIVE_ONLY)
 
 private:
-
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+  void abortCrossRASigningSchemeing() const {
+    // We should never go here since non-null RA signed state is either set
+    // by architecture-specific __unw_getcontext or by stepWithDwarf which
+    // already contains a corresponding check and should have already
+    // emitted the UNW_ECROSSRASIGNING error.
+    _LIBUNWIND_ABORT("UNW_ECROSSRASIGNING");
+  }
+#else
   void setZeroSigningScheme() {
     register uint64_t x17 __asm("x17") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
@@ -2225,8 +2219,12 @@ private:
     checkRASigningSchemeFlagsIntegrity(&_registers.__ra_signing_scheme.__flags);
   }
 
+  // Is PAuth is available, returns signing scheme flags value with embedded
+  // PAC computed with GA key and SP modifier. The PAC computed by PACGA only
+  // occupies most-significant 32 bits of 64-bit value, which are not
+  // overlapping with bits occupied by valid flags values.
+  // If PAuth is not available, just returns signing scheme flags.
   uint64_t getRASigningSchemeFlags() const {
-    // MYTODO resign explain
     register uint64_t x17 __asm("x17") =
         reinterpret_cast<uint64_t>(&_registers.__ra_signing_scheme.__flags);
     register uint64_t x16 __asm("x16") = _registers.__ra_signing_scheme.__flags;
@@ -2234,7 +2232,7 @@ private:
         _registers.__ra_signing_scheme.__flags_pac;
     register uint64_t x14 __asm("x14") = _registers.__sp;
 
-    // MYTODO: reuse code from CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY macro.
+    // TODO: reuse code from CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY macro.
     asm(
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
         CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI(/*schemeReg=*/x16)
@@ -2253,8 +2251,7 @@ private:
         : "r"(x17), "r"(x15), "r"(x14));
     return x16;
   }
-
-#endif
+#endif // !defined(_LIBUNWIND_IS_NATIVE_ONLY)
 
   uint64_t lazyGetVG() const;
 
@@ -2633,6 +2630,7 @@ inline void Registers_arm64::setVectorRegister(int, v128) {
 #undef SIGNING_SCHEME_FLAGS_SWITCH
 #undef CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY_FOR_PAUTHABI
 #undef CHECK_SIGNING_SCHEME_FLAGS_INTEGRITY
+#undef PACGA_TRAP
 #undef RUN_IF_PAUTH_FEATURE_PRESENT
 #undef STRING
 #undef STRING_IMPL
