@@ -1842,6 +1842,63 @@ extern "C" void *__libunwind_shstk_get_jump_target() {
 }
 #endif
 
+// MYTODO comment docs
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
+
+#define STRING_IMPL(x) #x
+#define STRING(x) STRING_IMPL(x)
+
+#define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
+  "mrs  " #scratchReg ", ID_AA64ISAR1_EL1"                  "\n\t"             \
+  "lsr  " #scratchReg ", " #scratchReg ", #24"              "\n\t"             \
+  "ands " #scratchReg ", " #scratchReg ", #255"             "\n\t"             \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t"             \
+  "mrs  " #scratchReg ", ID_AA64ISAR2_EL1"                  "\n\t"             \
+  "lsr  " #scratchReg ", " #scratchReg ", #8"               "\n\t"             \
+  "ands " #scratchReg ", " #scratchReg ", #15"              "\n\t"             \
+  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__) "\n\t"             \
+  "b .Lcheck_pac_end" STRING(__LINE__)                      "\n\t"             \
+  ".Lcheck_pac_code" STRING(__LINE__) ":"                   "\n\t"             \
+  code                                                      "\n\t"             \
+  ".Lcheck_pac_end" STRING(__LINE__) ":"                    "\n\t"
+
+  // MYTODO undef
+
+  // MYTODO comment why brk has this code
+  // #undef STRING
+  // #undef STRING_IMPL
+#define SIGNING_SCHEME_SWITCH(schemeReg, codeIf0, codeIf1, codeIf3, codeIf5,   \
+                              codeIf7)                                         \
+  "cmp " #schemeReg ", #0"                     "\n\t"                          \
+  "b.ne .Lswitch_1_"   STRING(__LINE__)        "\n\t"                          \
+  codeIf0                                      "\n\t"                          \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
+  ".Lswitch_1_" STRING(__LINE__) ":"           "\n\t"                          \
+  "cmp " #schemeReg ", #1"                     "\n\t"                          \
+  "b.ne .Lswitch_3_" STRING(__LINE__)          "\n\t"                          \
+  codeIf1 "                                    "\n\t"                          \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
+  ".Lswitch_3_" STRING(__LINE__) ":            "\n\t"                          \
+  "cmp " #schemeReg ", #3"                     "\n\t"                          \
+  "b.ne .Lswitch_5_"   STRING(__LINE__)        "\n\t"                          \
+  codeIf3                                      "\n\t"                          \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
+  ".Lswitch_5_" STRING(__LINE__) ":"           "\n\t"                          \
+  "cmp " #schemeReg ", #5"                     "\n\t"                          \
+  "b.ne .Lswitch_7_"   STRING(__LINE__)        "\n\t"                          \
+  codeIf5                                      "\n\t"                          \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
+  ".Lswitch_7_" STRING(__LINE__) ":"           "\n\t"                          \
+  "cmp " #schemeReg ", #7"                     "\n\t"                          \
+  "b.ne .Lswitch_unexpected" STRING(__LINE__)  "\n\t"                          \
+  codeIf7                                      "\n\t"                          \
+  "b    .Lswitch_end_" STRING(__LINE__)        "\n\t"                          \
+  ".Lswitch_unexpected" STRING(__LINE__) ":"   "\n\t"                          \
+  "brk #0xc474"                                "\n\t"                          \
+  ".Lswitch_end_" STRING(__LINE__) ":"         "\n\t"
+
+#endif
+
 class _LIBUNWIND_HIDDEN Registers_arm64 {
 public:
   Registers_arm64() = default;
@@ -1878,66 +1935,7 @@ public:
   uint64_t  getSP() const         { return _registers.__sp; }
   void      setSP(uint64_t value) { _registers.__sp = value; }
 
-// MYTODO comment docs
-#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
-#define STRING_IMPL(x) #x
-#define STRING(x) STRING_IMPL(x)
-#define CHECK_PAC_AVAILABLE(scratchReg, code)                                  \
-  "mrs  " #scratchReg ", ID_AA64ISAR1_EL1\n\t"                                 \
-  "lsr  " #scratchReg ", " #scratchReg ", #24  \n\t"                            \
-  "ands " #scratchReg ", " #scratchReg ", #255 \n\t"                            \
-  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__)          "\n\t"                  \
-  /* AAA */ \
-  "mrs  " #scratchReg ", ID_AA64ISAR2_EL1\n\t"                                 \
-  "lsr  " #scratchReg ", " #scratchReg ", #8  \n\t"                            \
-  "ands " #scratchReg ", " #scratchReg ", #15 \n\t"                            \
-  "cbnz " #scratchReg ", .Lcheck_pac_code" STRING(__LINE__)          "\n\t"                  \
-  /* AAA */ \
-  "b .Lcheck_pac_end" STRING(__LINE__) "\n\t" \
-/* AAA */ \
-  ".Lcheck_pac_code" STRING(__LINE__) ":\n\t" \
-       code "\n\t"                                                       \
-/* AAA */ \
-      ".Lcheck_pac_end" STRING(__LINE__) ":\n\t"
 
-  // MYTODO undef
-
-  // MYTODO comment why brk has this code
-  // #undef STRING
-  // #undef STRING_IMPL
-
-#define SIGNING_SCHEME_SWITCH(schemeReg, codeIf0, codeIf1, codeIf3, codeIf5,        \
-                              codeIf7)                                              \
-  "cmp   " #schemeReg ", #0\n\t"                                                    \
-  "b.ne  .Lsigning_scheme_switch_1_" STRING(__LINE__) "\n\t" \
-  codeIf0 "\n\t"                                               \
-  "b     .Lsigning_scheme_switch_end_" STRING(__LINE__) "\n\t"     \
-  ".Lsigning_scheme_switch_1_" STRING(__LINE__) ":\n\t"   \
-  "cmp   " #schemeReg ", #1\n\t"          \
-  "b.ne  .Lsigning_scheme_switch_3_" STRING(__LINE__) "\n\t" \
-  codeIf1 "\n\t"                    \
-  "b .Lsigning_scheme_switch_end_" STRING(__LINE__) "\n\t"      \
-  ".Lsigning_scheme_switch_3_" STRING(__LINE__) ":\n\t" \
-  "cmp   " #schemeReg ", #3\n\t" \
-  "b.ne  .Lsigning_scheme_switch_5_" STRING(__LINE__) "\n\t" \
-  codeIf3 "\n\t" \
-  "b     .Lsigning_scheme_switch_end_" STRING(__LINE__) "\n\t" \
-  ".Lsigning_scheme_switch_5_" STRING(__LINE__) ":\n\t" \
-  "cmp   " #schemeReg ", #5\n\t" \
-  "b.ne  .Lsigning_scheme_switch_7_" STRING(__LINE__) "\n\t" \
-  codeIf5 "\n\t" \
-  "b    .Lsigning_scheme_switch_end_" STRING(__LINE__) "\n\t" \
-  ".Lsigning_scheme_switch_7_" STRING(__LINE__) ":\n\t" \
-  "cmp   " #schemeReg ", #7\n\t" \
-  "b.ne  .Lsigning_scheme_switch_unexpected" STRING(__LINE__) "\n\t" \
-  codeIf7 "\n\t" \
-  "b     .Lsigning_scheme_switch_end_" STRING(__LINE__) "\n\t" \
-  ".Lsigning_scheme_switch_unexpected" STRING(__LINE__) ":\n\t" \
-  "brk   #0xc474      \n\t" \
-  ".Lsigning_scheme_switch_end_" STRING(__LINE__) ":\n\t"
-
-
-#endif
 
   uint64_t getIP() const {
     uint64_t value = _registers.__pc;
@@ -2749,6 +2747,14 @@ inline v128 Registers_arm64::getVectorRegister(int) const {
 inline void Registers_arm64::setVectorRegister(int, v128) {
   _LIBUNWIND_ABORT("no arm64 vector register support yet");
 }
+
+#if defined(_LIBUNWIND_IS_NATIVE_ONLY)
+#undef SIGNING_SCHEME_SWITCH
+#undef CHECK_PAC_AVAILABLE
+#undef STRING
+#undef STRING_IMPL
+#endif
+
 #endif // _LIBUNWIND_TARGET_AARCH64
 
 #if defined(_LIBUNWIND_TARGET_ARM)
