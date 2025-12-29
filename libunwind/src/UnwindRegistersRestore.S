@@ -737,8 +737,7 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 /* AAA */ 
   .Lcheck_pac_code1:
 
-  add    x17, x0, #0x108
-  pacga x17, x1, x17
+  pacga x17, x1, x14
   cmp   x17, x16     
   b.eq  .Ltest_pacga_success
   brk   #0xc474      
