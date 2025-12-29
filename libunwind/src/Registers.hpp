@@ -2322,7 +2322,8 @@ private:
       // - bit 0: is RA signed;
       // - bit 1: is RA signed with second modifier;
       // - bit 2: is RA signed with B key.
-      // Valid values: 0, 1, 3, 5, 7.
+      // Valid values: 0, 1, 3, 5, 7. Note that it does not directly
+      // correspond to any physical or Dwarf registers.
       uint64_t __flags = 0;
 
       // Pointer authentication code for the `__flags` value computed with GA

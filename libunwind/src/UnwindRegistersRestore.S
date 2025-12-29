@@ -654,8 +654,6 @@ Lnovec:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
 
-// MYTODO: pac
-
   #if defined(_LIBUNWIND_TRACE_RET_INJECT)
     cbz     w1, 1f
   0:
@@ -706,21 +704,16 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_jumpto)
   ldr    d31,     [x0, #0x218]
 #endif
 
-  // The lr value stored in __pc might be signed with IA/IB key (as described
-  // by __ra_sign.__use_b_key field) and &__pc address as a modifier.
-  // If the lr value is signed, re-sign that with the corresponding key
-  // and initial signing scheme using __sp as a modifier and potentially
-  // involving a second modifier (as described by (__ra_sign.__state & 2)).
+  // The lr value stored in __pc might be signed with IA/IB key, &__pc address
+  // as a modifier and an optional second modifier. If the lr value is signed,
+  // re-sign that with the corresponding key and initial signing scheme using
+  // __sp as a modifier and potentially involving a second modifier
+  // (as described by '__ra_signing_scheme.__flags & 2').
 
   ldr    x14,     [x0, #0x0F8]  // x14 = __sp
-  ldr    x15,     [x0, #0x118]  // x15 = __ra_sign.__second_modifier
-
-
-
-
-  ldr    x1,      [x0, #0x108]  // x1 = __ra_sign.__state
-  ldr    x16,      [x0, #0x110]  // x16 = __ra_sign.__state_pac
-
+  ldr    x15,     [x0, #0x118]  // x15 = __ra_signing_scheme.__second_modifier
+  ldr    x1,      [x0, #0x108]  // x1 = __ra_signing_scheme.__flags
+  ldr    x16,      [x0, #0x110]  // x16 = __ra_signing_scheme.__flags_pac
 
 
   mrs  x17, ID_AA64ISAR1_EL1

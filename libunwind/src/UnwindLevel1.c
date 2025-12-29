@@ -681,20 +681,20 @@ _LIBUNWIND_EXPORT uintptr_t _Unwind_GetIP(struct _Unwind_Context *context) {
         "cmp   x14, #1     \n\t"
         "b.ne  .Lswitch_3  \n\t"
         "hint 0xc          \n\t" // autia1716
-        "b     .Lload_end  \n\t"
+        "b     .Lswitch_end\n\t"
 
         ".Lswitch_3:       \n\t"
         "cmp   x14, #3     \n\t"
         "b.ne  .Lswitch_5  \n\t"
         "hint 0x27         \n\t" // pacm
         "hint 0xc          \n\t" // autia1716
-        "b     .Lload_end\n\t"
+        "b     .Lswitch_end\n\t"
 
         ".Lswitch_5:       \n\t"
         "cmp   x14, #5     \n\t"
         "b.ne  .Lswitch_7  \n\t"
         "hint 0xe          \n\t" // autib1716
-        "b     .Lload_end  \n\t"
+        "b     .Lswitch_end\n\t"
 
         ".Lswitch_7:       \n\t"
         "cmp   x14, #7     \n\t"
