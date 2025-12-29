@@ -2240,15 +2240,15 @@ public:
 
             SIGNING_SCHEME_SWITCH(x16,
                               // If 0:
-                              "cbnz  x15, .Lsetscheme_unexpected\n\t",
+                              "cbnz  x15, .Lsetscheme_unexpected_begin\n\t",
                               // If 1:
-            "cbnz  x15, .Lsetscheme_unexpected\n\t"
+            "cbnz  x15, .Lsetscheme_unexpected_begin\n\t"
                               , // If 3:
-         "cbz  x15, .Lsetscheme_unexpected\n\t"
+         "cbz  x15, .Lsetscheme_unexpected_begin\n\t"
 , // If 5:
-            "cbnz  x15, .Lsetscheme_unexpected\n\t"
+            "cbnz  x15, .Lsetscheme_unexpected_begin\n\t"
 , // If 7:
-        "cbz  x15, .Lsetscheme_unexpected\n\t"
+        "cbz  x15, .Lsetscheme_unexpected_begin\n\t"
                               )
         // "cmp   x16, #0\n\t"
         // "b.ne  .Lsetscheme_check1\n\t"
