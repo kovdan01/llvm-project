@@ -2774,7 +2774,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 
   // Ask address space object to find unwind sections for this pc.
   UnwindInfoSections sects;
-  if (_addressSpace.findUnwindSections<R>(pc, sects)) {
+  if (_addressSpace.template findUnwindSections<R>(pc, sects)) {
 #if defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
     // If there is a compact unwind encoding table, look there first.
     if (sects.compact_unwind_section != 0) {
@@ -2843,7 +2843,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
   // Lastly, ask AddressSpace object about platform specific ways to locate
   // other FDEs.
   pint_t fde;
-  if (_addressSpace.findOtherFDE<R>(pc, fde)) {
+  if (_addressSpace.template findOtherFDE<R>(pc, fde)) {
     typename CFI_Parser<A>::FDE_Info fdeInfo;
     typename CFI_Parser<A>::CIE_Info cieInfo;
     if (!CFI_Parser<A>::decodeFDE(_addressSpace, fde, &fdeInfo, &cieInfo)) {
@@ -3313,7 +3313,7 @@ bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
 #else
   typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
 #endif
-  return _addressSpace.findFunctionName<R>(pc, buf, bufLen, offset);
+  return _addressSpace.template findFunctionName<R>(pc, buf, bufLen, offset);
 }
 
 #if defined(_LIBUNWIND_CHECK_LINUX_SIGRETURN)
