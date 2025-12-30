@@ -113,8 +113,8 @@ bool EHHeaderParser<A>::decodeTableEntry(
 }
 
 template <typename A>
-template <typename T>
-bool EHHeaderParser<A>::findFDE(A &addressSpace, const T &pc, pint_t ehHdrStart,
+template <typename R>
+bool EHHeaderParser<A>::findFDE(A &addressSpace, const typename R::link_reg_t &pc, pint_t ehHdrStart,
                                 uint32_t sectionLength,
                                 typename CFI_Parser<A>::FDE_Info *fdeInfo,
                                 typename CFI_Parser<A>::CIE_Info *cieInfo) {

@@ -122,7 +122,7 @@ class _LIBUNWIND_HIDDEN DwarfFDECache {
 public:
   static constexpr pint_t kSearchAll = static_cast<pint_t>(-1);
   template <typename R>
-  static pint_t findFDE(pint_t mh, const typename T::link_reg_t &pc);
+  static pint_t findFDE(pint_t mh, const typename R::link_reg_t &pc);
   static void add(pint_t mh, pint_t ip_start, pint_t ip_end, pint_t fde);
   static void removeAllIn(pint_t mh);
   static void iterateCacheEntries(void (*func)(unw_word_t ip_start,
