@@ -121,7 +121,8 @@ class _LIBUNWIND_HIDDEN DwarfFDECache {
   typedef typename A::pint_t pint_t;
 public:
   static constexpr pint_t kSearchAll = static_cast<pint_t>(-1);
-  template <typename T> static pint_t findFDE(pint_t mh, const T &pc);
+  template <typename R>
+  static pint_t findFDE(pint_t mh, const typename T::link_reg_t &pc);
   static void add(pint_t mh, pint_t ip_start, pint_t ip_end, pint_t fde);
   static void removeAllIn(pint_t mh);
   static void iterateCacheEntries(void (*func)(unw_word_t ip_start,
@@ -174,9 +175,9 @@ bool DwarfFDECache<A>::_registeredForDyldUnloads = false;
 #endif
 
 template <typename A>
-template <typename T>
-typename DwarfFDECache<A>::pint_t DwarfFDECache<A>::findFDE(pint_t mh,
-                                                            const T &pc) {
+template <typename R>
+typename DwarfFDECache<A>::pint_t
+DwarfFDECache<A>::findFDE(pint_t mh, const typename R::link_reg_t &pc) {
   pint_t result = 0;
   _LIBUNWIND_LOG_IF_FALSE(_lock.lock_shared());
   for (entry *p = _buffer; p < _bufferUsed; ++p) {
@@ -1734,8 +1735,8 @@ bool UnwindCursor<A, R>::getInfoFromFdeCie(
     const typename CFI_Parser<A>::CIE_Info &cieInfo,
     const typename R::link_reg_t &pc, uintptr_t dso_base) {
   typename CFI_Parser<A>::PrologInfo prolog;
-  if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo, cieInfo, pc,
-                                          R::getArch(), &prolog)) {
+  if (CFI_Parser<A>::parseFDEInstructions<R>(_addressSpace, fdeInfo, cieInfo,
+                                             pc, R::getArch(), &prolog)) {
     // Save off parsed FDE info
     _info.start_ip          = fdeInfo.pcStart;
     _info.end_ip            = fdeInfo.pcEnd;
@@ -1764,34 +1765,32 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(
   bool foundInCache = false;
   // If compact encoding table gave offset into dwarf section, go directly there
   if (fdeSectionOffsetHint != 0) {
-    foundFDE = CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
-                                    sects.dwarf_section_length,
-                                    sects.dwarf_section + fdeSectionOffsetHint,
-                                    &fdeInfo, &cieInfo);
+    foundFDE = CFI_Parser<A>::findFDE<R>(
+        _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
+        sects.dwarf_section + fdeSectionOffsetHint, &fdeInfo, &cieInfo);
   }
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   if (!foundFDE && (sects.dwarf_index_section != 0)) {
-    foundFDE = EHHeaderParser<A>::findFDE(
+    foundFDE = EHHeaderParser<A>::findFDE<R>(
         _addressSpace, pc, sects.dwarf_index_section,
         (uint32_t)sects.dwarf_index_section_length, &fdeInfo, &cieInfo);
   }
 #endif
   if (!foundFDE) {
     // otherwise, search cache of previously found FDEs.
-    pint_t cachedFDE = DwarfFDECache<A>::findFDE(sects.dso_base, pc);
+    pint_t cachedFDE = DwarfFDECache<A>::findFDE<R>(sects.dso_base, pc);
     if (cachedFDE != 0) {
-      foundFDE =
-          CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
-                                 sects.dwarf_section_length,
-                                 cachedFDE, &fdeInfo, &cieInfo);
+      foundFDE = CFI_Parser<A>::findFDE<R>(
+          _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
+          cachedFDE, &fdeInfo, &cieInfo);
       foundInCache = foundFDE;
     }
   }
   if (!foundFDE) {
     // Still not found, do full scan of __eh_frame section.
-    foundFDE = CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
-                                      sects.dwarf_section_length, 0,
-                                      &fdeInfo, &cieInfo);
+    foundFDE = CFI_Parser<A>::findFDE<R>(_addressSpace, pc, sects.dwarf_section,
+                                         sects.dwarf_section_length, 0,
+                                         &fdeInfo, &cieInfo);
   }
   if (foundFDE) {
     if (getInfoFromFdeCie(fdeInfo, cieInfo, pc, sects.dso_base)) {
@@ -2830,8 +2829,8 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
   // There is no static unwind info for this pc. Look to see if an FDE was
   // dynamically registered for it.
-  pint_t cachedFDE = DwarfFDECache<A>::findFDE(DwarfFDECache<A>::kSearchAll,
-                                               pc);
+  pint_t cachedFDE =
+      DwarfFDECache<A>::findFDE<R>(DwarfFDECache<A>::kSearchAll, pc);
   if (cachedFDE != 0) {
     typename CFI_Parser<A>::FDE_Info fdeInfo;
     typename CFI_Parser<A>::CIE_Info cieInfo;
