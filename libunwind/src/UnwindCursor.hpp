@@ -1735,8 +1735,8 @@ bool UnwindCursor<A, R>::getInfoFromFdeCie(
     const typename CFI_Parser<A>::CIE_Info &cieInfo,
     const typename R::link_reg_t &pc, uintptr_t dso_base) {
   typename CFI_Parser<A>::PrologInfo prolog;
-  if (CFI_Parser<A>::parseFDEInstructions<R>(_addressSpace, fdeInfo, cieInfo,
-                                             pc, R::getArch(), &prolog)) {
+  if (CFI_Parser<A>::template parseFDEInstructions<R>(
+          _addressSpace, fdeInfo, cieInfo, pc, R::getArch(), &prolog)) {
     // Save off parsed FDE info
     _info.start_ip          = fdeInfo.pcStart;
     _info.end_ip            = fdeInfo.pcEnd;
@@ -1765,22 +1765,23 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(
   bool foundInCache = false;
   // If compact encoding table gave offset into dwarf section, go directly there
   if (fdeSectionOffsetHint != 0) {
-    foundFDE = CFI_Parser<A>::findFDE<R>(
+    foundFDE = CFI_Parser<A>::template findFDE<R>(
         _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
         sects.dwarf_section + fdeSectionOffsetHint, &fdeInfo, &cieInfo);
   }
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   if (!foundFDE && (sects.dwarf_index_section != 0)) {
-    foundFDE = EHHeaderParser<A>::findFDE<R>(
+    foundFDE = EHHeaderParser<A>::template findFDE<R>(
         _addressSpace, pc, sects.dwarf_index_section,
         (uint32_t)sects.dwarf_index_section_length, &fdeInfo, &cieInfo);
   }
 #endif
   if (!foundFDE) {
     // otherwise, search cache of previously found FDEs.
-    pint_t cachedFDE = DwarfFDECache<A>::findFDE<R>(sects.dso_base, pc);
+    pint_t cachedFDE =
+        DwarfFDECache<A>::template findFDE<R>(sects.dso_base, pc);
     if (cachedFDE != 0) {
-      foundFDE = CFI_Parser<A>::findFDE<R>(
+      foundFDE = CFI_Parser<A>::template findFDE<R>(
           _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
           cachedFDE, &fdeInfo, &cieInfo);
       foundInCache = foundFDE;
@@ -1788,9 +1789,9 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(
   }
   if (!foundFDE) {
     // Still not found, do full scan of __eh_frame section.
-    foundFDE = CFI_Parser<A>::findFDE<R>(_addressSpace, pc, sects.dwarf_section,
-                                         sects.dwarf_section_length, 0,
-                                         &fdeInfo, &cieInfo);
+    foundFDE = CFI_Parser<A>::template findFDE<R>(
+        _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length, 0,
+        &fdeInfo, &cieInfo);
   }
   if (foundFDE) {
     if (getInfoFromFdeCie(fdeInfo, cieInfo, pc, sects.dso_base)) {
@@ -2773,7 +2774,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 
   // Ask address space object to find unwind sections for this pc.
   UnwindInfoSections sects;
-  if (_addressSpace.findUnwindSections(pc, sects)) {
+  if (_addressSpace.findUnwindSections<R>(pc, sects)) {
 #if defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
     // If there is a compact unwind encoding table, look there first.
     if (sects.compact_unwind_section != 0) {
@@ -2830,7 +2831,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
   // There is no static unwind info for this pc. Look to see if an FDE was
   // dynamically registered for it.
   pint_t cachedFDE =
-      DwarfFDECache<A>::findFDE<R>(DwarfFDECache<A>::kSearchAll, pc);
+      DwarfFDECache<A>::template findFDE<R>(DwarfFDECache<A>::kSearchAll, pc);
   if (cachedFDE != 0) {
     typename CFI_Parser<A>::FDE_Info fdeInfo;
     typename CFI_Parser<A>::CIE_Info cieInfo;
@@ -2842,7 +2843,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
   // Lastly, ask AddressSpace object about platform specific ways to locate
   // other FDEs.
   pint_t fde;
-  if (_addressSpace.findOtherFDE(pc, fde)) {
+  if (_addressSpace.findOtherFDE<R>(pc, fde)) {
     typename CFI_Parser<A>::FDE_Info fdeInfo;
     typename CFI_Parser<A>::CIE_Info cieInfo;
     if (!CFI_Parser<A>::decodeFDE(_addressSpace, fde, &fdeInfo, &cieInfo)) {
@@ -3312,7 +3313,7 @@ bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
 #else
   typename R::link_reg_t pc = this->getReg(UNW_REG_IP);
 #endif
-  return _addressSpace.findFunctionName(pc, buf, bufLen, offset);
+  return _addressSpace.findFunctionName<R>(pc, buf, bufLen, offset);
 }
 
 #if defined(_LIBUNWIND_CHECK_LINUX_SIGRETURN)
