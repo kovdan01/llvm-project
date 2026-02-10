@@ -790,9 +790,11 @@ static void addGotAuthEntry(Ctx &ctx, Symbol &sym) {
     return;
   }
 
-  // Signed GOT requires dynamic relocation.
-  ctx.in.got->getPartition(ctx).relaDyn->addReloc(
-      {R_AARCH64_AUTH_RELATIVE, ctx.in.got.get(), off, false, sym, 0, R_ABS});
+  if (!sym.isUndefWeak()) {
+    // Signed GOT requires dynamic relocation.
+    ctx.in.got->getPartition(ctx).relaDyn->addReloc(
+        {R_AARCH64_AUTH_RELATIVE, ctx.in.got.get(), off, false, sym, 0, R_ABS});
+  }
 }
 
 static void addTpOffsetGotEntry(Ctx &ctx, Symbol &sym) {
@@ -853,7 +855,7 @@ bool RelocScan::isStaticLinkTimeConstant(RelExpr e, RelType type,
   if (e == R_GOT || e == R_PLT)
     return ctx.target->usesOnlyLowPageBits(type) || !ctx.arg.isPic;
   // R_AARCH64_AUTH_ABS64 and iRelSymbolicRel require a dynamic relocation.
-  if (e == RE_AARCH64_AUTH || type == ctx.target->iRelSymbolicRel)
+  if ((e == RE_AARCH64_AUTH && !(sym.isUndefWeak() && !sym.isPreemptible)) || type == ctx.target->iRelSymbolicRel)
     return false;
 
   // The behavior of an undefined weak reference is implementation defined.

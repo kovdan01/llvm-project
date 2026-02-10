@@ -144,6 +144,7 @@ protected:
   struct AuthEntryInfo {
     size_t offset;
     bool isSymbolFunc;
+    bool isUndefWeakNonPreemptible;
   };
   SmallVector<AuthEntryInfo, 0> authEntries;
 };
