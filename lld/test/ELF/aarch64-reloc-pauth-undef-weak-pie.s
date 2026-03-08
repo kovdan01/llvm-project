@@ -12,6 +12,7 @@
 
 # DATA-LABEL: Hex dump of section '.data':
 # DATA-NEXT:  0x000302d8 00000000 00000000 10000000 00000000
+# DATA-NEXT:  0x000302e8 00000000 00000000 10000000 00000000
 
 .weak undef
 
@@ -19,3 +20,5 @@
 foo:
 .quad undef@AUTH(da,42)
 .quad (undef + 16)@AUTH(da,42)
+.quad undef
+.quad (undef + 16)
