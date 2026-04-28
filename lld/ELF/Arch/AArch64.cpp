@@ -648,8 +648,21 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     // This is used for the addend of a .relr.auth.dyn entry,
     // which is a 32-bit value; the upper 32 bits are used to
     // encode the schema.
-    checkInt(ctx, loc, val, 32, rel);
-    write32(ctx, loc, val);
+    // MYTODO: not weak, because computeBinding
+    if (rel.sym->isUndefined() && !rel.sym->isPreemptible) {
+      // llvm::errs() << "UNDEF WEAK NON PREEMPTIBLE: " << rel.sym->getName() <<
+      // "\n";
+      write64(ctx, loc, val);
+    } else {
+      // llvm::errs() << "PREEMPTIBLE? " << (int)(rel.sym->isPreemptible)
+      //              << " WEAK? " << (int)(rel.sym->isWeak())
+      //              << " UNDEF? " << (int)(rel.sym->isUndefined())
+      //              << " BINDING " << (int)(rel.sym->binding)
+      //              << " VISIBILITY " << (int)(rel.sym->visibility())
+      //              << " name = " << rel.sym->getName() << "\n";
+      checkInt(ctx, loc, val, 32, rel);
+      write32(ctx, loc, val);
+    }
     break;
   case R_AARCH64_TLS_DTPREL64:
     write64(ctx, loc, val);

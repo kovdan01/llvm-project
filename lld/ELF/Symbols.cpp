@@ -268,8 +268,11 @@ void Symbol::extract(Ctx &ctx) const {
 
 uint8_t Symbol::computeBinding(Ctx &ctx) const {
   auto v = visibility();
-  if ((v != STV_DEFAULT && v != STV_PROTECTED) || versionId == VER_NDX_LOCAL)
+  // llvm::errs() << "computeBinding for " << this->getName() << " START\n";
+  if ((v != STV_DEFAULT && v != STV_PROTECTED) || versionId == VER_NDX_LOCAL) {
+    // llvm::errs() << "computeBinding for " << this->getName() << " LOCAL\n";
     return STB_LOCAL;
+  }
   if (binding == STB_GNU_UNIQUE && !ctx.arg.gnuUnique)
     return STB_GLOBAL;
   return binding;
