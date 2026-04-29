@@ -1,5 +1,5 @@
 # REQUIRES: aarch64
-# RUN: llvm-mc -filetype=obj -triple=aarch64 %s -o %t.o
+# RUN: llvm-mc -filetype=obj -triple=aarch64 -mattr=+pauth %s -o %t.o
 # RUN: ld.lld --static %t.o -o %t
 # RUN: llvm-readobj -r %t | FileCheck %s --check-prefix=RELA
 # RUN: llvm-readelf -x.data %t | FileCheck %s --check-prefix=DATA
@@ -10,25 +10,38 @@
 ## to NULL (plus addend).
 
 # RELA-LABEL: Relocations [
+# RELA-NEXT:   Section (1) .rela.dyn {
+# RELA-NEXT:    0x220200 R_AARCH64_AUTH_TLSDESC - 0x0
+# RELA-NEXT:   }
 # RELA-NEXT:  ]
 
 # DATA-LABEL: Hex dump of section '.data':
-# DATA-NEXT:  0x002301d8 00000000 00000000 25000000 00000000
-# DATA-NEXT:  0x002301e8 00000000 00000000 25000000 00000000
+# DATA-NEXT:  0x00230210 00000000 00000000 25000000 00000000
+# DATA-NEXT:  0x00230220 00000000 00000000 25000000 00000000
 
 # GOT-LABEL:  Hex dump of section '.got':
-# GOT-NEXT:   0x002201d0 00000000 00000000
+# GOT-NEXT:   0x002201f8 00000000 00000000 00000000 00000080
+# GOT-NEXT:   0x00220208 00000000 00000000
 
 # DIS-LABEL:  <_start>:
-# DIS-NEXT:     adrp x0, 0x220000
-# DIS-NEXT:     ldr  x0, [x0, #0x1d0]
+
+# DIS-NEXT:     adrp  x0,  0x220000
+# DIS-NEXT:     ldr   x0,  [x0, #0x1f8]
+# DIS-NEXT:     adrp  x0,  0x220000
+# DIS-NEXT:     ldr   x16, [x0, #0x200]
+# DIS-NEXT:     add   x0,  x0, #0x200
+# DIS-NEXT:     blraa x16, x0
 
 .weak undef
 
 .globl _start
 _start:
-  adrp x0, :got_auth:undef
-  ldr x0, [x0, :got_auth_lo12:undef]
+  adrp  x0,  :got_auth:undef
+  ldr   x0,  [x0, :got_auth_lo12:undef]
+  adrp  x0,  :tlsdesc_auth:undef
+  ldr   x16, [x0, :tlsdesc_auth_lo12:undef]
+  add   x0,  x0, :tlsdesc_auth_lo12:undef
+  blraa x16, x0
 
 .data
 foo:
