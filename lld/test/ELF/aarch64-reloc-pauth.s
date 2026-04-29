@@ -153,16 +153,21 @@
 # EMPTY-RELR:      .relr.auth.dyn AARCH64_AUTH_RELR {{0*}}[[ADDR2:.+]] {{0*}}[[ADDR2]] 000000 08 A 0 0 8
 
 # EMPTY-RELR:      Dynamic section at offset {{.+}} contains 12 entries
+# EMPTY-RELR-NOT:  (RELR)
+# EMPTY-RELR-NOT:  (RELRSZ)
+# EMPTY-RELR-NOT:  (RELRENT)
 # EMPTY-RELR-NOT:  (AARCH64_AUTH_RELR)
 # EMPTY-RELR-NOT:  (AARCH64_AUTH_RELRSZ)
 # EMPTY-RELR-NOT:  (AARCH64_AUTH_RELRENT)
 # EMPTY-RELR:      0x0000000000000007 (RELA) 0x[[ADDR1]]
 # EMPTY-RELR-NEXT: 0x0000000000000008 (RELASZ) 24 (bytes)
 # EMPTY-RELR-NEXT: 0x0000000000000009 (RELAENT) 24 (bytes)
+# EMPTY-RELR:      0x0000000000000000 (NULL) 0x0
+# EMPTY-RELR-EMPTY:
 
 # EMPTY-RELR:      Relocation section '.rela.dyn' at offset {{.+}} contains 1 entries:
 # EMPTY-RELR-NEXT:     Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
-# EMPTY-RELR-NEXT: 0000000000030320  0000000000000411 R_AARCH64_AUTH_RELATIVE           8003031f
+# EMPTY-RELR-NEXT: 0000000000030350  0000000000000411 R_AARCH64_AUTH_RELATIVE           8003034f
 # EMPTY-RELR-EMPTY:
 # EMPTY-RELR-NEXT: Relocation section '.relr.auth.dyn' at offset {{.+}} contains 0 entries:
 # EMPTY-RELR-NEXT: Index: Entry Address Symbolic Address
@@ -192,16 +197,21 @@
 # EMPTY-RELA-NOT:  (RELR)
 # EMPTY-RELA-NOT:  (RELRSZ)
 # EMPTY-RELA-NOT:  (RELRENT)
+# EMPTY-RELA-NOT:  (RELA)
+# EMPTY-RELA-NOT:  (RELASZ)
+# EMPTY-RELA-NOT:  (RELAENT)
 # EMPTY-RELA:      0x0000000070000012 (AARCH64_AUTH_RELR) 0x[[ADDR2]]
 # EMPTY-RELA-NEXT: 0x0000000070000011 (AARCH64_AUTH_RELRSZ) 8 (bytes)
 # EMPTY-RELA-NEXT: 0x0000000070000013 (AARCH64_AUTH_RELRENT) 8 (bytes)
+# EMPTY-RELA:      0x0000000000000000 (NULL) 0x0
+# EMPTY-RELA-EMPTY:
 
 # EMPTY-RELA:      Relocation section '.rela.dyn' at offset {{.+}} contains 0 entries:
 # EMPTY-RELA-NEXT:     Offset             Info             Type               Symbol's Value  Symbol's Name
 # EMPTY-RELA-EMPTY:
 # EMPTY-RELA-NEXT: Relocation section '.relr.auth.dyn' at offset {{.+}} contains 1 entries:
 # EMPTY-RELA-NEXT: Index: Entry Address Symbolic Address
-# EMPTY-RELA-NEXT: 0000: 0000000000030310 0000000000030310 $d
+# EMPTY-RELA-NEXT: 0000: 0000000000030340 0000000000030340 $d
 
 # EMPTY-RELA-RO-NOT: .rela.dyn
 
