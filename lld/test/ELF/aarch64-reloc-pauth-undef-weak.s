@@ -1,5 +1,5 @@
 # REQUIRES: aarch64
-# RUN: llvm-mc -filetype=obj -triple=aarch64 %s -o %t.o
+# RUN: llvm-mc -filetype=obj -triple=aarch64 -mattr=+pauth %s -o %t.o
 # RUN: ld.lld --static %t.o -o %t
 # RUN: llvm-readobj -r %t | FileCheck %s --check-prefix=RELA
 # RUN: llvm-readelf -x.data %t | FileCheck %s --check-prefix=DATA
@@ -13,22 +13,32 @@
 # RELA-NEXT:  ]
 
 # DATA-LABEL: Hex dump of section '.data':
-# DATA-NEXT:  0x002301d8 00000000 00000000 25000000 00000000
 # DATA-NEXT:  0x002301e8 00000000 00000000 25000000 00000000
+# DATA-NEXT:  0x002301f8 00000000 00000000 25000000 00000000
 
 # GOT-LABEL:  Hex dump of section '.got':
-# GOT-NEXT:   0x002201d0 00000000 00000000
+# GOT-NEXT:   0x002201e0 00000000 00000000
 
 # DIS-LABEL:  <_start>:
-# DIS-NEXT:     adrp x0, 0x220000
-# DIS-NEXT:     ldr  x0, [x0, #0x1d0]
+
+# DIS-NEXT:     adrp  x0,  0x220000
+# DIS-NEXT:     ldr   x0,  [x0, #0x1e0]
+# DIS-NEXT:     mov   x0,  #0x0
+# DIS-NEXT:     nop
+# DIS-NEXT:     nop
+# DIS-NEXT:     nop
 
 .weak undef
 
 .globl _start
 _start:
-  adrp x0, :got_auth:undef
-  ldr x0, [x0, :got_auth_lo12:undef]
+  adrp  x0,  :got_auth:undef
+  ldr   x0,  [x0, :got_auth_lo12:undef]
+  adrp  x0,  :tlsdesc_auth:undef
+  ldr   x16, [x0, :tlsdesc_auth_lo12:undef]
+  add   x0,  x0, :tlsdesc_auth_lo12:undef
+  .tlsdesccall undef
+  blraa x16, x0
 
 .data
 foo:

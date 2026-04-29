@@ -161,7 +161,7 @@ public:
     if (ctx.arg.shared) {
       // NEEDS_TLSDESC_NONAUTH is a no-op for non-AArch64 targets and detects
       // incompatibility with NEEDS_TLSDESC_AUTH.
-      sym.setFlags(NEEDS_TLSDESC | NEEDS_TLSDESC_NONAUTH);
+      sym.setFlags(NEEDS_TLSDESC);
       sec->addReloc({sharedExpr, type, offset, addend, &sym});
     } else if (sym.isPreemptible) {
       // Optimize to Initial Exec.
