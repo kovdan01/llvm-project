@@ -38,6 +38,12 @@
 _start:
   adrp  x0,  :got_auth:undef
   ldr   x0,  [x0, :got_auth_lo12:undef]
+
+  adrp  x0,  :tlsdesc:undef
+  ldr   x16, [x0, :tlsdesc_lo12:undef]
+  add   x0,  x0, :tlsdesc_lo12:undef
+  blr   x16
+
   adrp  x0,  :tlsdesc_auth:undef
   ldr   x16, [x0, :tlsdesc_auth_lo12:undef]
   add   x0,  x0, :tlsdesc_auth_lo12:undef
