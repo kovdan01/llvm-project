@@ -10,27 +10,23 @@
 ## to NULL (plus addend).
 
 # RELA-LABEL: Relocations [
-# RELA-NEXT:   Section (1) .rela.dyn {
-# RELA-NEXT:    0x220200 R_AARCH64_AUTH_TLSDESC - 0x0
-# RELA-NEXT:   }
 # RELA-NEXT:  ]
 
 # DATA-LABEL: Hex dump of section '.data':
-# DATA-NEXT:  0x00230210 00000000 00000000 25000000 00000000
-# DATA-NEXT:  0x00230220 00000000 00000000 25000000 00000000
+# DATA-NEXT:  0x002301e8 00000000 00000000 25000000 00000000
+# DATA-NEXT:  0x002301f8 00000000 00000000 25000000 00000000
 
 # GOT-LABEL:  Hex dump of section '.got':
-# GOT-NEXT:   0x002201f8 00000000 00000000 00000000 00000080
-# GOT-NEXT:   0x00220208 00000000 00000000
+# GOT-NEXT:   0x002201e0 00000000 00000000
 
 # DIS-LABEL:  <_start>:
 
 # DIS-NEXT:     adrp  x0,  0x220000
-# DIS-NEXT:     ldr   x0,  [x0, #0x1f8]
-# DIS-NEXT:     adrp  x0,  0x220000
-# DIS-NEXT:     ldr   x16, [x0, #0x200]
-# DIS-NEXT:     add   x0,  x0, #0x200
-# DIS-NEXT:     blraa x16, x0
+# DIS-NEXT:     ldr   x0,  [x0, #0x1e0]
+# DIS-NEXT:     mov   x0,  #0x0
+# DIS-NEXT:     nop
+# DIS-NEXT:     nop
+# DIS-NEXT:     nop
 
 .weak undef
 
@@ -41,6 +37,7 @@ _start:
   adrp  x0,  :tlsdesc_auth:undef
   ldr   x16, [x0, :tlsdesc_auth_lo12:undef]
   add   x0,  x0, :tlsdesc_auth_lo12:undef
+  .tlsdesccall undef
   blraa x16, x0
 
 .data
